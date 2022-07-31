@@ -7,4 +7,4 @@ int strlen(char *);
 
 // print
 
-void print(struct limine_terminal*, char *);
+void print(char *);

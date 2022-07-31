@@ -1,6 +1,10 @@
 .PHONY: all
 all: barebones.iso
 
+.PHONY: gdb
+gdb: barebones.iso
+	qemu-system-x86_64 -s -S -M q35 -m 2G -cdrom barebones.iso -boot d
+
 .PHONY: all-hdd
 all-hdd: barebones.hdd
 
@@ -27,6 +31,8 @@ ovmf-x64:
 limine:
 	git clone https://github.com/limine-bootloader/limine.git --branch=v3.0-branch-binary --depth=1
 	make -C limine
+
+	
 
 .PHONY: kernel
 kernel:

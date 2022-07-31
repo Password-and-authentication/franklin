@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include "idt.h"
-
+#include "limine.h"
 
 
 extern void *isr_table[];
@@ -22,18 +22,23 @@ void init_idt() {
     __asm__ volatile("sti");
 }
 
+
 void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
 
     idt_entry *desc = &idt[vector];
-
     desc->isr_low = (uint64_t)isr & 0xFFFF;
-    desc->selector = 0;
+    desc->selector = (0x5 << 3);
     desc->ist = 0;
+    desc->attributes = flags;
     desc->isr_mid = ((uint64_t)isr >> 16) & 0xFFFF;
     desc->isr_high = ((uint64_t)isr >> 32) & 0xFFFFFFFF;
     desc->zero = 0;
 }
 
+
+void print(char *);
+
 void exception_handler(void) {
+    print("Error");
     __asm__ volatile("cli; hlt");
 };

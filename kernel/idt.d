@@ -1,1 +1,1 @@
-idt.o: idt.c idt.h
+idt.o: idt.c idt.h limine.h
