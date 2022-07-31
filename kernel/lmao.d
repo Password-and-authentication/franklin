@@ -1,0 +1,1 @@
+lmao.o: lmao.c
