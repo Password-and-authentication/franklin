@@ -34,7 +34,7 @@ void kmain(void) {
     int i = 0;
 
     char *l = malloc(1);
-    char *p = malloc(10);
+    char *p = malloc(1);
     char *x = malloc(1);
     char *d = malloc(1);
 

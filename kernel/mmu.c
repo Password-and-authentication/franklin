@@ -8,33 +8,32 @@ static volatile struct limine_hhdm_request hhdm_req = {
     .revision = 0,
 };
 
+#define setpage(p, x) (bitmap[p / 64] = x << (p % 64) | bitmap[p / 64])
+#define getpage(p) (bitmap[p / 64] & ((1 << (p % 64))))
 
-
-void *malloc(int size) {
+void *palloc(int size) {
     struct limine_hhdm_response *hhdm_res = hhdm_req.response;
-
-
-    int i = 0, n = PGSIZE, p = 0;
+    int page = PGSIZE, p = 0;
     while (1) {
 
-        if ((bitmap[n / 64] & (1 << (n % 64))) == 0) {
+        // if free 
+        if (getpage(page) == 0) {
 
-            for (p = n; p < (size + n); ++p) {
-                if (bitmap[p / 64] & ((1 << (p % 64)) == 1))
+            // check that there are 'size' amount of pages free 
+            for (p = page; p < (size + page); ++p) {
+                if (getpage(p) == 1)
                     break;
             }
 
-            if (p == size + n) {
-                for (p = n; p < (size + n); ++p) 
-                    bitmap[p / 64] = 1 << (p % 64) | bitmap[p / 64];
-                return (void*) hhdm_res + (n * PGSIZE);
+            // mark the pages as used
+            if (p == size + page) {
+                for (p = page; p < (size + page); ++p) 
+                    setpage(p, 1);
+                return (void*) hhdm_res + (page * PGSIZE);
             }
-
         };
-        n++;
+        page++;
     };
-
-
 }   
 
 void initbmap(struct limine_memmap_response *memmap) {
