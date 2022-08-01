@@ -11,18 +11,27 @@ static volatile struct limine_hhdm_request hhdm_req = {
 
 
 void *malloc(int size) {
+    struct limine_hhdm_response *hhdm_res = hhdm_req.response;
 
-    int n = 0, p = 0;
+
+    int i = 0, n = PGSIZE, p = 0;
     while (1) {
-        if (bitmap[n / 8] & 1) {
-            p = size;
-            while (--p) {
-                if ((bitmap[n / 8] & (1 << p)) == 0)
+
+        if ((bitmap[n / 64] & (1 << (n % 64))) == 0) {
+
+            for (p = n; p < (size + n); ++p) {
+                if (bitmap[p / 64] & ((1 << (p % 64)) == 1))
                     break;
             }
-            // if (p == 0)
-        }
-        bitmap[n++ / 8] >>= 1;
+
+            if (p == size + n) {
+                for (p = n; p < (size + n); ++p) 
+                    bitmap[p / 64] = 1 << (p % 64) | bitmap[p / 64];
+                return (void*) hhdm_res + (n * PGSIZE);
+            }
+
+        };
+        n++;
     };
 
 
@@ -39,6 +48,7 @@ void initbmap(struct limine_memmap_response *memmap) {
     for (int i = 0; i < memmap->entry_count; ++i) {
         setentry(memmap->entries[i]);
     }
+
 }
 
 
