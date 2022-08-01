@@ -1,1 +1,1 @@
-kernel.o: kernel.c limine.h defs.h idt.h
+kernel.o: kernel.c limine.h defs.h idt.h mmu.h

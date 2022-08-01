@@ -3,6 +3,7 @@
 #include <limine.h>
 #include "defs.h"
 #include "idt.h"
+#include "mmu.h"
 
 
 static volatile struct limine_terminal_request terminal_request = {
@@ -10,38 +11,29 @@ static volatile struct limine_terminal_request terminal_request = {
     .revision = 0
 };
 
-void print(char *s) {
-    struct limine_terminal *terminal = terminal_request.response->terminals[0];
-    terminal_request.response->write(terminal, s, strlen(s));
+static volatile struct limine_memmap_request memmap_request = {
+    .id = LIMINE_MEMMAP_REQUEST,
+    .revision = 0,
+};
+
+void print(void* s) {
+    struct limine_terminal_response *terminal_res = terminal_request.response;
+    struct limine_terminal *terminal = terminal_res->terminals[0];
+    terminal_res->write(terminal, s, strlen(s));
 }
 
-int x = 10;
+extern uint64_t *bitmap;
+
  
 void kmain(void) {
-    if (terminal_request.response == NULL
-     || terminal_request.response->terminal_count < 1) {
-        __asm__ volatile("hlt");
-    }
-    int y = 100;
-    y = 100;
-    y = 100;
-
-
+    char s[15];
 
     init_idt();
+    struct limine_memmap_response *memmap = memmap_request.response;
+    initbmap(memmap);
+    int i = 0;
 
-
-    // int yy = 10 / 0;
-    
-    print("test");
-
-    // yy++;
-    // int x = yy;
-    // x++;
-
-
-    // print("ttttt");
-
+    char *l = malloc(5);
 
     __asm__ volatile("hlt");
 }

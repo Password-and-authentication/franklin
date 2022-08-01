@@ -22,7 +22,7 @@ typedef struct {
 
 
 __attribute__((noreturn))
-void exception_handler(void);
+void exception_handler(uint64_t);
 
 void init_idt(void);
 

@@ -3,12 +3,14 @@ extern exception_handler
 
 %macro isr_err 1
     isr_stub_%1:
+        mov rdi, %1
         call exception_handler
         iretq
 %endmacro
 
 %macro isr_no_err 1
     isr_stub_%1:
+        mov rdi, %1
         call exception_handler
         iretq
 %endmacro

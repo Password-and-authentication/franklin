@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "idt.h"
 #include "limine.h"
+#include "defs.h"
 
 
 extern void *isr_table[];
@@ -36,9 +37,11 @@ void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
 }
 
 
-void print(char *);
 
-void exception_handler(void) {
-    print("Error");
+void exception_handler(uint64_t code) {
+    print("\n\nError: ");
+    if (code == 0)
+        print("Division By Zero\n");
+
     __asm__ volatile("cli; hlt");
 };
