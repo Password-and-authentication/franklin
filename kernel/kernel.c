@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <stddef.h>
-#include <limine.h>
+#include "limine.h"
 #include "defs.h"
 #include "idt.h"
 #include "mmu.h"
@@ -16,12 +16,15 @@ static volatile struct limine_memmap_request memmap_request = {
     .revision = 0,
 };
 
+
+
+
+
 void print(void* s) {
     struct limine_terminal_response *terminal_res = terminal_request.response;
     struct limine_terminal *terminal = terminal_res->terminals[0];
     terminal_res->write(terminal, s, strlen(s));
 }
-
 
 
 extern uint64_t *bitmap;
@@ -37,9 +40,15 @@ void kmain(void) {
     char *l = palloc(1);
     char *p = palloc(1);
     char *x = palloc(1);
-    char *d = palloc(10);
+    char *d = palloc(1);
+
+
+
+
+
 
     init_vmm();
+
 
     freepg(l, 1);
     l = palloc(1);

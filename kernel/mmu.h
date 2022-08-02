@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 
-#define 
+#define PGSIZE 4096
 
 typedef uint64_t pde_t;
 typedef uint64_t pte_t;
@@ -10,10 +10,24 @@ typedef uint64_t pte_t;
 
 
 uint64_t *bitmap;
+
+#define PRESENT     0
+#define RW          1
+#define USER        2
+#define PWT         3
+#define PCD         4
+#define ACCESSED    5
+#define DIRTY       6
+#define PG_SIZE     7
+#define PDE_ADDR    12
+
+#define KFLAGS 0x5
+
 pde_t *pgdir;
-pte_t *pgtable;
 
 void init_vmm(void);
+void mappages(pde_t*, int);
+pte_t* pgdirentry(pde_t*);
 
 
 

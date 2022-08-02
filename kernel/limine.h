@@ -8,7 +8,7 @@ extern "C" {
 #include <stdint.h>
 
 
-
+#define HHDM_OFFSET 0xffff800000000000  
 /* Misc */
 
 #ifdef LIMINE_NO_POINTERS
