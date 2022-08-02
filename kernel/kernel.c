@@ -22,6 +22,8 @@ void print(void* s) {
     terminal_res->write(terminal, s, strlen(s));
 }
 
+
+
 extern uint64_t *bitmap;
 
  
@@ -31,14 +33,17 @@ void kmain(void) {
     init_idt();
     struct limine_memmap_response *memmap = memmap_request.response;
     initbmap(memmap);
-    int i = 0;
 
     char *l = palloc(1);
     char *p = palloc(1);
     char *x = palloc(1);
-    char *d = palloc(1);
+    char *d = palloc(10);
 
-
+    freepg(l, 1);
+    l = palloc(1);
+    freepg(p, 1);
+    p = palloc(1);
+    
     __asm__ volatile("hlt");
 }
 

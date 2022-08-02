@@ -8,15 +8,14 @@ static volatile struct limine_hhdm_request hhdm_req = {
     .revision = 0,
 };
 
-#define setpage(p, x) (bitmap[p / 64] = x << (p % 64) | bitmap[p / 64])
+#define togglepage(p) (bitmap[p / 64] ^= 1 << (p % 64))
 #define isfree(p) ((bitmap[p / 64] & ((1 << (p % 64)))) == 0)
 
 void *palloc(int size) {
     struct limine_hhdm_response *hhdm_res = hhdm_req.response;
-    int page = PGSIZE, p = 0;
+    int page = 0, p = 0;
     while (1) {
 
-        // if free 
         if (isfree(page)) {
 
             // check that there are 'size' amount of pages free 
@@ -28,13 +27,23 @@ void *palloc(int size) {
             // mark the pages as used
             if (p == size + page) {
                 for (p = page; p < (size + page); ++p) 
-                    setpage(p, 1);
-                return (void*) hhdm_res + (page * PGSIZE);
+                    togglepage(p);
+                return (void*) hhdm_res->offset + (page * PGSIZE);
             }
         };
         page++;
     };
 }   
+
+
+void freepg(void *addr, int length) {
+    struct limine_hhdm_response *hhdm_res = hhdm_req.response;
+    int page = ((uint64_t)addr - (uint64_t)hhdm_res->offset) / PGSIZE;
+
+    do {
+        togglepage(page);
+    } while(--length && page++);
+}
 
 void initbmap(struct limine_memmap_response *memmap) {
     uint64_t bitmapsz = getmemsz(memmap);
