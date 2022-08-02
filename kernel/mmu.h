@@ -1,8 +1,20 @@
 
-#define PGSIZE 4096
+#include <stdint.h>
+
+
+#define 
+
+typedef uint64_t pde_t;
+typedef uint64_t pte_t;
+
 
 
 uint64_t *bitmap;
+pde_t *pgdir;
+pte_t *pgtable;
+
+void init_vmm(void);
+
 
 
 void* palloc(int);

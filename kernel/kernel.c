@@ -39,6 +39,8 @@ void kmain(void) {
     char *x = palloc(1);
     char *d = palloc(10);
 
+    init_vmm();
+
     freepg(l, 1);
     l = palloc(1);
     freepg(p, 1);
