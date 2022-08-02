@@ -33,10 +33,10 @@ void kmain(void) {
     initbmap(memmap);
     int i = 0;
 
-    char *l = malloc(1);
-    char *p = malloc(1);
-    char *x = malloc(1);
-    char *d = malloc(1);
+    char *l = palloc(1);
+    char *p = palloc(1);
+    char *x = palloc(1);
+    char *d = palloc(1);
 
 
     __asm__ volatile("hlt");

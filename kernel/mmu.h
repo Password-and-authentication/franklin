@@ -5,7 +5,7 @@
 uint64_t *bitmap;
 
 
-void* malloc(int);
+void* palloc(int);
 void initbmap(struct limine_memmap_response*);
 void setentry(struct limine_memmap_entry *);
 uint64_t getmemsz(struct limine_memmap_response*);

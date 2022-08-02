@@ -9,7 +9,7 @@ static volatile struct limine_hhdm_request hhdm_req = {
 };
 
 #define setpage(p, x) (bitmap[p / 64] = x << (p % 64) | bitmap[p / 64])
-#define getpage(p) (bitmap[p / 64] & ((1 << (p % 64))))
+#define isfree(p) ((bitmap[p / 64] & ((1 << (p % 64)))) == 0)
 
 void *palloc(int size) {
     struct limine_hhdm_response *hhdm_res = hhdm_req.response;
@@ -17,11 +17,11 @@ void *palloc(int size) {
     while (1) {
 
         // if free 
-        if (getpage(page) == 0) {
+        if (isfree(page)) {
 
             // check that there are 'size' amount of pages free 
             for (p = page; p < (size + page); ++p) {
-                if (getpage(p) == 1)
+                if (!isfree(p))
                     break;
             }
 
