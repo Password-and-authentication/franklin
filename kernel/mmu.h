@@ -27,6 +27,9 @@ pde_t *pgdir;
 
 void init_vmm(void);
 void mappages(pde_t*, int);
+void newpte(pte_t*);
+pte_t *newpde(pte_t*);
+void newdirentry(pde_t*, int);
 pte_t* pgdirentry(pde_t*);
 
 
