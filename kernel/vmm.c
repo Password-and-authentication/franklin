@@ -11,6 +11,8 @@ void init_vmm() {
     mappage(0x1000);
     unmappage(0x1);
     mappage(0x500);
+    remappage(0x0, 69);
+
 }   
 
 void mappage(uint64_t vaddr) {
@@ -45,6 +47,19 @@ void unmappage(uint64_t vaddr) {
     *pte &= (0 << PRESENT);
     freepg((void*)P2V(addr), 1);
 }
+
+
+void remappage(uint64_t vaddr, int pfn) {
+    pte_t *pte = getpte(vaddr);
+    if (!isfree(pfn))
+        print("ER");
+    uintptr_t addr = *pte >> 12;
+    freepg((void*)P2V(addr), 1);
+    *pte &= 0xFFF;
+    *pte |= (pfn * PGSIZE) << 12;
+    int x = 10;
+}
+
 
 pte_t *getpte(uint64_t vaddr) {
     uintptr_t addr;

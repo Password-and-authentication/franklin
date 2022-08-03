@@ -36,9 +36,11 @@ typedef struct {
 } Table;
 
 
+uint8_t isfree(int);
+
 uint64_t *newentry(uint64_t*);
 
-
+void remappage(uint64_t, int);
 void unmappage(uint64_t);
 pte_t *getpte(uint64_t);
 void mappage(uint64_t);

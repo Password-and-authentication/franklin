@@ -4,10 +4,10 @@
 
 
 
-static inline void togglepage(int page) {
+void togglepage(int page) {
     bitmap[page / 64] ^= 1 << (page % 64);
 };
-static inline uint8_t isfree(int page) {
+uint8_t isfree(int page) {
     return ((bitmap[page / 64] & (((1 << (page % 64))))) == 0);
 }
 
