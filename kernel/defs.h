@@ -10,3 +10,6 @@ int itoa(int, char *);
 
 void print(void*);
 
+
+
+void panic(char*);

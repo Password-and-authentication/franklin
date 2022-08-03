@@ -38,14 +38,13 @@ typedef struct {
 
 uint8_t isfree(int);
 
-uint64_t *newentry(uint64_t*);
+uint64_t *newentry(uint64_t*, uint64_t);
 
 void remappage(uint64_t, int);
 void unmappage(uint64_t);
 pte_t *getpte(uint64_t);
-void mappage(uint64_t);
+void mappage(uint64_t, uint64_t);
 void init_vmm(void);
-void mappages(pde_t*, int);
 void newpte(pte_t*);
 pte_t *newpde(pte_t*);
 void newdirentry(pde_t*, int);
@@ -54,6 +53,7 @@ pte_t* pgdirentry(pde_t*);
 
 
 void* palloc(int);
+void *pallocaddr(int, uint64_t);
 void freepg(void*, int);
 
 void initbmap(struct limine_memmap_response*);

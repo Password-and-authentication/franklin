@@ -37,6 +37,18 @@ void *palloc(int size) {
 }   
 
 
+void *pallocaddr(int size, uint64_t paddr) {
+    
+    int pfn = paddr / PGSIZE;
+    for (int i = pfn; i < pfn + size; ++i) {
+        if (!isfree(i))
+            panic("panic: pallocaddr, page is not free\n");
+        togglepage(i);
+    };
+    return (void*)P2V(paddr);
+}
+
+
 void freepg(void *addr, int length) {
     int page = ((uint64_t)addr - (uint64_t)HHDM_OFFSET) / PGSIZE;
 
