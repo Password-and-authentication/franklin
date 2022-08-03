@@ -5,5 +5,5 @@
 void panic(char *s) {
     print(s);
 
-    __asm__ volatile("cli; hlt");
+    __asm__ volatile("hlt");
 }

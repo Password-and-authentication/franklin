@@ -31,8 +31,6 @@ extern uint64_t *bitmap;
 
  
 void kmain(void) {
-    char s[15];
-
     init_idt();
     struct limine_memmap_response *memmap = memmap_request.response;
     initbmap(memmap);

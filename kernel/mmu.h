@@ -12,8 +12,6 @@ typedef uint64_t pte_t;
 typedef uint64_t pml4_t;
 typedef uint64_t pdpte_t;
 
-
-
 uint64_t *bitmap;
 
 #define PRESENT     0x1
@@ -29,9 +27,6 @@ uint64_t *bitmap;
 #define KFLAGS 0x3
 
 
-
-
-
 // VMM  
 
 
@@ -44,13 +39,13 @@ typedef struct {
 
 void init_vmm(void);
 
-void mappage(uint64_t, uint64_t, uint8_t);
+uint64_t mappage(uint64_t, uint64_t, uint8_t);
 void remappage(uint64_t, int);
 void unmappage(uint64_t);
 
 pte_t *getpte(uint64_t);
 uint64_t *newentry(uint64_t*, uint64_t, uint8_t);
-void memset64(uint64_t*, int);
+void memset64(char*, int);
 
 
 
