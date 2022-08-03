@@ -14,11 +14,12 @@ uint8_t isfree(int page) {
 
 
 void *palloc(int size) {
-    int page = 0, p = 0;
+    int page = PGSIZE, p = 0;
     int x = 0, i = 0;
 
     while (1) {
-
+        if (page >= MAXPG)
+            panic("panic: out of pages\n");
         // if true all pages are inuse
         if (bitmap[page / 64] == INT64_MAX) {
             page++;
@@ -96,6 +97,7 @@ void setentry(struct limine_memmap_entry *entry) {
 uint64_t getmemsz(struct limine_memmap_response* memmap) {
     uint64_t size = memmap->entries[14]->base + memmap->entries[14]->length;
 
+    MAXPG = size / PGSIZE;
     size /= PGSIZE;
     size /= 8;
     size /= PGSIZE;

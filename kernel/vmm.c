@@ -8,14 +8,7 @@
 void init_vmm() {
     uint64_t addr;
     PML4E = palloc(1);
-    addr = mappage(20 * PGSIZE, 20 * PGSIZE, KFLAGS);
-    remappage(20 * PGSIZE, 21);
-    addr = mappage(0x1000, 0, KFLAGS);
-
-    unmappage(20 * PGSIZE);
-    addr = mappage(20 * PGSIZE, 20 * PGSIZE, KFLAGS);
-    addr = mappage(6900 * PGSIZE, 0, KFLAGS);
-    unmappage(addr);
+    test();    
 }   
 
 uint64_t mappage(uint64_t vaddr, uint64_t paddr, uint8_t flags) {
@@ -106,4 +99,37 @@ uint64_t* newentry(uint64_t *table_entry, uint64_t paddr, uint8_t flags) {
     *table_entry |= flags;
     memset64((char*)page, PGSIZE);
     return page;
+}
+
+
+
+void test() {
+        // mappage(0x2000, 0x1000, KFLAGS);
+    // mappage(0x3000, PGSIZE * PGSIZE, KFLAGS);
+    // mappage(3000 * PGSIZE, 1000 * PGSIZE, KFLAGS);
+    // mappage(5000* PGSIZE, 6000 * PGSIZE, KFLAGS);
+    // unmappage(1000 * PGSIZE);
+    // unmappage(5000 * PGSIZE);
+    // unmappage(3000 * PGSIZE);
+    // unmappage(0x3000);
+    mappage(3000 * PGSIZE, NULL, KFLAGS);
+    for (int i = 1000; i < (10 + 1000); ++i) {
+        mappage(i * PGSIZE, 0, KFLAGS);
+    }
+
+    for (int i = 1000; i < (10 + 1000); ++i) {
+        unmappage(i * PGSIZE);
+    }
+
+    for (int i = 0; i < 1000; ++i) {
+        mappage(i * PGSIZE, 0, KFLAGS);
+    }
+
+    for (int i = 5000; i < 10000; ++i) {
+        mappage(i * PGSIZE, 0, KFLAGS);
+    }
+    for (int i = 5000; i < 10000; ++i) {
+        unmappage(i * PGSIZE);
+    }
+
 }

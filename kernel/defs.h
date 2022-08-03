@@ -1,6 +1,6 @@
 
 typedef unsigned int uint_t;
-
+#define NULL 0
 // string.c
 
 int strlen(char *);

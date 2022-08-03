@@ -3,6 +3,7 @@
 
 
 #define PGSIZE 4096
+uint64_t MAXPG;
 
 #define V2P(V) (uintptr_t)V - HHDM_OFFSET
 #define P2V(P) (uintptr_t)P + HHDM_OFFSET
@@ -27,6 +28,8 @@ uint64_t *bitmap;
 #define KFLAGS 0x3
 
 
+
+
 // VMM  
 
 
@@ -37,6 +40,8 @@ typedef struct {
     uint8_t shift;
 } Table;
 
+
+void test(void);
 void init_vmm(void);
 
 uint64_t mappage(uint64_t, uint64_t, uint8_t);
