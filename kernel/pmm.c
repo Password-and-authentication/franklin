@@ -1,6 +1,7 @@
 #include "limine.h"
 #include "mmu.h"
 #include "defs.h"
+#include <strings.h>
 
 
 
@@ -14,10 +15,20 @@ uint8_t isfree(int page) {
 
 void *palloc(int size) {
     int page = 0, p = 0;
-    int x;
+    int x = 0, i = 0;
+
     while (1) {
 
+        // if true all pages are inuse
+        if (bitmap[page / 64] == INT64_MAX) {
+            page++;
+            continue;
+        }
         if (isfree(page)) {
+
+            // if value is zero all 64 pages are free
+            if (bitmap[page / 64] == 0)
+                goto setpages;
 
             // check that there are 'size' amount of pages free 
             for (p = page; p < (size + page); ++p) {
@@ -27,6 +38,7 @@ void *palloc(int size) {
 
             // mark the pages as used
             if (p == size + page) {
+                setpages:
                 for (p = page; p < (size + page); ++p) 
                     togglepage(p);
                 return (void*) HHDM_OFFSET + (page * PGSIZE);
