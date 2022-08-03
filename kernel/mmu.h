@@ -6,6 +6,8 @@
 
 typedef uint64_t pde_t;
 typedef uint64_t pte_t;
+typedef uint64_t pml4_t;
+typedef uint64_t pdpte_t;
 
 
 
@@ -24,7 +26,13 @@ uint64_t *bitmap;
 #define KFLAGS 0x5
 
 pde_t *pgdir;
+pml4_t *pml4e;
 
+
+
+uint64_t *newentry(uint64_t*);
+
+void mappage(uint64_t);
 void init_vmm(void);
 void mappages(pde_t*, int);
 void newpte(pte_t*);
