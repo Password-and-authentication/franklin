@@ -4,11 +4,17 @@
 
 
 
-#define togglepage(p) (bitmap[p / 64] ^= 1 << (p % 64))
-#define isfree(p) ((bitmap[p / 64] & ((1 << (p % 64)))) == 0)
+static inline void togglepage(int page) {
+    bitmap[page / 64] ^= 1 << (page % 64);
+};
+static inline uint8_t isfree(int page) {
+    return ((bitmap[page / 64] & (((1 << (page % 64))))) == 0);
+}
+
 
 void *palloc(int size) {
     int page = 0, p = 0;
+    int x;
     while (1) {
 
         if (isfree(page)) {
