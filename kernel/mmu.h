@@ -26,7 +26,14 @@ uint64_t *bitmap;
 #define PG_SIZE     7
 #define PDE_ADDR    12
 
-#define KFLAGS 0x5
+#define KFLAGS 0x3
+
+
+
+
+
+// VMM  
+
 
 pml4_t *PML4E;
 
@@ -35,28 +42,29 @@ typedef struct {
     uint8_t shift;
 } Table;
 
+void init_vmm(void);
 
-uint8_t isfree(int);
-
-uint64_t *newentry(uint64_t*, uint64_t);
-
+void mappage(uint64_t, uint64_t, uint8_t);
 void remappage(uint64_t, int);
 void unmappage(uint64_t);
+
 pte_t *getpte(uint64_t);
-void mappage(uint64_t, uint64_t);
-void init_vmm(void);
-void newpte(pte_t*);
-pte_t *newpde(pte_t*);
-void newdirentry(pde_t*, int);
-pte_t* pgdirentry(pde_t*);
+uint64_t *newentry(uint64_t*, uint64_t, uint8_t);
+void memset64(uint64_t*, int);
 
 
+
+// PMM
+
+uint8_t isfree(int);
+void togglepage(int);
 
 void* palloc(int);
-void *pallocaddr(int, uint64_t);
+void* pallocaddr(int, uint64_t);
 void freepg(void*, int);
 
-void initbmap(struct limine_memmap_response*);
+void initbmap(struct limine_memmap_response *);
 void setentry(struct limine_memmap_entry *);
 uint64_t getmemsz(struct limine_memmap_response*);
-struct limine_memmap_entry* getentry(struct limine_memmap_response *, uint64_t);
+struct limine_memmap_entry* getentry(struct limine_memmap_response*, uint64_t);
+

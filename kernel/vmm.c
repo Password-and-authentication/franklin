@@ -7,10 +7,10 @@
 
 void init_vmm() {
     PML4E = palloc(1);
-    mappage(20 * PGSIZE, 0);
+    mappage(20 * PGSIZE, 0, KFLAGS);
 }   
 
-void mappage(uint64_t vaddr, uint64_t paddr) {
+void mappage(uint64_t vaddr, uint64_t paddr, uint8_t flags) {
     pdpte_t *PDPTE;
     pde_t *PDE;
     pte_t *PTE;
@@ -21,9 +21,9 @@ void mappage(uint64_t vaddr, uint64_t paddr) {
         index = (vaddr >> (tablearr[i].shift)) & 0x1FF;
         if ((tablearr[i].table[index] & 1) == 0) {
             if (i == 3)
-                newentry(&tablearr[i].table[index], paddr);
+                newentry(&tablearr[i].table[index], paddr, flags);
             else
-                tablearr[i + 1].table = newentry(&tablearr[i].table[index], 0);
+                tablearr[i + 1].table = newentry(&tablearr[i].table[index], 0, flags);
         } else {
             if (i == 3) {
                 panic("panic: mappage, page already in use\n");
@@ -56,11 +56,9 @@ void remappage(uint64_t vaddr, int pfn) {
 }
 
 void memset64(uint64_t* mem, int n) {
-
     for (int i = 0; i < n / 64; ++i) {
         mem[i] = 0;
     }
-
 }
 
 
@@ -68,27 +66,27 @@ pte_t *getpte(uint64_t vaddr) {
     uintptr_t addr;
     uint16_t index = vaddr >> 39;
     if ((PML4E[index] & PRESENT) == 0)
-        print("ERROR: getpte(), PML4E not in use\n");
+        panic("ERROR: getpte(), PML4E not in use\n");
     addr = PML4E[index] >> 12;
     pdpte_t *PDPTE = P2V(addr);
     index = (vaddr >> 30) & 0x1FF;
     if ((PDPTE[index] & PRESENT) == 0)
-        print("ERROR: getpte(), PDPTE not in use\n");
+        panic("ERROR: getpte(), PDPTE not in use\n");
     addr = PDPTE[index] >> 12;
     pde_t *PDE = P2V(addr);
     index = (vaddr >> 21) & 0x1FF;
     if ((PDE[index] & PRESENT) == 0)
-        print("ERROR: getpte(), PDE not in use\n");
+        panic("ERROR: getpte(), PDE not in use\n");
     addr = PDE[index] >> 12;
     pte_t *PTE = P2V(addr);
     index = (vaddr >> 12) & 0x1FF;
     if ((PTE[index] & PRESENT) == 0)
-        print("ERROR: getpte(), PTE not in use\n");
+        panic("ERROR: getpte(), PTE not in use\n");
     return &PTE[index];
 }
 
 
-uint64_t* newentry(uint64_t *table_entry, uint64_t paddr) {
+uint64_t* newentry(uint64_t *table_entry, uint64_t paddr, uint8_t flags) {
     uint64_t *page;
     if (paddr != 0)
         page = pallocaddr(1, paddr);
@@ -96,7 +94,7 @@ uint64_t* newentry(uint64_t *table_entry, uint64_t paddr) {
         page = palloc(1);
     paddr = V2P(page);
     *table_entry = ((uintptr_t)paddr << 12);
-    *table_entry |= 1;
+    *table_entry |= flags;
     memset64(page, PGSIZE);
     return page;
 }
