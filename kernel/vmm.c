@@ -14,103 +14,37 @@ void init_vmm() {
 }   
 
 
+typedef struct {
+    uint64_t *table;
+    uint8_t shift;
+} Table;
 
 void mappage(uint64_t vaddr) {
     pdpte_t *PDPTE;
     pde_t *pgdir;
     pte_t *pagetable;
+    Table ttablearr[4] = {{pml4e, 39}, {PDPTE, 30}, {pgdir, 21}, {pagetable, 12}};
     uint8_t shiftarr[4] = {39, 30, 21, 12};
     uint64_t *tablearr[4] = {pml4e, PDPTE, pgdir, pagetable};
     uint16_t index;
     uintptr_t addr;
     for (int i = 0; i < 4; ++i) {
-        index = (vaddr >> (shiftarr[i])) & 0x1FF;
-        if ((tablearr[i][index] & 1) == 0) {
+        index = (vaddr >> (ttablearr[i].shift)) & 0x1FF;
+        if ((ttablearr[i].table[i] & 1) == 0) {
             if (i == 3)
-                newentry(&tablearr[i][index]);
+                newentry(&ttablearr[i].table[index]);
             else
-                tablearr[i + 1] = newentry(&tablearr[i][index]);
+                ttablearr[i + 1].table = newentry(&ttablearr[i].table[index]);
         } else {
             if (i == 3) {
                 print("page already in use\n");
                 break;
             }
-            addr = (tablearr[i][index] >> 12);
-            tablearr[i + 1] = addr + HHDM_OFFSET;
+            addr = (ttablearr[i].table[index] >> 12);
+            ttablearr[i + 1].table = addr + HHDM_OFFSET;
         }
     }
-    // if ((pml4e[index] & 1) == 0) {
-
-    //     PDPTE = newentry(&pml4e[index]);
-
-    //     index = vaddr >> 30;
-    //     index &= 0x1FF;
-    //     pgdir = newentry(&PDPTE[index]);
-
-    //     index = vaddr >> 21;
-    //     index &= 0x1FF;
-    //     pagetable = newentry(&pgdir[index]);
-
-
-    //     index = vaddr >> 12;
-    //     index &= 0x1FF;
-    //     page = (char*) newentry(&pagetable[index]);
-
-    // } else {
-        
-    //     uintptr_t addr = (pml4e[index] >> 12);
-    //     PDPTE = addr + HHDM_OFFSET;
-
-    //     index = vaddr >> 30;
-    //     index &= 0x1FF;
-    //     if ((PDPTE[index] & 1) == 0) {
-    //         pgdir = newentry(&PDPTE[index]);
-
-    //         index = vaddr >> 21;
-    //         index &= 0x1FF;
-
-    //         pagetable = newentry(&pgdir[index]);
-
-    //         index = vaddr >> 12;
-    //         index &= 0x1FF;
-
-    //         page = (char*) newentry(&pagetable[index]);
-    //     } else {
-    //         addr = (PDPTE[index] >> 12);
-    //         pgdir = addr + HHDM_OFFSET;
-
-    //         index = (vaddr >> 21) & 0x1FF;
-    //         if ((pgdir[index] & 1) == 0) {
-    //             pagetable = newentry(&pgdir[index]);
-
-    //             index = (vaddr >> 12) & 0x1FF;
-    //             page = (char*) newentry(&pagetable[index]);
-    //         } else {
-    //             addr = (pgdir[index] >> 12);
-    //             pagetable = addr + HHDM_OFFSET;
-
-    //             index = (vaddr >> 12) & 0x1FF;
-    //             if ((pagetable[index] & 1) == 0) {
-    //                 page = (char*) newentry(&pagetable[index]);
-    //             } else print("Error page already in use\n");
-    //         }
-    //     }
-    // }
 }
-
-
-
-void recursive(uint64_t *table, uintptr_t vaddr) {
-
-    uint16_t index;
-    if ((table[index] & 1) == 0) {
-
-    }
-}
-
-
-
-
 
 
 uint64_t* newentry(uint64_t *table_entry) {
