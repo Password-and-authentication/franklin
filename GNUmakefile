@@ -32,13 +32,20 @@ limine:
 	git clone https://github.com/limine-bootloader/limine.git --branch=v3.0-branch-binary --depth=1
 	make -C limine
 
+.PHONY: os
+os:	kernel ACPI
 	
 
 .PHONY: kernel
 kernel:
 	$(MAKE) -C kernel
 
-barebones.iso: limine kernel
+
+.PHONY: ACPI
+ACPI:
+	$(MAKE) -C ACPI
+
+barebones.iso: limine os
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp kernel/kernel.elf \

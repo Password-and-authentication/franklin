@@ -32,7 +32,7 @@ int mappage(uint64_t vaddr, uint64_t paddr, uint8_t flags) {
 // get PTE and set present flag to 0 and free page from physical memory
 void unmappage(uint64_t vaddr) {
     pte_t *pte = getpte(vaddr);
-    __asm__ volatile("invlpg %0" : : "m" (pte));
+    __asm__ volatile("invlpg %0" : : "m" (*(char*)vaddr));
     uintptr_t addr = ((uintptr_t)*pte >> PAGE_SHIFT);
     *pte &= (0 << PRESENT);
     freepg((void*)P2V(addr), 1);

@@ -19,14 +19,13 @@ static volatile struct limine_memmap_request memmap_request = {
 
 
 
-
 void print(void* s) {
     struct limine_terminal_response *terminal_res = terminal_request.response;
     struct limine_terminal *terminal = terminal_res->terminals[0];
     terminal_res->write(terminal, s, strlen(s));
 }
 
-
+extern int acpi(void);
 extern uint64_t *bitmap;
 
  
@@ -41,7 +40,7 @@ void kmain(void) {
     char *d = palloc(1);
 
 
-
+    acpi();
 
 
 

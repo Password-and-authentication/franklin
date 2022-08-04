@@ -65,6 +65,7 @@ override CFILES := $(shell find ./ -type f -name '*.c')
 override ASFILES := $(shell find ./ -type f -name '*.S')
 override NASMFILES := $(shell find ./ -type f -name '*.asm')
 override OBJ := $(CFILES:.c=.o) $(ASFILES:.S=.o) $(NASMFILES:.asm=.o)
+override OBJ += $(shell find ../ACPI -type f -name '*.o')
 override HEADER_DEPS := $(CFILES:.c=.d) $(ASFILES:.S=.d)
  
 # Default target.
