@@ -51,7 +51,7 @@ void unmappage(uint64_t);
 
 pte_t *getpte(uint64_t);
 uint64_t *newentry(uint64_t*, uint64_t, uint8_t);
-void memzero64(char*, int);
+void memzero(char*, int);
 
 
 

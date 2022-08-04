@@ -49,7 +49,7 @@ void remappage(uint64_t vaddr, int pfn) {
     *pte |= (pfn * PGSIZE) << 12;
 }
 
-void memzero64(char* mem, int n) {
+void memzero(char* mem, int n) {
     for (int i = 0; i < n; ++i) {
         mem[i] = 0;
     }
@@ -93,7 +93,7 @@ uint64_t* newentry(uint64_t *table_entry, uint64_t paddr, uint8_t flags) {
     paddr = V2P(page);
     *table_entry = ((uintptr_t)paddr << PAGE_SHIFT);
     *table_entry |= flags;
-    memzero64((char*)page, PGSIZE);
+    memzero((char*)page, PGSIZE);
     noalloc:
     paddr = P2V((*table_entry >> PAGE_SHIFT));
     return (uint64_t*) paddr;
