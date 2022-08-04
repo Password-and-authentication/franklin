@@ -14,7 +14,7 @@ uint8_t isfree(int page) {
 
 
 void *palloc(int size) {
-    int page = PGSIZE, p = 0;
+    int page = 0, p = 0;
     int x = 0, i = 0;
 
     while (1) {

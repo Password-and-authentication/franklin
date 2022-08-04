@@ -26,6 +26,7 @@ uint64_t *bitmap;
 #define PDE_ADDR    12
 
 #define KFLAGS 0x3
+#define PAGE_SHIFT 12
 
 
 
@@ -44,13 +45,13 @@ typedef struct {
 void test(void);
 void init_vmm(void);
 
-uint64_t mappage(uint64_t, uint64_t, uint8_t);
+int mappage(uint64_t, uint64_t, uint8_t);
 void remappage(uint64_t, int);
 void unmappage(uint64_t);
 
 pte_t *getpte(uint64_t);
 uint64_t *newentry(uint64_t*, uint64_t, uint8_t);
-void memset64(char*, int);
+void memzero64(char*, int);
 
 
 
