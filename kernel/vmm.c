@@ -13,6 +13,10 @@ uintptr_t P2V(uintptr_t P) {
    return P + HHDM_OFFSET; 
 }
 
+uintptr_t getpaddr(uint64_t entry) {
+    return (entry >> PAGE_SHIFT) << PAGE_SHIFT;
+}
+
 
 
 void init_vmm() {
@@ -20,6 +24,7 @@ void init_vmm() {
     PML4E = palloc(1);
     mappage(0, 0, KFLAGS);
     remappage(0, 1000);
+    unmappage(0);
     test();    
     int x;
 }   
@@ -45,8 +50,8 @@ void unmappage(uint64_t vaddr) {
     char *l = (char*) vaddr;
     __asm__ volatile("invlpg %0" : : "m" (*(char*)vaddr) : "memory");
     pte_t *pte = getpte(vaddr);
-    uintptr_t paddr = ((uintptr_t)*pte >> PAGE_SHIFT) << PAGE_SHIFT;
-    *pte &= (0 << PRESENT);
+    uintptr_t paddr = getpaddr(*pte);
+    *pte ^= (1 << PRESENT);
     freepg(paddr, 1);
 }
 
@@ -56,9 +61,10 @@ void remappage(uint64_t vaddr, int pfn) {
     if (!isfree(pfn))
         panic("panic: remappage, pfn: is not free\n");
     pte_t *pte = getpte(vaddr);
-    uintptr_t addr = (*pte >> PAGE_SHIFT) << PAGE_SHIFT;
-    freepg(addr, 1);
-    *pte |= ((pfn * PGSIZE) >> PAGE_SHIFT) << PAGE_SHIFT;
+    uintptr_t paddr = getpaddr(*pte);
+    freepg(paddr, 1);
+    *pte &= 0x1FF;
+    *pte |= getpaddr(pfn * PGSIZE);
 }
 
 void memzero(char* mem, int n) {
@@ -69,22 +75,22 @@ void memzero(char* mem, int n) {
 
 
 pte_t *getpte(uint64_t vaddr) {
-    uintptr_t addr;
+    uintptr_t paddr;
     uint16_t index = vaddr >> 39;
     if ((PML4E[index] & PRESENT) == 0)
         panic("ERROR: getpte(), PML4E not in use\n");
-    addr = (PML4E[index] >> PAGE_SHIFT) << PAGE_SHIFT;
-    pdpte_t *PDPTE = (pdpte_t*)P2V(addr);
+    paddr = getpaddr(PML4E[index]);
+    pdpte_t *PDPTE = (pdpte_t*)P2V(paddr);
     index = (vaddr >> 30) & 0x1FF;
     if ((PDPTE[index] & PRESENT) == 0)
         panic("ERROR: getpte(), PDPTE not in use\n");
-    addr = (PDPTE[index] >> PAGE_SHIFT) << PAGE_SHIFT;
-    pde_t *PDE = (pde_t*)P2V(addr);
+    paddr = getpaddr(PDPTE[index]);
+    pde_t *PDE = (pde_t*)P2V(paddr);
     index = (vaddr >> 21) & 0x1FF;
     if ((PDE[index] & PRESENT) == 0)
         panic("ERROR: getpte(), PDE not in use\n");
-    addr = (PDE[index] >> PAGE_SHIFT) << PAGE_SHIFT;
-    pte_t *PTE = (pte_t*)P2V(addr);
+    paddr = getpaddr(PDE[index]);
+    pte_t *PTE = (pte_t*)P2V(paddr);
     index = (vaddr >> 12) & 0x1FF;
     if ((PTE[index] & PRESENT) == 0)
         panic("ERROR: getpte(), PTE not in use\n");
@@ -107,9 +113,8 @@ uint64_t* newentry(uint64_t *table_entry, uint64_t paddr, uint8_t flags) {
     memzero((char*)page, PGSIZE);
 
     noalloc:
-    vaddr = (*table_entry >> PAGE_SHIFT) << PAGE_SHIFT;
-    vaddr = P2V(vaddr);
-    return (uint64_t*) vaddr;
+    paddr = getpaddr(*table_entry);
+    return (uint64_t*) P2V(paddr);
 }
 
 
