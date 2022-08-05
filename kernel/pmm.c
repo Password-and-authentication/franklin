@@ -62,8 +62,8 @@ void *pallocaddr(int size, uint64_t paddr) {
 }
 
 
-void freepg(void *addr, int length) {
-    int page = ((uint64_t)addr - (uint64_t)HHDM_OFFSET) / PGSIZE;
+void freepg(uintptr_t addr, int length) {
+    int page = addr / PGSIZE;
 
     do {
         togglepage(page);

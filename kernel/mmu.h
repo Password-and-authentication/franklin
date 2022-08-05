@@ -5,8 +5,8 @@
 #define PGSIZE 4096
 uint64_t MAXPG;
 
-#define V2P(V) (uintptr_t)V - HHDM_OFFSET
-#define P2V(P) (uintptr_t)P + HHDM_OFFSET
+uintptr_t V2P(uintptr_t);
+uintptr_t P2V(uintptr_t);
 
 typedef uint64_t pde_t;
 typedef uint64_t pte_t;
@@ -62,7 +62,7 @@ void togglepage(int);
 
 void* palloc(int);
 void* pallocaddr(int, uint64_t);
-void freepg(void*, int);
+void freepg(uintptr_t, int);
 
 void initbmap(struct limine_memmap_response *);
 void setentry(struct limine_memmap_entry *);
