@@ -50,6 +50,11 @@ isr_err     30
 isr_no_err  31
 
 
+extern timerh
+isr_timer:
+    mov rdi, 10
+    call timerh
+    iretq
 
 global isr_table
 
@@ -59,3 +64,4 @@ isr_table:
         dq isr_stub_%+i
     %assign i i+1
     %endrep
+    dq isr_timer

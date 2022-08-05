@@ -10,6 +10,12 @@ static volatile struct limine_rsdp_request rsdp_req = {
 
 #define L 0x43495041
 
+void fuck() {
+    int x = 10;
+    int y = 20;
+    return;
+}
+
 int acpi() {
     struct limine_rsdp_response *rsdp_res = rsdp_req.response;
     RSDP *rsdp = (RSDP*) rsdp_res->address;
@@ -21,10 +27,25 @@ int acpi() {
         if (hdr->signature == L)
             break;
     }
-
     MADT *madt = rsdt->entry[--i] + HHDM_OFFSET;
+    volatile uint32_t *vector = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0xF0);
+    *vector = 0x1FF;
+    volatile uint32_t *tpr = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x80);
+    *tpr = 0;
+    volatile uint32_t *initcount = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x380);
+    volatile uint32_t *timer = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x320);
+    volatile uint32_t *divide = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x3E0);
+    *divide = 0x3;
+    *timer = (1 << 17) | 32;
+    *initcount = 100000;
+
+
+    
+
+
+
     uint8_t lapic[100];
-    int x = 0;
+    int x = 1;
     for (int i = 0; i < hdr->length;) {
         if (madt->entry[i] == 0)
             lapic[x++] = madt->entry[i + 3];

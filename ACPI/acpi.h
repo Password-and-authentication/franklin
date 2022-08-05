@@ -35,7 +35,7 @@ typedef struct {
 
 typedef struct {
     defaultheader h;
-    uint32_t apicaddr;
+    uint32_t lapic;
     uint32_t flags;
     char entry[];
 } __attribute__((packed))MADT;

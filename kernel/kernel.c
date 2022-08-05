@@ -26,6 +26,7 @@ void print(void* s) {
 }
 
 extern int acpi(void);
+extern void fuck(void);
 extern uint64_t *bitmap;
 
  
@@ -39,13 +40,13 @@ void kmain(void) {
     char *x = palloc(1);
     char *d = palloc(1);
 
-
+    fuck();
     acpi();
 
 
 
     init_vmm();
-
+    // for(;;);
 
     freepg(l, 1);
     l = palloc(1);

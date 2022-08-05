@@ -12,7 +12,7 @@ endef
  
 $(eval $(call DEFAULT_VAR,CC,cc))
  
-CFLAGS ?= -O0 -g -Wall -Wextra -Wpedantic -pipe
+CFLAGS ?= -Og -g -Wall -Wextra -Wpedantic -pipe
 
 
 override INTERNALCFLAGS := \
@@ -33,11 +33,6 @@ override INTERNALCFLAGS := \
 	-mno-red-zone          \
 	-mcmodel=kernel        \
 	-MMD
- 
-override INTERNALLDFLAGS :=     \
-	-nostdlib                   \
-	-static                     \
-
 
 override CFILES := $(shell find ./ -type f -name '*.c')
 override ASFILES := $(shell find ./ -type f -name '*.S')
