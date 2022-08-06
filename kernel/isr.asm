@@ -52,8 +52,25 @@ isr_no_err  31
 
 extern timerh
 isr_timer:
-    mov rdi, 10
+    push rax
+    push rdi
+    push rdx
+    push rcx
+    push rsi
+    push r8
+    push r9
+    push r10
+    push r11
     call timerh
+    pop r11
+    pop r10
+    pop r9 
+    pop r8
+    pop rsi
+    pop rcx
+    pop rdx
+    pop rdi 
+    pop rax
     iretq
 
 global isr_table

@@ -3,6 +3,7 @@
 #include "../kernel/limine.h"
 
 
+
 static volatile struct limine_rsdp_request rsdp_req = {
     .id = LIMINE_RSDP_REQUEST,
     .revision = 0,
@@ -31,13 +32,12 @@ int acpi() {
     volatile uint32_t *vector = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0xF0);
     *vector = 0x1FF;
     volatile uint32_t *tpr = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x80);
+    EOI = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0xB0);
     *tpr = 0;
-    volatile uint32_t *initcount = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x380);
-    volatile uint32_t *timer = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x320);
-    volatile uint32_t *divide = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x3E0);
-    *divide = 0x3;
-    *timer = (1 << 17) | 32;
-    *initcount = 100000;
+
+    void initimer(MADT *madt);
+
+    initimer(madt);
 
 
     
@@ -57,7 +57,22 @@ int acpi() {
 }
 
 
+void initimer(MADT *madt) {
 
+    volatile uint32_t *initcount = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x380);
+    volatile uint32_t *timer = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x320);
+    volatile uint32_t *divide = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x3E0);
+    *timer = 1 << 17 | 32;
+    *divide = 0x3;
+    *initcount = 10000;
+
+
+    
+
+
+
+
+}
 
 uint8_t checkchecksum(RSDP* rsdp) {
 

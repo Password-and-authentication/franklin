@@ -18,18 +18,23 @@ static volatile struct limine_memmap_request memmap_request = {
 
 
 
-
 void print(void* s) {
+    
     struct limine_terminal_response *terminal_res = terminal_request.response;
     struct limine_terminal *terminal = terminal_res->terminals[0];
-    terminal_res->write(terminal, s, strlen(s));
+    terminal_res->write(terminal, s, 10);
 }
 
 extern int acpi(void);
 extern void fuck(void);
 extern uint64_t *bitmap;
 
- 
+void testin() {
+    int x = 10;
+    return;
+}
+
+
 void kmain(void) {
     init_idt();
     struct limine_memmap_response *memmap = memmap_request.response;
@@ -40,20 +45,21 @@ void kmain(void) {
     char *x = palloc(1);
     char *d = palloc(1);
 
+
     fuck();
     acpi();
-
-
-
-    init_vmm();
-    // for(;;);
-
-    freepg(l, 1);
-    l = palloc(1);
-    freepg(p, 1);
-    p = palloc(1);
     
-    __asm__ volatile("hlt");
+
+    print("testing\n");
+
+    // // for(;;);
+
+    // l = palloc(1);
+    // freepg(p, 1);
+    // p = palloc(1);
+
+    for(;;)
+        __asm__ volatile("hlt");
 }
 
 

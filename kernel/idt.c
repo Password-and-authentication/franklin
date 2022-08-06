@@ -2,6 +2,7 @@
 #include "idt.h"
 #include "limine.h"
 #include "defs.h"
+#include "../ACPI/acpi.h"
 
 
 extern void *isr_table[];
@@ -39,15 +40,15 @@ void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
 
 
 void timerh(uint64_t t) {
-    int x = 10;
-    int y = t;
-    int s = y + x;
-    print("yessir\n");
+    *EOI = 0;
     return;
 }
 
 void exception_handler(uint64_t code) {
     print("\n\nError: ");
+    char s[20];
+    itoa(code, s);
+    print(s);
     if (code == 0)
         print("Division By Zero\n");
 

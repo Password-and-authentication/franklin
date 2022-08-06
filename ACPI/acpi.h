@@ -1,7 +1,7 @@
 
 
 #define MADT_CODE 0x43495041
-
+uint32_t *EOI;
 
 typedef struct {
     uint64_t signature;
