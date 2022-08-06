@@ -4,7 +4,8 @@
 #include "defs.h"
 #include "idt.h"
 #include "mmu.h"
-
+#include "cpu.h"
+#include "../69.h"
 
 static volatile struct limine_terminal_request terminal_request = {
     .id = LIMINE_TERMINAL_REQUEST,
@@ -34,6 +35,8 @@ void testin() {
     return;
 }
 
+#define asm __asm__
+
 
 void kmain(void) {
     init_idt();
@@ -46,11 +49,10 @@ void kmain(void) {
     char *d = palloc(1);
 
 
-    fuck();
     acpi();
-    
 
-    print("testing\n");
+    init_cpu();    
+
 
     // // for(;;);
 
@@ -59,7 +61,7 @@ void kmain(void) {
     // p = palloc(1);
 
     for(;;)
-        __asm__ volatile("hlt");
+        asm ("hlt");
 }
 
 
