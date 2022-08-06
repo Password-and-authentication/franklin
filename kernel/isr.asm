@@ -12,6 +12,7 @@ extern exception_handler
     isr_stub_%1:
         mov rdi, %1
         call exception_handler
+        add rsp, 8
         iretq
 %endmacro
 

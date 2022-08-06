@@ -26,6 +26,10 @@ void exception_handler(uint64_t);
 
 void timerh(uint64_t);
 
+
+idtr_t idtr;
+
 void init_idt(void);
+void load_idt(void);
 
 

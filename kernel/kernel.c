@@ -53,12 +53,8 @@ void kmain(void) {
 
     init_cpu();    
 
-
     // // for(;;);
 
-    // l = palloc(1);
-    // freepg(p, 1);
-    // p = palloc(1);
 
     for(;;)
         asm ("hlt");

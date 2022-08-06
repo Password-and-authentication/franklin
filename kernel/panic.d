@@ -1,1 +1,1 @@
-panic.o: panic.c defs.h
+panic.o: panic.c defs.h ../69.h

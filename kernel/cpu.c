@@ -1,7 +1,8 @@
 #include "limine.h"
 #include "cpu.h"
 #include "../69.h"
-
+#include "../kernel/defs.h"
+#include "idt.h"
 
 
 
@@ -12,8 +13,12 @@ volatile static struct limine_smp_request smp_req = {
 
 void init_cpu() {
     struct limine_smp_response *smp = smp_req.response;
+    
+    // smp->cpus[1]->goto_address = cpu;
+    volatile int x = 10;
+    asm("mov $10, %eax");
+    smp->cpus[1]->goto_address = cpu;
 
-    smp->cpus[0]->goto_address = cpu;
 
 }
 
@@ -21,8 +26,8 @@ void init_cpu() {
 
 
 void cpu(struct limine_smp_info *info) {
-    int x = 10;
-    int y = 100;
-    int p = y;
-    asm("hlt");
+    load_idt();
+
+    for(;;);
+        
 }

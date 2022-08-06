@@ -1,6 +1,7 @@
 #include "mmu.h"
 #include "limine.h"
 #include "defs.h"
+#include "../69.h"
 
 
 
@@ -48,7 +49,7 @@ int mappage(uint64_t vaddr, uint64_t paddr, uint8_t flags) {
 // get PTE and set present flag to 0 and free page from physical memory
 void unmappage(uint64_t vaddr) {
     char *l = (char*) vaddr;
-    __asm__ volatile("invlpg %0" : : "m" (*(char*)vaddr) : "memory");
+    asm("invlpg %0" : : "m" (*(char*)vaddr) : "memory");
     pte_t *pte = getpte(vaddr);
     uintptr_t paddr = getpaddr(*pte);
     *pte ^= (1 << PRESENT);

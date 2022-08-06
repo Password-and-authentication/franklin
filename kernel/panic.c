@@ -1,8 +1,8 @@
 #include "defs.h"
-
+#include "../69.h"
 
 void panic(char *s) {
     print(s);
 
-    __asm__ volatile("hlt");
+    asm("hlt");
 };

@@ -20,7 +20,7 @@ extern "C" {
 #define LIMINE_COMMON_MAGIC 0xc7b1dd30df4c8b88, 0x0a82e883a194f07b
 
 struct limine_uuid {
-    uint32_t a;
+    uint32_t ia;
     uint16_t b;
     uint16_t c;
     uint8_t d[8];

@@ -3,6 +3,7 @@
 #include "limine.h"
 #include "defs.h"
 #include "../ACPI/acpi.h"
+#include "../69.h"
 
 
 extern void *isr_table[];
@@ -10,7 +11,6 @@ void set_idt_entry(uint8_t, void*, uint8_t);
 
 __attribute__((aligned(0x10)))
 static idt_entry idt[256];
-static idtr_t idtr;
 
 void init_idt() {
     idtr.base = (uintptr_t)&idt[0];
@@ -20,8 +20,13 @@ void init_idt() {
         set_idt_entry(vector, isr_table[vector], 0x8E);
     }
 
-    __asm__ volatile("lidt %0" : : "m"(idtr));
-    __asm__ volatile("sti");
+    asm("lidt %0" :: "m" (idtr));
+    asm("sti");
+}
+
+void load_idt() {
+    asm("lidt %0" :: "m" (idtr));
+    asm("sti");
 }
 
 
@@ -52,5 +57,5 @@ void exception_handler(uint64_t code) {
     if (code == 0)
         print("Division By Zero\n");
 
-    __asm__ volatile("cli; hlt");
+    asm("cli; hlt");
 };
