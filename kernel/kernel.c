@@ -6,6 +6,7 @@
 #include "mmu.h"
 #include "cpu.h"
 #include "../69.h"
+#include "spinlock.h"
 
 static volatile struct limine_terminal_request terminal_request = {
     .id = LIMINE_TERMINAL_REQUEST,
@@ -27,6 +28,17 @@ void print(void* s) {
 extern int acpi(void);
 extern uint64_t *bitmap;
 
+
+
+void lmao() {
+    acquire(&spinlock);
+
+    int x = 10;
+    int y = 20;
+    release(&spinlock);
+    return;
+}
+
 void kmain(void) {
     init_idt();
     struct limine_memmap_response *memmap = memmap_request.response;
@@ -35,7 +47,10 @@ void kmain(void) {
 
     acpi();
     init_cpu();    
+    init_lock(&spinlock);
 
+
+    lmao();
 
     for(;;)
         asm ("hlt");

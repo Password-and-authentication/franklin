@@ -3,6 +3,8 @@
 #define MADT_CODE 0x43495041
 uint32_t *EOI;
 
+
+
 typedef struct {
     uint64_t signature;
     uint8_t checksum;
@@ -41,6 +43,9 @@ typedef struct {
 } __attribute__((packed))MADT;
 
 
+
+void init_apic(MADT*);
+void init_timer(MADT*);
 
 // typedef struct {
 //     uint32_t signature;

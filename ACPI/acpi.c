@@ -24,16 +24,7 @@ int acpi() {
             break;
     }
     MADT *madt = rsdt->entry[--i] + HHDM_OFFSET;
-    volatile uint32_t *vector = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0xF0);
-    *vector = 0x1FF;
-    volatile uint32_t *tpr = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x80);
-    EOI = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0xB0);
-    *tpr = 0;
-
-    void initimer(MADT *madt);
-
-    initimer(madt);
-
+    init_apic(madt);
 
     uint8_t lapic[100];
     int x = 1;
@@ -48,7 +39,20 @@ int acpi() {
 }
 
 
-void initimer(MADT *madt) {
+
+void init_apic(MADT *madt) {
+    volatile uint32_t *vector = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0xF0);
+    *vector = 0x1FF;
+    volatile uint32_t *tpr = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x80);
+    EOI = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0xB0);
+    *tpr = 0;
+
+    init_timer(madt);
+
+}
+
+
+void init_timer(MADT *madt) {
 
     volatile uint32_t *initcount = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x380);
     volatile uint32_t *timer = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x320);

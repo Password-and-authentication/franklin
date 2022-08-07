@@ -3,6 +3,7 @@
 #include "../69.h"
 #include "../kernel/defs.h"
 #include "idt.h"
+#include "spinlock.h"
 
 
 
@@ -22,6 +23,11 @@ void init_cpu() {
 
 void cpu(struct limine_smp_info *info) {
     load_idt();
+
+    acquire(&spinlock);
+    int x = 10;
+    int y = 20;
+    release(&spinlock);
 
     for(;;);
         
