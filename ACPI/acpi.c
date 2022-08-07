@@ -11,11 +11,6 @@ static volatile struct limine_rsdp_request rsdp_req = {
 
 #define L 0x43495041
 
-void fuck() {
-    int x = 10;
-    int y = 20;
-    return;
-}
 
 int acpi() {
     struct limine_rsdp_response *rsdp_res = rsdp_req.response;
