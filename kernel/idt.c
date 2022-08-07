@@ -42,7 +42,7 @@ void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
     desc->zero = 0;
 }
 
-
+extern int lock;
 
 void timerh(uint64_t t) {
     *EOI = 0;

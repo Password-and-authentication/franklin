@@ -40,10 +40,6 @@ int acpi() {
     initimer(madt);
 
 
-    
-
-
-
     uint8_t lapic[100];
     int x = 1;
     for (int i = 0; i < hdr->length;) {
