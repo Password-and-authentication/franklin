@@ -7,6 +7,10 @@
 #include "cpu.h"
 #include "../69.h"
 #include "spinlock.h"
+#include "apic.h"
+#include "../ACPI/acpi.h"
+
+
 
 static volatile struct limine_terminal_request terminal_request = {
     .id = LIMINE_TERMINAL_REQUEST,
@@ -25,7 +29,6 @@ void print(void* s) {
     terminal_res->write(terminal, s, strlen(s));
 }
 
-extern int acpi(void);
 extern uint64_t *bitmap;
 
 
@@ -39,14 +42,23 @@ void lmao() {
     return;
 }
 
+#define L 0x43495041
+
+
 void kmain(void) {
     init_idt();
     struct limine_memmap_response *memmap = memmap_request.response;
     initbmap(memmap);
 
+    
+    init_acpi();
+    MADT *madt = get_acpi_sdt(0x43495041);
+    uint8_t NMI;
+    walk_madt(madt, &NMI);
+    init_apic(madt->lapic + HHDM_OFFSET, NMI);
 
-    acpi();
-    init_cpu();    
+
+    // init_cpu();    
     init_lock(&spinlock);
 
 

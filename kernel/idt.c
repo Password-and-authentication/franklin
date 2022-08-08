@@ -44,6 +44,7 @@ void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
 
 
 void timerh(uint64_t t) {
+    print("timer");
     *EOI = 0;
     return;
 }

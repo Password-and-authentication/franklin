@@ -12,7 +12,26 @@ static volatile struct limine_rsdp_request rsdp_req = {
 #define L 0x43495041
 
 
-int acpi(void) {
+
+void init_acpi() {
+    struct limine_rsdp_response *rsdp_res = rsdp_req.response;
+    RSDP *rsdp = (RSDP*) rsdp_res->address;
+    rsdt = (uintptr_t)rsdp->rsdtaddr + HHDM_OFFSET;
+}
+
+
+void* get_acpi_sdt(uint64_t signature) {
+    defaultheader *hdr = rsdt->entry[0] + HHDM_OFFSET;
+    int i = 0;
+    while ((hdr = rsdt->entry[i++] + HHDM_OFFSET)) {
+        if (hdr->signature == signature)
+            return (void*)HHDM_OFFSET + rsdt->entry[--i];
+    }
+}
+
+
+
+void acpi(uint32_t **lapic, uint8_t *NMI) {
     struct limine_rsdp_response *rsdp_res = rsdp_req.response;
     RSDP *rsdp = (RSDP*) rsdp_res->address;
     RSDT *rsdt =  (uintptr_t) rsdp->rsdtaddr + HHDM_OFFSET;
@@ -25,17 +44,10 @@ int acpi(void) {
     }
     MADT *madt = rsdt->entry[--i] + HHDM_OFFSET;
 
-    uint8_t lapicId[100], NMI, x = 1;
-    for (int i = 0; i < hdr->length;) {
-        if (madt->entry[i] == 0)
-            lapicId[x++] = madt->entry[i + 3];
-        if (madt->entry[i] == 4)
-            NMI = madt->entry[i + 5];
-        i += madt->entry[i + 1];
-    }
-    init_apic(HHDM_OFFSET + madt->lapic, NMI);
+    *lapic = HHDM_OFFSET + madt->lapic;
+    // init_apic(lapic, *NMI);
     
-    return 69;
+    return;
 }
 
 
@@ -50,13 +62,12 @@ void init_apic(uint32_t* lapic, uint8_t NMI) {
         *(uint32_t*)((uint64_t)lapic + LINT0) = 1 << 10;
         *(uint32_t*)((uint64_t)lapic + LINT1) = 1 << 17;
     }
-        
-
     EOI = (uint32_t*)((uint64_t)lapic + EOI_REG);
     *(uint32_t*)((uint64_t)lapic + TPR_REG) = 0;
     *(uint32_t*)((uint64_t)lapic + SPURIOUS_VECTOR) = 0x1FF;
 
     init_timer(lapic);
+    lapicc = lapic;
 }
 
 

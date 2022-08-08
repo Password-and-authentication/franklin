@@ -1,4 +1,5 @@
-
+#ifndef _ACPI_
+#define _ACPI_ 1
 
 #define MADT_CODE 0x43495041
 #define EOI_REG 0xB0
@@ -53,9 +54,16 @@ typedef struct {
 } __attribute__((packed))MADT;
 
 
+uint32_t *lapicc;
+RSDT *rsdt;
 
+void *get_acpi_sdt(uint64_t);
+void init_acpi(void);
+void acpi(uint32_t**, uint8_t*);
 void init_apic(uint32_t*, uint8_t);
 void init_timer(uint32_t*);
+
+#endif
 
 // typedef struct {
 //     uint32_t signature;
