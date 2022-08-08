@@ -1,6 +1,16 @@
 
 
 #define MADT_CODE 0x43495041
+#define EOI_REG 0xB0
+#define SPURIOUS_VECTOR 0xF0
+#define TPR_REG 0x80
+#define TIMER_REG 0x320
+#define DIVIDE_REG 0x3E0
+#define INITCOUNT 0x380
+#define LINT0 0x350
+#define LINT1 0x360
+
+
 uint32_t *EOI;
 
 
@@ -44,8 +54,8 @@ typedef struct {
 
 
 
-void init_apic(MADT*);
-void init_timer(MADT*);
+void init_apic(uint32_t*);
+void init_timer(uint32_t*);
 
 // typedef struct {
 //     uint32_t signature;

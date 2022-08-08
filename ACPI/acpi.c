@@ -12,7 +12,7 @@ static volatile struct limine_rsdp_request rsdp_req = {
 #define L 0x43495041
 
 
-int acpi() {
+int acpi(void) {
     struct limine_rsdp_response *rsdp_res = rsdp_req.response;
     RSDP *rsdp = (RSDP*) rsdp_res->address;
     RSDT *rsdt =  (uintptr_t) rsdp->rsdtaddr + HHDM_OFFSET;
@@ -24,7 +24,7 @@ int acpi() {
             break;
     }
     MADT *madt = rsdt->entry[--i] + HHDM_OFFSET;
-    init_apic(madt);
+    init_apic(HHDM_OFFSET + madt->lapic);
 
     uint8_t lapic[100];
     int x = 1;
@@ -34,44 +34,23 @@ int acpi() {
         i += madt->entry[i + 1];
     }
     
-    
     return 69;
 }
 
 
 
-void init_apic(MADT *madt) {
-    volatile uint32_t *vector = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0xF0);
-    *vector = 0x1FF;
-    volatile uint32_t *tpr = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x80);
-    EOI = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0xB0);
-    *tpr = 0;
+void init_apic(uint32_t* lapic) {
+    EOI = (uint32_t*)((uint64_t)lapic + EOI_REG);
+    *(uint32_t*)((uint64_t)lapic + TPR_REG) = 0;
+    *(uint32_t*)((uint64_t)lapic + SPURIOUS_VECTOR) = 0x1FF;
+    *(uint32_t*)((uint64_t)lapic + LINT0) = 1 << 17;
 
-    init_timer(madt);
-
+    init_timer(lapic);
 }
 
 
-void init_timer(MADT *madt) {
-
-    volatile uint32_t *initcount = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x380);
-    volatile uint32_t *timer = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x320);
-    volatile uint32_t *divide = (uint32_t*)(HHDM_OFFSET + madt->lapic + 0x3E0);
-    *timer = 1 << 17 | 32;
-    *divide = 0x3;
-    *initcount = 10000;
-
-
-    
-
-
-
-
-}
-
-uint8_t checkchecksum(RSDP* rsdp) {
-
-    uint64_t sum = 0;
-
-    return 0;
+void init_timer(uint32_t* lapic) {
+    *(uint32_t*)((uint64_t)lapic + TIMER_REG) = 1 << 17 | 32;
+    *(uint32_t*)((uint64_t)lapic + DIVIDE_REG) = 0x3;
+    *(uint32_t*)((uint64_t)lapic + INITCOUNT) = 10000;
 }
