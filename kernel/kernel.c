@@ -26,7 +26,9 @@ static volatile struct limine_memmap_request memmap_request = {
 void print(void* s) {
     struct limine_terminal_response *terminal_res = terminal_request.response;
     struct limine_terminal *terminal = terminal_res->terminals[0];
+    acquire(&spinlock);
     terminal_res->write(terminal, s, strlen(s));
+    release(&spinlock);
 }
 
 extern uint64_t *bitmap;
@@ -42,7 +44,6 @@ void lmao() {
     return;
 }
 
-#define L 0x43495041
 
 
 void kmain(void) {
@@ -50,19 +51,22 @@ void kmain(void) {
     struct limine_memmap_response *memmap = memmap_request.response;
     initbmap(memmap);
 
-    
+    int i = 0;
+    while (isfree(i++));
+
+    init_vmm();    
     init_acpi();
-    MADT *madt = get_acpi_sdt(0x43495041);
-    uint8_t NMI;
-    walk_madt(madt, &NMI);
-    init_apic(madt->lapic + HHDM_OFFSET, NMI);
+    MADT *madt = get_acpi_sdt(MADT_C);
+    walk_madt(madt);
+    init_apic(madt->lapic + HHDM_OFFSET);
 
 
     // init_cpu();    
-    init_lock(&spinlock);
+    // int x = 10;
+    // int y = 21;
+    // init_lock(&spinlock);
 
 
-    lmao();
 
     for(;;)
         asm ("hlt");

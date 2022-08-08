@@ -52,27 +52,3 @@ void acpi(uint32_t **lapic, uint8_t *NMI) {
 
 
 
-void init_apic(uint32_t* lapic, uint8_t NMI) {
-
-    // set the correct LINT pin for NMI
-    if (NMI == 1) {
-        *(uint32_t*)((uint64_t)lapic + LINT0) = 1 << 17; // mask LINT0
-        *(uint32_t*)((uint64_t)lapic + LINT1) = 1 << 10; // delivery mode: NMI
-    } else {
-        *(uint32_t*)((uint64_t)lapic + LINT0) = 1 << 10;
-        *(uint32_t*)((uint64_t)lapic + LINT1) = 1 << 17;
-    }
-    EOI = (uint32_t*)((uint64_t)lapic + EOI_REG);
-    *(uint32_t*)((uint64_t)lapic + TPR_REG) = 0;
-    *(uint32_t*)((uint64_t)lapic + SPURIOUS_VECTOR) = 0x1FF;
-
-    init_timer(lapic);
-    lapicc = lapic;
-}
-
-
-void init_timer(uint32_t* lapic) {
-    *(uint32_t*)((uint64_t)lapic + TIMER_REG) = 1 << 17 | 32;
-    *(uint32_t*)((uint64_t)lapic + DIVIDE_REG) = 0x3;
-    *(uint32_t*)((uint64_t)lapic + INITCOUNT) = 10000;
-}

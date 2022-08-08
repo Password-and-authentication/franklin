@@ -5,6 +5,7 @@
 #include "idt.h"
 #include "spinlock.h"
 #include "../ACPI/acpi.h"
+#include "apic.h"
 
 
 volatile static struct limine_smp_request smp_req = {
@@ -16,22 +17,14 @@ volatile static struct limine_smp_request smp_req = {
 void init_cpu() {
     struct limine_smp_response *smp = smp_req.response;
     
-    uint32_t reg = *(uint32_t*)((uint64_t)lapicc + 0x20);
     smp->cpus[1]->goto_address = cpu;
 }
 
 
-
-
 void cpu(struct limine_smp_info *info) {
     load_idt();
-    uint32_t reg = *(uint32_t*)((uint64_t)lapicc + 0x20);
-
-    acquire(&spinlock);
-    int x = 10;
-    int y = 20;
-    release(&spinlock);
+    MADT *madt = get_acpi_sdt(MADT_C);
+    init_apic(HHDM_OFFSET + madt->lapic);
 
     for(;;);
-        
 }

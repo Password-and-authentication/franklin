@@ -6,10 +6,10 @@
 
 
 void togglepage(int page) {
-    bitmap[page / 64] ^= 1 << (page % 64);
+    bitmap[page / 64] ^= (UINT64_C(1) << (page % 64));
 };
 uint8_t isfree(int page) {
-    return ((bitmap[page / 64] & (((1 << (page % 64))))) == 0);
+    return (((bitmap[page / 64] & (UINT64_C(1) << (page % 64)))) == 0);
 }
 
 
@@ -42,7 +42,7 @@ void *palloc(int size) {
                 setpages:
                 for (p = page; p < (size + page); ++p) 
                     togglepage(p);
-                return (void*) HHDM_OFFSET + (page * PGSIZE);
+                return (void*)((uintptr_t)(page * PGSIZE));
             }
         };
         page++;
@@ -58,7 +58,7 @@ void *pallocaddr(int size, uint64_t paddr) {
             panic("panic: pallocaddr, page is not free\n");
         togglepage(i);
     };
-    return (void*)P2V(paddr);
+    return (void*)paddr;
 }
 
 
@@ -75,21 +75,23 @@ void initbmap(struct limine_memmap_response *memmap) {
     struct limine_memmap_entry *entry = getentry(memmap, bitmapsz);
 
     bitmap = (uint64_t)HHDM_OFFSET + entry->base;
+    for (int i = 0; i < bitmapsz; ++i)
+        togglepage(entry->base / PGSIZE + i);
+
     entry->base += bitmapsz;
     entry->length -= bitmapsz;
     for (int i = 0; i < memmap->entry_count; ++i) {
-        setentry(memmap->entries[i]);
+        if (memmap->entries[i]->type != 0)
+            setentry(memmap->entries[i]);
     }
-
 }
 
 
 void setentry(struct limine_memmap_entry *entry) {
-    uint_t j = entry->base;
-    int inuse = (entry->type == 0) ? 0 : 1;
+    uint_t page = entry->base / PGSIZE;
 
-    for (int i = 0; i < (entry->length / PGSIZE); i++, j++) {
-        bitmap[j / 64] = inuse << (j % 64) | bitmap[j / 64];
+    for (int i = 0; i < (entry->length / PGSIZE); i++, page++) {
+        togglepage(page);
     }
 }
 

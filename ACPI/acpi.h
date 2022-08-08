@@ -1,6 +1,9 @@
 #ifndef _ACPI_
 #define _ACPI_ 1
 
+
+
+#define MADT_C 0x43495041
 #define MADT_CODE 0x43495041
 #define EOI_REG 0xB0
 #define SPURIOUS_VECTOR 0xF0
@@ -60,8 +63,6 @@ RSDT *rsdt;
 void *get_acpi_sdt(uint64_t);
 void init_acpi(void);
 void acpi(uint32_t**, uint8_t*);
-void init_apic(uint32_t*, uint8_t);
-void init_timer(uint32_t*);
 
 #endif
 

@@ -22,12 +22,9 @@ uintptr_t getpaddr(uint64_t entry) {
 
 void init_vmm() {
     uint64_t addr;
-    PML4E = palloc(1);
-    mappage(0, 0, KFLAGS);
-    remappage(0, 1000);
-    unmappage(0);
+    PML4E = P2V((uintptr_t)palloc(1));
+    memzero((char*)PML4E, PGSIZE);
     test();    
-    int x;
 }   
 
 int mappage(uint64_t vaddr, uint64_t paddr, uint8_t flags) {
@@ -65,7 +62,7 @@ void remappage(uint64_t vaddr, int pfn) {
     uintptr_t paddr = getpaddr(*pte);
     freepg(paddr, 1);
     *pte &= 0x1FF;
-    *pte |= getpaddr(pfn * PGSIZE);
+    *pte |= (uintptr_t)pallocaddr(1, pfn * PGSIZE);
 }
 
 void memzero(char* mem, int n) {
@@ -109,9 +106,8 @@ uint64_t* newentry(uint64_t *table_entry, uint64_t paddr, uint8_t flags) {
         page = pallocaddr(1, paddr);
     else
         page = palloc(1);
-    paddr = V2P((uintptr_t)page);
-    *table_entry = paddr | flags;
-    memzero((char*)page, PGSIZE);
+    *table_entry = (uintptr_t)page | flags;
+    memzero((char*)P2V((uintptr_t)page), PGSIZE);
 
     noalloc:
     paddr = getpaddr(*table_entry);
@@ -122,13 +118,15 @@ uint64_t* newentry(uint64_t *table_entry, uint64_t paddr, uint8_t flags) {
 
 void test() {
 
-    for (int i = 0; i < 20; ++i) {
-        mappage(i * PGSIZE, NULL, KFLAGS);
-    }
 
-    for (int i = 0; i < 10; ++i) {
-        unmappage(i * PGSIZE);
-    }
+    mappage(0, 0, KFLAGS);
+    unmappage(0);
+
+    for (int i = 0; i < 10; ++i)
+        mappage(i * PGSIZE, 0, KFLAGS);
+
+    for (int i = 10; i < 20; ++i)
+        mappage(i * PGSIZE, 0, KFLAGS);
 
     for (int i = 10; i < 20; ++i) 
         unmappage(i * PGSIZE);
@@ -146,18 +144,12 @@ void test() {
         unmappage(i * PGSIZE);
     }
 
-    for (int i = 1000; i < 1010; ++i) {
-        mappage(i * PGSIZE, 0, KFLAGS);
-        unmappage(i * PGSIZE);
-    }
-        // mappage(0x2000, 0x1000, KFLAGS);
-    // mappage(0x3000, PGSIZE * PGSIZE, KFLAGS);
-    // mappage(3000 * PGSIZE, 1000 * PGSIZE, KFLAGS);
-    // mappage(5000* PGSIZE, 6000 * PGSIZE, KFLAGS);
-    // unmappage(1000 * PGSIZE);
-    // unmappage(5000 * PGSIZE);
-    // unmappage(3000 * PGSIZE);
-    // unmappage(0x3000);
+    mappage(0x3000, PGSIZE * PGSIZE, KFLAGS);
+    mappage(3000 * PGSIZE, 1000 * PGSIZE, KFLAGS);
+    mappage(5000* PGSIZE, 6000 * PGSIZE, KFLAGS);
+    unmappage(5000 * PGSIZE);
+    unmappage(3000 * PGSIZE);
+    unmappage(0x3000);
     for (int i = 1000; i < (1000 + 10); ++i) {
         mappage(i * PGSIZE, 0, KFLAGS);
     }
@@ -166,17 +158,15 @@ void test() {
         unmappage(i * PGSIZE);
     }
 
-    // for (int i = 0; i < 1000; ++i) {
-    //     mappage(i * PGSIZE, 0, KFLAGS);
-    // }
+    for (int i = 0; i < 1000; ++i) {
+        mappage(i * PGSIZE, 0, KFLAGS);
+    }
 
-    // for (int i = 5000; i < 10000; ++i) {
-    //     mappage(i * PGSIZE, 0, KFLAGS);
-    // }
-    // for (int i = 5000; i < 10000; ++i) {
-    //     unmappage(i * PGSIZE);
-    // }
-    // mappage(10000* PGSIZE, 0, KFLAGS);
-    // mappage(19990 * PGSIZE, 0, KFLAGS);
+    for (int i = 5000; i < 6000; ++i) {
+        mappage(i * PGSIZE, 0, KFLAGS);
+    }
+
+    mappage(10000* PGSIZE, 0, KFLAGS);
+    mappage(19990 * PGSIZE, 0, KFLAGS);
 
 }

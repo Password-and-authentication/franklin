@@ -1,6 +1,14 @@
+#ifndef _APIC_
+#define _APIC_ 1
+
 #include "../ACPI/acpi.h"
 
 
-void apic(void);
+uint8_t NMI_LINT;
 
-void walk_madt(MADT*, uint8_t*);
+void apic(void);
+void walk_madt(MADT*);
+void init_apic(uint32_t*);
+void init_timer(uint32_t*);
+
+#endif
