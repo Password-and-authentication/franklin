@@ -24,26 +24,37 @@ int acpi(void) {
             break;
     }
     MADT *madt = rsdt->entry[--i] + HHDM_OFFSET;
-    init_apic(HHDM_OFFSET + madt->lapic);
 
-    uint8_t lapic[100];
-    int x = 1;
+    uint8_t lapicId[100], NMI, x = 1;
     for (int i = 0; i < hdr->length;) {
         if (madt->entry[i] == 0)
-            lapic[x++] = madt->entry[i + 3];
+            lapicId[x++] = madt->entry[i + 3];
+        if (madt->entry[i] == 4)
+            NMI = madt->entry[i + 5];
         i += madt->entry[i + 1];
     }
+    init_apic(HHDM_OFFSET + madt->lapic, NMI);
     
     return 69;
 }
 
 
 
-void init_apic(uint32_t* lapic) {
+void init_apic(uint32_t* lapic, uint8_t NMI) {
+
+    // set the correct LINT pin for NMI
+    if (NMI == 1) {
+        *(uint32_t*)((uint64_t)lapic + LINT0) = 1 << 17; // mask LINT0
+        *(uint32_t*)((uint64_t)lapic + LINT1) = 1 << 10; // delivery mode: NMI
+    } else {
+        *(uint32_t*)((uint64_t)lapic + LINT0) = 1 << 10;
+        *(uint32_t*)((uint64_t)lapic + LINT1) = 1 << 17;
+    }
+        
+
     EOI = (uint32_t*)((uint64_t)lapic + EOI_REG);
     *(uint32_t*)((uint64_t)lapic + TPR_REG) = 0;
     *(uint32_t*)((uint64_t)lapic + SPURIOUS_VECTOR) = 0x1FF;
-    *(uint32_t*)((uint64_t)lapic + LINT0) = 1 << 17;
 
     init_timer(lapic);
 }

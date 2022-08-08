@@ -54,7 +54,7 @@ typedef struct {
 
 
 
-void init_apic(uint32_t*);
+void init_apic(uint32_t*, uint8_t);
 void init_timer(uint32_t*);
 
 // typedef struct {
