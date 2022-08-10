@@ -7,7 +7,15 @@
 
 
 
+void out(char port, char buffer) {
+    asm("out %%al, %%dx" :: "a"(buffer), "d"(port));
+}
 
+char in(char port) {
+    char buffer;
+    asm volatile("in %%dx, %%al" : "=a"(buffer) : "d"(port));
+    return buffer;
+}
 
 void init_kbd() {
     
@@ -15,13 +23,34 @@ void init_kbd() {
         return;
     
     char buffer;
-    asm ("movb $0x20, %al; outb %al, $0x64");
-    asm volatile("inb $0x64, %%al; mov %%al, %0" : "=r" (buffer) :: "rax");
-    asm volatile("inb $0x60, %%al; mov %%al, %0" : "=r" (buffer) :: "rax");
 
+    out(0x64, 0xAD); // disable devices
+    out(0x64, 0xA7);
 
+    in(0x60); // flush output buffer
 
+    out(0x64, 0x20);
+    buffer = in(0x64);
+    buffer = in(0x60);
 
+    buffer ^= 0b1000011; // set the configure byte (clear bits 0, 1, 6)
+
+    out(0x64, 0xAA);
+    buffer = in(0x64);
+    buffer = in(0x60);
+
+    out(0x64, 0xAB); // test first port
+    buffer = in(0x64);
+    buffer = in(0x60);
+
+    out(0x60, 0xF5); // disable scanning
+    buffer = in(0x60);
+    out(0x60, 0xF2); // identify command
+    buffer = in(0x60);
+
+    buffer = in(0x60); // get type
+
+    out(0x60, 0xF4); //enable keyboard
 }
 
 
