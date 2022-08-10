@@ -18,7 +18,6 @@ void walk_madt(MADT *madt) {
 
 
 void init_apic(uint32_t* lapic) {
-
     // set the correct LINT pin for NMI
     if (NMI_LINT == 1) {
         *(uint32_t*)((uint64_t)lapic + LINT0) = 1 << 17; // mask LINT0

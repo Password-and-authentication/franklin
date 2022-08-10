@@ -4,6 +4,7 @@
 #include "defs.h"
 #include "../ACPI/acpi.h"
 #include "../69.h"
+#include "io.h"
 
 
 extern void *isr_table[];
@@ -16,7 +17,7 @@ void init_idt() {
     idtr.base = (uintptr_t)&idt[0];
     idtr.size = (uint16_t)sizeof(idt_entry) * IDT_MAX_DESC - 1;
 
-    for (uint8_t vector = 0; vector < 33; vector++) {
+    for (uint8_t vector = 0; vector < 34; vector++) {
         set_idt_entry(vector, isr_table[vector], 0x8E);
     }
 
@@ -32,9 +33,10 @@ void load_idt() {
 
 void kbd() {
     print("lol");
-    asm("cli; hlt");
+    in(0x60);
+    out(0x20, 0x20);
+    *EOI = 0;
     return;
-
 }
 
 void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
@@ -51,7 +53,7 @@ void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
 
 
 void timerh(uint64_t t) {
-    print("timer");
+    // print("timer");
     *EOI = 0;
     return;
 }

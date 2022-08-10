@@ -16,6 +16,30 @@ extern exception_handler
         iretq
 %endmacro
 
+%macro pusha 0
+    push rax
+    push rdi
+    push rdx
+    push rcx
+    push rsi
+    push r8
+    push r9
+    push r10
+    push r11
+%endmacro
+
+%macro popa 0
+    pop r11
+    pop r10
+    pop r9 
+    pop r8
+    pop rsi
+    pop rcx
+    pop rdx
+    pop rdi 
+    pop rax
+%endmacro
+
 
 isr_no_err  0
 isr_no_err  1
@@ -54,31 +78,17 @@ isr_no_err  31
 
 extern timerh
 isr_timer:
-    push rax
-    push rdi
-    push rdx
-    push rcx
-    push rsi
-    push r8
-    push r9
-    push r10
-    push r11
+    pusha
     call timerh
-    pop r11
-    pop r10
-    pop r9 
-    pop r8
-    pop rsi
-    pop rcx
-    pop rdx
-    pop rdi 
-    pop rax
+    popa
     iretq
 
 
 extern kbd
 isr_kbd:
+    pusha
     call kbd
+    popa
     iretq
 
 

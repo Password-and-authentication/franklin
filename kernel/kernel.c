@@ -10,6 +10,8 @@
 #include "apic.h"
 #include "../ACPI/acpi.h"
 #include "kbd.h"
+#include "pic.h"
+#include "io.h"
 
 
 
@@ -50,22 +52,20 @@ void lmao() {
 void kmain(void) {
     init_idt();
     struct limine_memmap_response *memmap = memmap_request.response;
-    initbmap(memmap);
+    // initbmap(memmap);
 
-    int i = 0;
-    while (isfree(i++));
+    // int i = 0;
+    // while (isfree(i++));
 
-    init_vmm();    
+    // init_vmm();    
     init_acpi();
     MADT *madt = get_acpi_sdt(MADT_C);
     walk_madt(madt);
     init_apic(madt->lapic + HHDM_OFFSET);
 
-
-    init_cpu();    
-
-
+    // init_cpu();    
     init_kbd();
+    pic_remap(0x20);
 
 
     for(;;)
