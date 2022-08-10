@@ -30,6 +30,13 @@ void load_idt() {
 }
 
 
+void kbd() {
+    print("lol");
+    asm("cli; hlt");
+    return;
+
+}
+
 void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
 
     idt_entry *desc = &idt[vector];

@@ -25,6 +25,7 @@ __attribute__((noreturn))
 void exception_handler(uint64_t);
 
 void timerh(uint64_t);
+void kbd(void);
 
 
 idtr_t idtr;

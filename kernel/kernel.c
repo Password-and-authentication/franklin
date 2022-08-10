@@ -9,6 +9,7 @@
 #include "spinlock.h"
 #include "apic.h"
 #include "../ACPI/acpi.h"
+#include "kbd.h"
 
 
 
@@ -61,11 +62,10 @@ void kmain(void) {
     init_apic(madt->lapic + HHDM_OFFSET);
 
 
-    // init_cpu();    
-    // int x = 10;
-    // int y = 21;
-    // init_lock(&spinlock);
+    init_cpu();    
 
+
+    init_kbd();
 
 
     for(;;)

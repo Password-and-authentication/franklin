@@ -51,6 +51,7 @@ isr_err     30
 isr_no_err  31
 
 
+
 extern timerh
 isr_timer:
     push rax
@@ -74,6 +75,13 @@ isr_timer:
     pop rax
     iretq
 
+
+extern kbd
+isr_kbd:
+    call kbd
+    iretq
+
+
 global isr_table
 
 isr_table:
@@ -83,3 +91,4 @@ isr_table:
     %assign i i+1
     %endrep
     dq isr_timer
+    dq isr_kbd

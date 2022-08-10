@@ -5,6 +5,8 @@
 
 #define MADT_C 0x43495041
 #define MADT_CODE 0x43495041
+#define FADT_CODE 0x50434146
+
 #define EOI_REG 0xB0
 #define SPURIOUS_VECTOR 0xF0
 #define TPR_REG 0x80
@@ -55,6 +57,49 @@ typedef struct {
     uint32_t flags;
     char entry[];
 } __attribute__((packed))MADT;
+
+
+typedef struct {
+    defaultheader h;
+    uint32_t FIRMWARE_CONTROL;
+    uint32_t DSDT;
+    char zero;
+    char PMprofile;
+    uint16_t SCI_INT;
+    uint32_t SMI_CMD;
+    char ACPI_ENABLE;
+    char S4BIOS_REQ;
+    char PSTATE_CNT;
+    uint32_t PM1a_EVT_BLK;
+    uint32_t PM1b_EVT_BLK;
+    uint32_t PM1a_CNT_BLK;
+    uint32_t PM1b_CNT_BLK;
+    uint32_t PM2_CNT_BLK;
+    uint32_t PM_TMR_BLK;
+    uint32_t GPEO_BLK;
+    uint32_t GPE1_BLK;
+    char PM1_EVT_LEN;
+    char PM1_CNT_LEN;
+    char PM2_CNT_LEN;
+    char PM_TMR_LEN;
+    char GPE0_BLK_LEN;
+    char GPE1_BLK_LEN;
+    char GPE1_BASE;
+    char CST_CNT;
+    uint16_t P_LVL2_LAT;
+    uint16_t P_LVL3_LAT;
+    uint16_t FLUSH_SIZE;
+    uint16_t FLUSH_STRIDE;
+    char DUTY_OFFSET;
+    char DUTY_WIDTH;
+    char DAY_ALRM;
+    char MON_ALRM;
+    char CENTURY;
+    uint16_t IAPC_BOOT_ARCH;
+
+
+
+} __attribute__((packed)) FADT;
 
 
 uint32_t *lapicc;
