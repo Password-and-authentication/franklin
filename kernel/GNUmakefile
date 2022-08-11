@@ -18,7 +18,7 @@ endef
 $(eval $(call DEFAULT_VAR,CC,cc))
  
 # User controllable CFLAGS.
-CFLAGS ?= -O0 -g -Wall -Wextra -Wpedantic -pipe
+CFLAGS ?= -00 -g -Wall -Wextra -Wpedantic -pipe
  
 # User controllable nasm flags.
 NASMFLAGS ?= -F dwarf -g
