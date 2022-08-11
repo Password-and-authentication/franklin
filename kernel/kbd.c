@@ -42,6 +42,7 @@ void init_kbd() {
 
     buffer = in(0x60); // get type
 
+
     out(0x60, 0xF4); //enable keyboard
     out(0x64, 0xAE);
 }

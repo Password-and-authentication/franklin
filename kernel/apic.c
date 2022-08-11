@@ -20,8 +20,8 @@ void walk_madt(MADT *madt) {
 void init_apic(volatile uint32_t* lapic) {
     // set the correct LINT pin for NMI
     if (NMI_LINT == 1) {
-        *(volatile uint32_t*)((uint64_t)lapic + LINT0) = 1 << 17; // mask LINT0
-        *(volatile uint32_t*)((uint64_t)lapic + LINT1) = 1 << 10; // delivery mode: NMI
+        // *(volatile uint32_t*)((uint64_t)lapic + LINT0) = 1 << 17; // mask LINT0
+        // *(volatile uint32_t*)((uint64_t)lapic + LINT1) = 1 << 10; // delivery mode: NMI
     } else {
         *(volatile uint32_t*)((uint64_t)lapic + LINT0) = 1 << 10;
         *(volatile uint32_t*)((uint64_t)lapic + LINT1) = 1 << 17;

@@ -30,21 +30,8 @@ void print(void* s) {
     struct limine_terminal_response *terminal_res = terminal_request.response;
     struct limine_terminal *terminal = terminal_res->terminals[0];
     acquire(&spinlock);
-    terminal_res->write(terminal, s, strlen(s));
+    terminal_res->write(terminal, s, 1);
     release(&spinlock);
-}
-
-extern uint64_t *bitmap;
-
-
-
-void lmao() {
-    acquire(&spinlock);
-
-    int x = 10;
-    int y = 20;
-    release(&spinlock);
-    return;
 }
 
 
@@ -52,20 +39,21 @@ void lmao() {
 void kmain(void) {
     init_idt();
     struct limine_memmap_response *memmap = memmap_request.response;
-    initbmap(memmap);
+    // initbmap(memmap);
 
-    int i = 0;
-    while (isfree(i++));
+    // int i = 0;
+    // while (isfree(i++));
 
-    init_vmm();    
-    // init_acpi();
+    // init_vmm();    
+    init_acpi();
     // MADT *madt = get_acpi_sdt(MADT_C);
     // walk_madt(madt);
     // init_apic(madt->lapic + HHDM_OFFSET);
 
     // init_cpu();    
-    // init_kbd();
+    init_kbd();
     pic_remap(0x20);
+    unmask_irq(1);
 
 
     for(;;)
