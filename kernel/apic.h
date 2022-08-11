@@ -8,7 +8,7 @@ uint8_t NMI_LINT;
 
 void apic(void);
 void walk_madt(MADT*);
-void init_apic(uint32_t*);
-void init_timer(uint32_t*);
+void init_apic(volatile uint32_t*);
+void init_timer(volatile uint32_t*);
 
 #endif

@@ -32,10 +32,10 @@ void load_idt() {
 
 
 void kbd() {
-    print("lol");
+    print("kbd");
     in(0x60);
     out(0x20, 0x20);
-    *EOI = 0;
+    // *EOI = 0;
     return;
 }
 
@@ -54,7 +54,7 @@ void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
 
 void timerh(uint64_t t) {
     // print("timer");
-    *EOI = 0;
+    // *EOI = 0;
     return;
 }
 

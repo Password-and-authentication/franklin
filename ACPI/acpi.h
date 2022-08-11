@@ -17,7 +17,7 @@
 #define LINT1 0x360
 
 
-uint32_t *EOI;
+volatile uint32_t *EOI;
 
 
 
