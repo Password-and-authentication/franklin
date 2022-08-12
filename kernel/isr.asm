@@ -84,10 +84,10 @@ isr_timer:
     iretq
 
 
-extern kbd
+extern kbd_press
 isr_kbd:
     pusha
-    call kbd
+    call kbd_press
     popa
     iretq
 

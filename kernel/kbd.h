@@ -5,6 +5,7 @@ void init_kbd(void);
 int check_ps2(void);
 
 
+void key_press(void);
 void setconfb(char);
 char getconfb(void);
 void disdev(void);

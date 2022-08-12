@@ -6,7 +6,23 @@
 #include "defs.h"
 
 
-char getconfb(void);
+
+static int key_release;
+void kbd_press() {
+  unsigned char keycode = in(0x60);
+  
+  if (!key_release && keycode == 0x23) {
+    print("d");
+  }
+  if (key_release)
+    key_release = 0;
+  if (keycode == 0xF0)
+    key_release = 1;
+
+  out(0x20, 0x20);
+  return;
+}
+
 
 void init_kbd() {
     

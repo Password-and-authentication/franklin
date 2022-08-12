@@ -31,15 +31,8 @@ void load_idt() {
 }
 
 char kbd_US[];
+int key_release;
 
-void kbd() {
-    char keycode = in(0x60);
-    char s[20];
-    itoa(keycode, s);
-    print(s);
-    out(0x20, 0x20);
-    return;
-}
 
 void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
 
