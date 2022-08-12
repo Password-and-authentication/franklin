@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include "../ACPI//acpi.h"
 #include "apic.h"
+#include "../69.h"
+#include "io.h"
 
 
 // right now its only getting the LINT pin that is connected to NMI
@@ -35,7 +37,10 @@ void init_apic(volatile uint32_t* lapic) {
 
 
 void init_timer(volatile uint32_t* lapic) {
-    *(volatile uint32_t*)((uint64_t)lapic + TIMER_REG) = 1 << 17 | 32; // periodic mode and vector 32
-    *(volatile uint32_t*)((uint64_t)lapic + DIVIDE_REG) = 0x3;
-    *(volatile uint32_t*)((uint64_t)lapic + INITCOUNT) = 10000; // not configured yet
+
+    
+
+    // *(volatile uint32_t*)((uint64_t)lapic + TIMER_REG) = 1 << 17 | 32; // periodic mode and vector 32
+    // *(volatile uint32_t*)((uint64_t)lapic + DIVIDE_REG) = 0x3;
+    // *(volatile uint32_t*)((uint64_t)lapic + INITCOUNT) = 2500000; // not configured yet
 }

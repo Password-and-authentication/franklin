@@ -15,6 +15,8 @@ uint8_t isfree(int page) {
 
 
 void *palloc(int size) {
+    if (size >= MAXPG)
+        panic("panic: palloc, size too big");
     acquire(&spinlock);
     int page = 0, p = 0;
     int x = 0, i = 0;
