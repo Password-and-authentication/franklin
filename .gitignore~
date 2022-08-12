@@ -1,12 +1,3 @@
-idt.o
-kernel.o
-cpu.o
-cpu.d
-isr.o
-lmao.d
-pmm.d
-pmm.o
-string.o
-string.c
-vmm.o
-vmm.d
+*.o
+*.d
+*.elf
