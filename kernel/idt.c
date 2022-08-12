@@ -34,7 +34,9 @@ char kbd_US[];
 
 void kbd() {
     char keycode = in(0x60);
-    print((char*)&kbd_US[keycode]);
+    char s[20];
+    itoa(keycode, s);
+    print(s);
     out(0x20, 0x20);
     return;
 }

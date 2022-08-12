@@ -1,5 +1,5 @@
 #include "io.h"
-
+#include "pic.h"
 
 
 void unmask_irq(char irq) {
@@ -10,14 +10,6 @@ void unmask_irq(char irq) {
 }
 
 
-#define PIC1_COMMAND 0x20
-#define PIC1_DATA 0x21
-#define PIC2_COMMAND 0xA0
-#define PIC2_DATA 0xA1
-
-#define ICW1 0b000010000
-#define ICW2 0b1
-
 
 void pic_remap(int offset) {
     char mask = in(PIC1_DATA); // mask gets cleared on initalization
@@ -25,7 +17,6 @@ void pic_remap(int offset) {
 
     out(PIC1_COMMAND, ICW1 | 0x01);     // initalization
     out(PIC2_COMMAND, ICW1 | 0x01);
-
 
     out(PIC1_DATA, offset);     // offset in idt
     out(PIC2_DATA, offset);
