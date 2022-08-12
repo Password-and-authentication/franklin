@@ -3,7 +3,7 @@
 #include "apic.h"
 
 
-
+// right now its only getting the LINT pin that is connected to NMI
 void walk_madt(MADT *madt) {
 
     uint8_t lapicId[100], x = 1;
@@ -20,8 +20,8 @@ void walk_madt(MADT *madt) {
 void init_apic(volatile uint32_t* lapic) {
     // set the correct LINT pin for NMI
     if (NMI_LINT == 1) {
-        // *(volatile uint32_t*)((uint64_t)lapic + LINT0) = 1 << 17; // mask LINT0
-        // *(volatile uint32_t*)((uint64_t)lapic + LINT1) = 1 << 10; // delivery mode: NMI
+        *(volatile uint32_t*)((uint64_t)lapic + LINT0) = 1 << 17; // mask LINT0
+        *(volatile uint32_t*)((uint64_t)lapic + LINT1) = 1 << 10; // delivery mode: NMI
     } else {
         *(volatile uint32_t*)((uint64_t)lapic + LINT0) = 1 << 10;
         *(volatile uint32_t*)((uint64_t)lapic + LINT1) = 1 << 17;
@@ -37,5 +37,5 @@ void init_apic(volatile uint32_t* lapic) {
 void init_timer(volatile uint32_t* lapic) {
     *(volatile uint32_t*)((uint64_t)lapic + TIMER_REG) = 1 << 17 | 32; // periodic mode and vector 32
     *(volatile uint32_t*)((uint64_t)lapic + DIVIDE_REG) = 0x3;
-    *(volatile uint32_t*)((uint64_t)lapic + INITCOUNT) = 10000;
+    *(volatile uint32_t*)((uint64_t)lapic + INITCOUNT) = 10000; // not configured yet
 }

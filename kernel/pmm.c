@@ -1,6 +1,7 @@
 #include "limine.h"
 #include "mmu.h"
 #include "defs.h"
+#include "spinlock.h"
 #include <strings.h>
 
 
@@ -14,6 +15,7 @@ uint8_t isfree(int page) {
 
 
 void *palloc(int size) {
+    acquire(&spinlock);
     int page = 0, p = 0;
     int x = 0, i = 0;
 
@@ -42,32 +44,37 @@ void *palloc(int size) {
                 setpages:
                 for (p = page; p < (size + page); ++p) 
                     togglepage(p);
-                return (void*)((uintptr_t)(page * PGSIZE));
+                goto releaselock; 
             }
         };
         page++;
     };
+    releaselock:
+    release(&spinlock);
+    return (void*)((uintptr_t)(page * PGSIZE));
 }   
 
 
 void *pallocaddr(int size, uint64_t paddr) {
-    
+    acquire(&spinlock);
     int pfn = paddr / PGSIZE;
     for (int i = pfn; i < pfn + size; ++i) {
         if (!isfree(i))
             panic("panic: pallocaddr, page is not free\n");
         togglepage(i);
     };
+    release(&spinlock);
     return (void*)paddr;
 }
 
 
 void freepg(uintptr_t addr, int length) {
     int page = addr / PGSIZE;
-
+    acquire(&spinlock);
     do {
         togglepage(page);
     } while(--length && page++);
+    release(&spinlock);
 }
 
 void initbmap(struct limine_memmap_response *memmap) {
@@ -89,10 +96,11 @@ void initbmap(struct limine_memmap_response *memmap) {
 
 void setentry(struct limine_memmap_entry *entry) {
     uint_t page = entry->base / PGSIZE;
-
+    acquire(&spinlock);
     for (int i = 0; i < (entry->length / PGSIZE); i++, page++) {
         togglepage(page);
     }
+    release(&spinlock);
 }
 
 

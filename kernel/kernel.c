@@ -44,16 +44,19 @@ void kmain(void) {
     int i = 0;
     while (isfree(i++));
 
+    init_lock(&spinlock);
     init_vmm();    
     init_acpi();
     MADT *madt = get_acpi_sdt(MADT_C);
     walk_madt(madt);
-    // init_apic(madt->lapic + HHDM_OFFSET);
+    init_apic(madt->lapic + HHDM_OFFSET);
 
-    init_cpu();    
+    // init_cpu();    
     init_kbd();
     pic_remap(0x20);
     unmask_irq(1);
+    print("test");
+
 
 
     for(;;)

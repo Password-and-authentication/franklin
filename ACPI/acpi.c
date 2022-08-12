@@ -45,7 +45,6 @@ void acpi(uint32_t **lapic, uint8_t *NMI) {
     MADT *madt = rsdt->entry[--i] + HHDM_OFFSET;
 
     *lapic = HHDM_OFFSET + madt->lapic;
-    // init_apic(lapic, *NMI);
     
     return;
 }

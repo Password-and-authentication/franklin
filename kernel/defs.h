@@ -1,4 +1,6 @@
 
+#include <stdint.h>
+#include <stdbool.h>
 typedef unsigned int uint_t;
 #define NULL 0
 

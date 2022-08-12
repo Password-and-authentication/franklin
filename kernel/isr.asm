@@ -12,7 +12,7 @@ extern exception_handler
     isr_stub_%1:
         mov rdi, %1
         call exception_handler
-        add rsp, 8
+        add rsp, 8 ; get rid of error code
         iretq
 %endmacro
 
@@ -82,7 +82,6 @@ isr_timer:
     call timerh
     popa
     iretq
-
 
 extern kbd_press
 isr_kbd:

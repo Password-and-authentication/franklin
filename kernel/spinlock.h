@@ -8,5 +8,6 @@ uint32_t spinlock;
 void acquire(lock*);
 void release(lock*);
 void init_lock(lock*);
+int trylock(lock*);
 
 #endif
