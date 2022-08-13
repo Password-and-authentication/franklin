@@ -22,11 +22,9 @@ void walk_madt(MADT *madt) {
 void init_apic(volatile uint32_t* lapic) {
     // set the correct LINT pin for NMI
     if (NMI_LINT == 1) {
-        *(volatile uint32_t*)((uint64_t)lapic + LINT0) = 1 << 17; // mask LINT0
         *(volatile uint32_t*)((uint64_t)lapic + LINT1) = 1 << 10; // delivery mode: NMI
     } else {
         *(volatile uint32_t*)((uint64_t)lapic + LINT0) = 1 << 10;
-        *(volatile uint32_t*)((uint64_t)lapic + LINT1) = 1 << 17;
     }
     EOI = (uint32_t*)((uint64_t)lapic + EOI_REG);
     *(volatile uint32_t*)((uint64_t)lapic + TPR_REG) = 0;
@@ -35,12 +33,26 @@ void init_apic(volatile uint32_t* lapic) {
     init_timer(lapic);
 }
 
+void init_pit(int);
 
 void init_timer(volatile uint32_t* lapic) {
-
-    
-
     // *(volatile uint32_t*)((uint64_t)lapic + TIMER_REG) = 1 << 17 | 32; // periodic mode and vector 32
     // *(volatile uint32_t*)((uint64_t)lapic + DIVIDE_REG) = 0x3;
     // *(volatile uint32_t*)((uint64_t)lapic + INITCOUNT) = 2500000; // not configured yet
+
+    init_pit(50);
 }
+
+
+void init_pit(int hz) {
+
+    int divisor = 1193180 / hz;
+    out(0x43, 0b110100);
+    out(0x40, divisor & 0xFF);
+    out(0x40, divisor >> 8);
+}
+
+
+
+
+

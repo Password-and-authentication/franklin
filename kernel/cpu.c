@@ -25,7 +25,7 @@ void init_cpu() {
 void cpu(struct limine_smp_info *info) {
     load_idt();
     MADT *madt = get_acpi_sdt(MADT_C);
-    init_apic(HHDM_OFFSET + madt->lapic);
+    // init_apic(HHDM_OFFSET + madt->lapic);
 
     char *l = palloc(100);
     freepg(P2V((uintptr_t)l), 100);

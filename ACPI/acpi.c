@@ -16,38 +16,24 @@ static volatile struct limine_rsdp_request rsdp_req = {
 void init_acpi() {
     struct limine_rsdp_response *rsdp_res = rsdp_req.response;
     RSDP *rsdp = (RSDP*) rsdp_res->address;
-    rsdt = (uintptr_t)rsdp->rsdtaddr + HHDM_OFFSET;
+    rsdt = (uint64_t)rsdp->rsdtaddr + HHDM_OFFSET;
+
+    defaultheader *hdr;
+    int x = 0;
+    for (int i = 36; i < rsdt->h.length; i += 4)
+        hdr = (defaultheader*)((uint64_t)rsdt->entry[x++] + HHDM_OFFSET);
 }
 
 
 void* get_acpi_sdt(uint64_t signature) {
-    defaultheader *hdr = rsdt->entry[0] + HHDM_OFFSET;
     int i = 0;
-    while ((hdr = rsdt->entry[i++] + HHDM_OFFSET)) {
+    defaultheader *hdr;
+    while (1) {
+        hdr = (defaultheader*)((uint64_t)rsdt->entry[i++] + HHDM_OFFSET);
         if (hdr->signature == signature)
-            return (void*)HHDM_OFFSET + rsdt->entry[--i];
+            return (void*)((uint64_t)rsdt->entry[--i] + HHDM_OFFSET);
     }
+    return 0;
 }
-
-
-
-void acpi(uint32_t **lapic, uint8_t *NMI) {
-    struct limine_rsdp_response *rsdp_res = rsdp_req.response;
-    RSDP *rsdp = (RSDP*) rsdp_res->address;
-    RSDT *rsdt =  (uintptr_t) rsdp->rsdtaddr + HHDM_OFFSET;
-    defaultheader *hdr = rsdt->entry[0] + HHDM_OFFSET;
-    int i = 0;
-
-    while ((hdr = rsdt->entry[i++] + HHDM_OFFSET)) {
-        if (hdr->signature == L)
-            break;
-    }
-    MADT *madt = rsdt->entry[--i] + HHDM_OFFSET;
-
-    *lapic = HHDM_OFFSET + madt->lapic;
-    
-    return;
-}
-
 
 

@@ -51,11 +51,12 @@ void kmain(void) {
     walk_madt(madt);
     init_apic(madt->lapic + HHDM_OFFSET);
 
-    // init_cpu();    
+    init_cpu();    
     init_kbd();
     pic_remap(0x20);
     unmask_irq(1);
-    print("test");
+    unmask_irq(0);
+
 
 
 

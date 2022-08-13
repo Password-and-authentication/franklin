@@ -43,14 +43,10 @@ void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
     desc->zero = 0;
 }
 
-int countdown;
 void timerh(uint64_t t) {
-
-    if (countdown > 0)
-        countdown--;
+    print("hello");
 
     out(0x20, 0x20);
-    // *EOI = 0;
     return;
 }
 

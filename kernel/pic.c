@@ -5,7 +5,7 @@
 void unmask_irq(char irq) {
 
     char imr = in(0x21);
-    imr ^= (1 << 1);
+    imr ^= (1 << irq);
     out(0x21, imr);
 }
 

@@ -4,6 +4,7 @@
 
 
 #define MADT_C 0x43495041
+#define HPET_CODE 0x54455048
 #define MADT_CODE 0x43495041
 #define FADT_CODE 0x50434146
 
@@ -57,6 +58,11 @@ typedef struct {
     uint32_t flags;
     char entry[];
 } __attribute__((packed))MADT;
+
+
+typedef struct {
+    
+} __attribute__((packed))HPET;
 
 
 typedef struct {
