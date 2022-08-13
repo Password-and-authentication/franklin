@@ -3,6 +3,8 @@
 #include "apic.h"
 #include "../69.h"
 #include "io.h"
+#include "idt.h"
+#include "defs.h"
 
 
 // right now its only getting the LINT pin that is connected to NMI
@@ -35,12 +37,13 @@ void init_apic(volatile uint32_t* lapic) {
 
 void init_pit(int);
 
+
 void init_timer(volatile uint32_t* lapic) {
     // *(volatile uint32_t*)((uint64_t)lapic + TIMER_REG) = 1 << 17 | 32; // periodic mode and vector 32
     // *(volatile uint32_t*)((uint64_t)lapic + DIVIDE_REG) = 0x3;
     // *(volatile uint32_t*)((uint64_t)lapic + INITCOUNT) = 2500000; // not configured yet
 
-    init_pit(50);
+    init_pit(1000);
 }
 
 
@@ -50,6 +53,14 @@ void init_pit(int hz) {
     out(0x43, 0b110100);
     out(0x40, divisor & 0xFF);
     out(0x40, divisor >> 8);
+}
+
+
+void sleep(int ms) {
+    countdown = ms;
+
+    while (countdown > 0)
+        ;
 }
 
 

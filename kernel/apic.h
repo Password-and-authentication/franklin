@@ -11,4 +11,6 @@ void walk_madt(MADT*);
 void init_apic(volatile uint32_t*);
 void init_timer(volatile uint32_t*);
 
+void sleep(int);
+
 #endif
