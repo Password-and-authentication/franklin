@@ -39,11 +39,29 @@ void init_pit(int);
 
 
 void init_timer(volatile uint32_t* lapic) {
-    // *(volatile uint32_t*)((uint64_t)lapic + TIMER_REG) = 1 << 17 | 32; // periodic mode and vector 32
-    // *(volatile uint32_t*)((uint64_t)lapic + DIVIDE_REG) = 0x3;
-    // *(volatile uint32_t*)((uint64_t)lapic + INITCOUNT) = 2500000; // not configured yet
 
-    init_pit(1000);
+    init_pit(1000); // how many interrupts every second
+
+    *(volatile uint32_t*)((uint64_t)lapic + DIVIDE_REG) = 0x3;
+    *(volatile uint32_t*)((uint64_t)lapic + INITCOUNT) = ~0;
+
+    sleep(1000);
+
+    unsigned int ticks = ~0 - *(volatile uint32_t*)((uint64_t)lapic + 0x390);
+
+    *(volatile uint32_t*)((uint64_t)lapic + TIMER_REG) = 1 << 17 | 34; // periodic mode and vector 32
+    *(volatile uint32_t*)((uint64_t)lapic + DIVIDE_REG) = 0x3;
+    *(volatile uint32_t*)((uint64_t)lapic + INITCOUNT) = ticks;
+}
+
+void apic_timer() {
+    static int i;
+    char s[20];
+    itoa(i, s);
+    print(s);
+    i++;
+    print(" ");
+    *EOI = 0;
 }
 
 
@@ -56,8 +74,8 @@ void init_pit(int hz) {
 }
 
 
-void sleep(int ms) {
-    countdown = ms;
+void sleep(int us) {
+    countdown = us;
 
     while (countdown > 0)
         ;

@@ -91,6 +91,14 @@ isr_kbd:
     iretq
 
 
+extern apic_timer
+isr_apic_timer:
+    pusha
+    call apic_timer
+    popa
+    iretq
+
+
 global isr_table
 
 isr_table:
@@ -101,3 +109,4 @@ isr_table:
     %endrep
     dq isr_timer
     dq isr_kbd
+    dq isr_apic_timer

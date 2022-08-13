@@ -17,7 +17,7 @@ void init_idt() {
     idtr.base = (uintptr_t)&idt[0];
     idtr.size = (uint16_t)sizeof(idt_entry) * IDT_MAX_DESC - 1;
 
-    for (uint8_t vector = 0; vector < 34; vector++) {
+    for (uint8_t vector = 0; vector < 35; vector++) {
         set_idt_entry(vector, isr_table[vector], 0x8E);
     }
 
@@ -29,6 +29,7 @@ void load_idt() {
     asm("lidt %0" :: "m" (idtr));
     asm("sti");
 }
+
 
 
 void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
