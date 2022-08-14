@@ -45,11 +45,17 @@ void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
 }
 
 void timerh(uint64_t t) {
-
-    countdown--;
-
-    out(0x20, 0x20);
-    return;
+  static int x;
+  if (x == 1000)
+    asm("cli; hlt");
+  char s[20];
+  itoa(x, s);
+  print(s);
+  x++;
+  
+  countdown--;
+  out(0x20, 0x20);
+  return;
 }
 
 void exception_handler(uint64_t code) {

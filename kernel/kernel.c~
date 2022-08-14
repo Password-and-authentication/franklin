@@ -41,7 +41,6 @@ void kmain(void) {
     struct limine_memmap_response *memmap = memmap_request.response;
     initbmap(memmap);
 
-
     int i = 0;
     while (isfree(i++));
 
@@ -56,9 +55,22 @@ void kmain(void) {
     walk_madt(madt);
     init_apic(madt->lapic + HHDM_OFFSET);
 
-    
+    // init_cpu();    
+
+
+    int x = 0;
+    // char s[20];
+    // while (1) {
+    //     itoa(x, s);
+    //     print(s);
+    //     print("\n");
+    //     sleep(1000);
+    //     x++;
+    // }
+
+
     for(;;)
-      asm("hlt");
+        asm ("hlt");
 }
 
 
