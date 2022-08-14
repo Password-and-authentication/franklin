@@ -49,19 +49,18 @@ void kmain(void) {
     init_acpi();
     MADT *madt = get_acpi_sdt(MADT_C);
     walk_madt(madt);
+    pic_remap(0x20);
+    unmask_irq(0);
     init_apic(madt->lapic + HHDM_OFFSET);
 
-    /* init_cpu();     */
+    init_cpu();
     init_kbd();
-    pic_remap(0x20);
     unmask_irq(1);
-    unmask_irq(0);
 
-
-    while (1) {
-      print("hello");
-      sleep(1000);
-    }
+    /* while (1) { */
+      /* print("hello"); */
+      /* sleep(1000); */
+    /* } */
 		  
 
 

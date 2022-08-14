@@ -9,6 +9,7 @@
 #define TIMER_REG 0x320
 #define DIVIDE_REG 0x3E0
 #define INITCOUNT 0x380
+#define CURRENTCOUNT 0x390
 #define LINT0 0x350
 #define LINT1 0x360
 

@@ -50,13 +50,27 @@ void init_timer(volatile uint32_t* lapic) {
 
     init_pit(1000); // how many interrupts every second
     
+    write32(lapic, DIVIDE_REG, 0); // divide by 2
+    write32(lapic, INITCOUNT, ~0);
+
+    sleep(1); // 1 ms
+
+    write32(lapic, TIMER_REG, 1 << 16); // stop timer
+    unsigned int ticks = ~0 - *read32(lapic, CURRENTCOUNT);
+    ticks *= 1000; // ticks in 10ms
+
+    write32(lapic, TIMER_REG, 34 | 1 << 17);
+    write32(lapic, DIVIDE_REG, 0);
+    write32(lapic, INITCOUNT, ticks);
 }
+
 
 void apic_timer() {
     static int i;
 
-
-
+    if (i == 10)
+      print("done");
+    i++;
 
 
     *EOI = 0;
