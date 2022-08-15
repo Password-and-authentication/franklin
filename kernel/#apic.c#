@@ -51,7 +51,6 @@ void init_timer(uint32_t* lapic) {
 
     init_pit(1000); // how many interrupts every second
     new_irq(34, isr_apic_timer);
-
     
     write32(lapic, DIVIDE_REG, 0); // divide by 2
     write32(lapic, INITCOUNT, ~0);

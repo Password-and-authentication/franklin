@@ -75,7 +75,7 @@ isr_err     30
 isr_no_err  31
 
 
-
+global isr_timer
 extern timerh
 isr_timer:
     pusha
@@ -83,6 +83,7 @@ isr_timer:
     popa
     iretq
 
+global isr_kbd
 extern kbd_press
 isr_kbd:
     pusha
@@ -91,6 +92,7 @@ isr_kbd:
     iretq
 
 
+global isr_apic_timer
 extern apic_timer
 isr_apic_timer:
     pusha
@@ -107,6 +109,4 @@ isr_table:
         dq isr_stub_%+i
     %assign i i+1
     %endrep
-    dq isr_timer
-    dq isr_kbd
-    dq isr_apic_timer
+

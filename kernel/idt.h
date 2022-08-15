@@ -33,4 +33,8 @@ volatile int countdown;
 void init_idt(void);
 void load_idt(void);
 
+void new_irq(char, void*);
+
+void isr_apic_timer(void);
+void isr_kbd(void);
 

@@ -34,7 +34,7 @@ void print(void* s) {
     release(&spinlock);
 }
 
-
+extern void isr_kbd(void);
 
 void kmain(void) {
     init_idt();
@@ -50,6 +50,7 @@ void kmain(void) {
     MADT *madt = get_acpi_sdt(MADT_C);
     walk_madt(madt);
     pic_remap(0x20);
+    new_irq(33, isr_kbd);
     unmask_irq(0);
     init_apic(madt->lapic + HHDM_OFFSET);
 

@@ -17,7 +17,7 @@ void init_idt() {
     idtr.base = (uintptr_t)&idt[0];
     idtr.size = (uint16_t)sizeof(idt_entry) * IDT_MAX_DESC - 1;
 
-    for (uint8_t vector = 0; vector < 35; vector++) {
+    for (uint8_t vector = 0; vector < 32; vector++) {
         set_idt_entry(vector, isr_table[vector], 0x8E);
     }
 
@@ -30,7 +30,9 @@ void load_idt() {
     asm("sti");
 }
 
-
+void new_irq(char vector, void* isr) {
+  set_idt_entry(vector, isr, 0x8E);
+}
 
 void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
 
@@ -45,8 +47,6 @@ void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
 }
 
 void timerh(uint64_t t) {
-
-  
   countdown--;
   out(0x20, 0x20);
   return;
