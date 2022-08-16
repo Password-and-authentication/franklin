@@ -1,45 +1,60 @@
 
+
+	%macro pushregs 0
+	push rbp
+	push rax
+	push rcx
+	push rdx
+	push rdi
+	push rsi
+	push r8
+	push r9
+	push r10
+	push r11
+	%endmacro
+
+
+	%macro popregs 0
+	pop r11
+	pop r10
+	pop r9
+	pop r8
+	pop rsi
+	pop rdi
+	pop rdx
+	pop rcx
+	pop rax
+	pop rbp
+	%endmacro
+
+	
 extern exception_handler
 
 %macro isr_err 1
-    isr_stub_%1:
-        mov rdi, %1
+isr_stub_%1:
+	pushregs
         call exception_handler
+	popregs
         iretq
 %endmacro
 
 %macro isr_no_err 1
-    isr_stub_%1:
-        mov rdi, %1
+isr_stub_%1:
+	cld
+	pushregs
+	mov r15, rsp
+	and rsp, -16
         call exception_handler
+	mov r15, rsp
+	popregs
         add rsp, 8 ; get rid of error code
         iretq
 %endmacro
 
-%macro pusha 0
-    push rax
-    push rdi
-    push rdx
-    push rcx
-    push rsi
-    push r8
-    push r9
-    push r10
-    push r11
-%endmacro
 
-%macro popa 0
-    pop r11
-    pop r10
-    pop r9 
-    pop r8
-    pop rsi
-    pop rcx
-    pop rdx
-    pop rdi 
-    pop rax
-%endmacro
 
+
+	
 
 isr_no_err  0
 isr_no_err  1
@@ -78,27 +93,39 @@ isr_no_err  31
 global isr_timer
 extern timerh
 isr_timer:
-    pusha
-    call timerh
-    popa
-    iretq
+	cld
+	pushregs
+	mov r15, rsp
+	and rsp, -16
+	call timerh
+	mov rsp, r15
+	popregs
+	iretq
 
 global isr_kbd
 extern kbd_press
 isr_kbd:
-    pusha
-    call kbd_press
-    popa
-    iretq
+	cld
+	pushregs
+	mov r15, rsp
+	and rsp, -16
+	call kbd_press
+	mov rsp, r15
+	popregs
+	iretq
 
 
 global isr_apic_timer
 extern apic_timer
 isr_apic_timer:
-    pusha
-    call apic_timer
-    popa
-    iretq
+	cld
+	pushregs
+	mov r15, rsp
+	and rsp, -16
+	call apic_timer
+	mov rsp, r15
+	popregs
+	iretq
 
 
 global isr_table

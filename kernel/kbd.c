@@ -16,7 +16,6 @@ void kbd_press() {
     unsigned char keycode = in(0x60);
 
 
-    
     if (keycode != 0xF0 && !key_release && keycode < 127)
         print(&kbd_us[keycode]);
     if (key_release)

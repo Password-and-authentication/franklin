@@ -5,6 +5,7 @@
 #include "franklin/idt.h"
 #include "franklin/69.h"
 #include "franklin/io.h"
+#include "franklin/spinlock.h"
 
 
 
@@ -46,7 +47,9 @@ void set_idt_entry(uint8_t vector, void(*isr)(), uint8_t flags) {
 }
 
 void timerh(uint64_t t) {
+  
   countdown--;
+  
   out(0x20, 0x20);
   return;
 }

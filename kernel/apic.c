@@ -48,26 +48,29 @@ void init_apic(uint32_t* lapic) {
 
 
 extern void isr_apic_timer(void);
+extern void isr_timer(void);
 void init_pit(int);
 
-
+static unsigned int ticks;
+static int configured;
 
 void init_timer(uint32_t* lapic) {
+  
+  if (configured)
+    goto startimer;
+  
+  configured = 1;
+  
+  write32(lapic, DIVIDE_REG, 0); // divide by 2
+  write32(lapic, INITCOUNT, ~0);
 
+  sleep(1); // sleep for 1 ms
 
-    init_pit(1000); // how many interrupts every second
-    new_irq(34, isr_apic_timer);
+  write32(lapic, TIMER_REG, 1 << 16); // stop timer
+  ticks = ~0 - *read32(lapic, CURRENTCOUNT);
 
-    
-    write32(lapic, DIVIDE_REG, 0); // divide by 2
-    write32(lapic, INITCOUNT, ~0);
-
-    sleep(1); // sleep for 1 ms
-
-    write32(lapic, TIMER_REG, 1 << 16); // stop timer
-    unsigned int ticks = ~0 - *read32(lapic, CURRENTCOUNT);
-    ticks *= 100; // interrupt every 10ms
-
+  /* ticks *= 100; // interrupt every 10ms */
+ startimer:
     print("start lapic timer\n");
     write32(lapic, TIMER_REG, 34 | 1 << 17); // vector 34 and periodic mode
     write32(lapic, DIVIDE_REG, 0);
@@ -77,18 +80,15 @@ void init_timer(uint32_t* lapic) {
 
 
 void apic_timer() {
-    /* static int i; */
+  
 
-
-
-
-    *EOI = 0;
+  *EOI = 0;
 }
 extern void isr_timer(void);
 
 void init_pit(int hz) {
-
-  new_irq(32, isr_timer);
+  
+  /* new_irq(32, isr_timer); */
   int divisor = 1193180 / hz;
   out(0x43, 0b110100);
   out(0x40, divisor & 0xFF);
@@ -98,13 +98,12 @@ void init_pit(int hz) {
 
 void sleep(int us) {
   acquire(&spinlock);
-  print("sleep: lock acruieq\n");
   countdown = us;
 
   while (countdown > 0)
       ;
-  print("sleep: lock release\n");
- release(&spinlock);
+
+  release(&spinlock);
 }
 
 

@@ -34,6 +34,8 @@ void print(void* s) {
 }
 
 extern void isr_kbd(void);
+extern void isr_apic_timer(void);
+extern void isr_timer(void);
 
 void kmain(void) {
     init_idt();
@@ -45,25 +47,19 @@ void kmain(void) {
 
     init_lock(&spinlock);
     init_vmm();
-    init_acpi();
+    init_acpi(); // set global variable RSDT
     MADT *madt = get_acpi_sdt(MADT_C);
-    walk_madt(madt);
-    pic_remap(0x20);
-    new_irq(33, isr_kbd);
-    unmask_irq(0);
-    init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
-
-    init_cpu();
-    init_kbd();
+    walk_madt(madt); // get info about MADT table
+    pic_remap(0x20); 
+    new_irq(33, isr_kbd); 
+    new_irq(34, isr_apic_timer);
+    new_irq(32, isr_timer);
     unmask_irq(1);
-
-    while (1) {
-      /* print("hello"); */
-
-    }
-		  
-
-
+    unmask_irq(0);
+    init_kbd(); // init ps/2 keyboard
+    init_pit(1000); // 1000 hz
+    init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
+    init_cpu();
 
     for(;;)
         asm ("hlt");
