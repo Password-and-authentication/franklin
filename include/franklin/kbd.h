@@ -4,7 +4,7 @@
 void init_kbd(void);
 int check_ps2(void);
 
-char kbd_us[];
+
 void key_press(void);
 void setconfb(char);
 char getconfb(void);

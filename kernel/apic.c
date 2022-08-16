@@ -1,10 +1,11 @@
 #include <stdint.h>
-#include "../ACPI//acpi.h"
+#include "franklin/acpi.h"
 #include "franklin/apic.h"
 #include "franklin/69.h"
 #include "franklin/io.h"
 #include "franklin/idt.h"
 #include "franklin/defs.h"
+#include "franklin/spinlock.h"
 
 
 
@@ -45,11 +46,14 @@ void init_apic(uint32_t* lapic) {
     init_timer(lapic);
 }
 
-void init_pit(int);
+
 extern void isr_apic_timer(void);
+void init_pit(int);
+
 
 
 void init_timer(uint32_t* lapic) {
+
 
     init_pit(1000); // how many interrupts every second
     new_irq(34, isr_apic_timer);
@@ -71,8 +75,9 @@ void init_timer(uint32_t* lapic) {
 }
 
 
+
 void apic_timer() {
-    static int i;
+    /* static int i; */
 
 
 
@@ -92,10 +97,14 @@ void init_pit(int hz) {
 
 
 void sleep(int us) {
-    countdown = us;
+  acquire(&spinlock);
+  print("sleep: lock acruieq\n");
+  countdown = us;
 
-    while (countdown > 0)
-        ;
+  while (countdown > 0)
+      ;
+  print("sleep: lock release\n");
+ release(&spinlock);
 }
 
 

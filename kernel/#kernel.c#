@@ -13,8 +13,6 @@
 #include "franklin/acpi.h"
 int g;
 
-
-
 int y = 120;
 int x = 1;
 static volatile struct limine_terminal_request terminal_request = {

@@ -1,10 +1,14 @@
 #include <stdint.h>
-#include "franklin/acpi.h"
 #include "franklin/69.h"
 #include "franklin/kbd.h"
 #include "franklin/io.h"
 #include "franklin/defs.h"
+#include "franklin/acpi.h"
 
+static char kbd_us[127] = {
+		    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'q'
+};
 
 
 static int key_release = 0;
@@ -25,10 +29,6 @@ void kbd_press() {
 }
 
 
-char kbd_us[127] = {
-		    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'q'
-};
 
 void init_kbd() {
     

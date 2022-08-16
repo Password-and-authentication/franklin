@@ -8,8 +8,6 @@
 
 
 
-extern void *isr_table[];
-void set_idt_entry(uint8_t, void*, uint8_t);
 
 __attribute__((aligned(0x10)))
 static idt_entry idt[256];
@@ -31,11 +29,11 @@ void load_idt() {
     asm("sti");
 }
 
-void new_irq(char vector, void* isr) {
+void new_irq(char vector, void(*isr)(void)) {
   set_idt_entry(vector, isr, 0x8E);
 }
 
-void set_idt_entry(uint8_t vector, void* isr, uint8_t flags) {
+void set_idt_entry(uint8_t vector, void(*isr)(), uint8_t flags) {
 
     idt_entry *desc = &idt[vector];
     desc->isr_low = (uint64_t)isr & 0xFFFF;

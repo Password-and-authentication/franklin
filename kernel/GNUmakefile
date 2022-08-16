@@ -20,6 +20,7 @@ $(eval $(call DEFAULT_VAR,CC,cc))
 # Same thing for "ld" (the linker).
 $(eval $(call DEFAULT_VAR,LD,ld))
 
+
 # User controllable CFLAGS.
 CFLAGS ?= -O0 -g -Wall -Wextra -Wpedantic -pipe -I ../include
 

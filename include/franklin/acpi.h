@@ -1,5 +1,5 @@
 #ifndef _ACPI_
-#define _ACPI_ 1
+#define _ACPI_
 
 
 
@@ -49,9 +49,6 @@ typedef struct {
 } __attribute__((packed))MADT;
 
 
-typedef struct {
-
-} __attribute__((packed))HPET;
 
 
 typedef struct {
@@ -100,9 +97,11 @@ typedef struct {
 uint32_t *lapicc;
 RSDT *rsdt;
 
-void *get_acpi_sdt(uint64_t);
+
+void *get_acpi_sdt(unsigned long);
 void init_acpi(void);
-void acpi(uint32_t**, uint8_t*);
+void acpi(unsigned int**, char*);
+
 
 #endif
 

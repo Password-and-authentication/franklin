@@ -27,14 +27,15 @@ void exception_handler(uint64_t);
 void timerh(uint64_t);
 
 
+extern void *isr_table[];
 idtr_t idtr;
 volatile int countdown;
+int x;
 
 void init_idt(void);
 void load_idt(void);
-
-void new_irq(char, void*);
-
+void new_irq(char, void(*)(void));
+void set_idt_entry(uint8_t, void(*)(void), uint8_t);
 void isr_apic_timer(void);
 void isr_kbd(void);
 

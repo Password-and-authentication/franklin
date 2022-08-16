@@ -1,6 +1,5 @@
-
 override ACPI := acpi.elf
- 
+
 define DEFAULT_VAR =
     ifeq ($(origin $1), default)
         override $(1) := $(2)
@@ -9,14 +8,15 @@ define DEFAULT_VAR =
         override $(1) := $(2)
     endif
 endef
- 
+
 $(eval $(call DEFAULT_VAR,CC,cc))
- 
-CFLAGS ?= -Og -g -Wall -Wextra -Wpedantic -pipe
+
+
+CFLAGS ?= -Og -g -Wall -Wextra -Wpedantic -pipe -I ../include
+
 
 
 override INTERNALCFLAGS := \
-	-I.                    \
 	-std=c11               \
 	-ffreestanding         \
 	-fno-stack-protector   \
@@ -39,7 +39,7 @@ override ASFILES := $(shell find ./ -type f -name '*.S')
 override NASMFILES := $(shell find ./ -type f -name '*.asm')
 override OBJ := $(CFILES:.c=.o) $(ASFILES:.S=.o) $(NASMFILES:.asm=.o)
 override HEADER_DEPS := $(CFILES:.c=.d) $(ASFILES:.S=.d)
- 
+
 
 .PHONY: all
 all: $(ACPI)
@@ -47,22 +47,23 @@ all: $(ACPI)
 # Link rules for the final kernel executable.
 $(ACPI): $(OBJ)
 	$(CC) -c $(CFLAGS) $(INTERNALCFLAGS) $(OBJ) -o $@
- 
+
+
 # Include header dependencies.
 -include $(HEADER_DEPS)
- 
+
 # Compilation rules for *.c files.
 %.o: %.c
-	$(CC) $(CPPFLAGS) $(INTERNALCFLAGS) -c $< -o $@
- 
+	$(CC) $(CFLAGS) $(INTERNALCFLAGS) -c $< -o $@
+
 # Compilation rules for *.S files.
 %.o: %.S
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(INTERNALCFLAGS) -c $< -o $@
- 
+	$(CC) $(CFLAGS) $(CFLAGS) $(INTERNALCFLAGS) -c $< -o $@
+
 # Compilation rules for *.asm (nasm) files.
 %.o: %.asm
 	nasm $(NASMFLAGS) $(INTERNALNASMFLAGS) $< -o $@
- 
+
 # Remove object files and the final executable.
 .PHONY: clean
 clean:

@@ -1,7 +1,11 @@
-#ifndef _APIC_
-#define _APIC_ 1
 
-#include "../ACPI/acpi.h"
+#include "acpi.h"
+
+#ifndef _APIC_
+#define _APIC_
+
+
+
 
 #define EOI_REG 0xB0
 #define SPURIOUS_VECTOR 0xF0
