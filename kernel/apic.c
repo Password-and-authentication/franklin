@@ -4,7 +4,7 @@
 #include "franklin/69.h"
 #include "franklin/io.h"
 #include "franklin/idt.h"
-#include "defs.h"
+#include "franklin/defs.h"
 
 
 
@@ -64,6 +64,7 @@ void init_timer(uint32_t* lapic) {
     unsigned int ticks = ~0 - *read32(lapic, CURRENTCOUNT);
     ticks *= 100; // interrupt every 10ms
 
+    print("start lapic timer\n");
     write32(lapic, TIMER_REG, 34 | 1 << 17); // vector 34 and periodic mode
     write32(lapic, DIVIDE_REG, 0);
     write32(lapic, INITCOUNT, ticks);

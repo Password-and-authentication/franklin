@@ -10,7 +10,7 @@
 #include "franklin/apic.h"
 
 
-
+int x = 1;
 static volatile struct limine_terminal_request terminal_request = {
     .id = LIMINE_TERMINAL_REQUEST,
     .revision = 0
@@ -41,7 +41,7 @@ void kmain(void) {
     while (isfree(i++));
 
     init_lock(&spinlock);
-    init_vmm();    
+    init_vmm();
     init_acpi();
     MADT *madt = get_acpi_sdt(MADT_C);
     walk_madt(madt);
@@ -54,10 +54,10 @@ void kmain(void) {
     init_kbd();
     unmask_irq(1);
 
-    /* while (1) { */
+    while (1) {
       /* print("hello"); */
-      /* sleep(1000); */
-    /* } */
+      sleep(1000);
+    }
 		  
 
 

@@ -10,8 +10,10 @@
 static int key_release = 0;
 void kbd_press() {
     unsigned char keycode = in(0x60);
+
+
     
-    if (keycode != 0xF0 && !key_release)
+    if (keycode != 0xF0 && !key_release && keycode < 127)
         print(&kbd_us[keycode]);
     if (key_release)
         key_release = 0;
@@ -22,9 +24,10 @@ void kbd_press() {
     return;
 }
 
+
 char kbd_us[127] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '\t',
-    0, 0, 0, 0, 0, 0, 0, 'q', 0,
+		    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'q'
 };
 
 void init_kbd() {
