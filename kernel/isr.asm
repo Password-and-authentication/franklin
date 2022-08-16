@@ -32,8 +32,12 @@ extern exception_handler
 
 %macro isr_err 1
 isr_stub_%1:
+	cld
 	pushregs
+	mov r15, rsp
+	and rsp, -16
         call exception_handler
+	mov rsp, r15
 	popregs
         iretq
 %endmacro
@@ -52,9 +56,6 @@ isr_stub_%1:
 %endmacro
 
 
-
-
-	
 
 isr_no_err  0
 isr_no_err  1
