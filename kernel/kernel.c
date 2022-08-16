@@ -11,12 +11,9 @@
 #include "franklin/kbd.h"
 #include "franklin/pic.h"
 #include "franklin/acpi.h"
-int g;
 
 
 
-int y = 120;
-int x = 1;
 static volatile struct limine_terminal_request terminal_request = {
     .id = LIMINE_TERMINAL_REQUEST,
     .revision = 0
