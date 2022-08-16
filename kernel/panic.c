@@ -1,6 +1,6 @@
-#include "defs.h"
-#include "../69.h"
-#include "spinlock.h"
+#include "franklin/defs.h"
+#include "franklin/69.h"
+#include "franklin/spinlock.h"
 
 
 void panic(char *s) {

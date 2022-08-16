@@ -21,7 +21,7 @@ $(eval $(call DEFAULT_VAR,CC,cc))
 $(eval $(call DEFAULT_VAR,LD,ld))
 
 # User controllable CFLAGS.
-CFLAGS ?= -O0 -g -Wall -Wextra -Wpedantic -pipe
+CFLAGS ?= -O0 -g -Wall -Wextra -Wpedantic -pipe -I ../include
 
 # User controllable nasm flags.
 NASMFLAGS ?= -F dwarf -g

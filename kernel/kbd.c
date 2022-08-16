@@ -1,9 +1,9 @@
 #include <stdint.h>
-#include "../ACPI/acpi.h"
-#include "../69.h"
-#include "kbd.h"
-#include "io.h"
-#include "defs.h"
+#include "franklin/acpi.h"
+#include "franklin/69.h"
+#include "franklin/kbd.h"
+#include "franklin/io.h"
+#include "franklin/defs.h"
 
 
 
@@ -41,9 +41,10 @@ void init_kbd() {
     config = getconfb();
     setconfb(config & 0b111100); // disable translation and both ports
 
-    testps2control(); // will panic if error
+    /* testps2control(); // commented out because apparently it can reset some settings */
     testps2port(1);
 
+    // for debugging
     buffer = gettype();
     buffer = getscancode();
 

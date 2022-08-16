@@ -1,12 +1,12 @@
 #include "limine.h"
-#include "cpu.h"
-#include "../69.h"
-#include "../kernel/defs.h"
-#include "idt.h"
-#include "spinlock.h"
-#include "../ACPI/acpi.h"
-#include "apic.h"
-#include "mmu.h"
+#include "franklin/defs.h"
+#include "franklin/cpu.h"
+#include "franklin/69.h"
+#include "franklin/idt.h"
+#include "franklin/spinlock.h"
+#include "franklin/apic.h"
+#include "franklin/mmu.h"
+#include "franklin/acpi.h"
 
 
 volatile static struct limine_smp_request smp_req = {

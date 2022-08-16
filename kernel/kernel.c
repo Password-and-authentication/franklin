@@ -1,17 +1,13 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "limine.h"
-#include "defs.h"
-#include "idt.h"
-#include "mmu.h"
-#include "cpu.h"
-#include "../69.h"
-#include "spinlock.h"
-#include "apic.h"
-#include "../ACPI/acpi.h"
-#include "kbd.h"
-#include "io.h"
-#include "pic.h"
+#include "franklin/defs.h"
+#include "franklin/mmu.h"
+#include "franklin/cpu.h"
+#include "franklin/idt.h"
+#include "franklin/69.h"
+#include "franklin/spinlock.h"
+#include "franklin/apic.h"
 
 
 

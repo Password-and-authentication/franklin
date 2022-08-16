@@ -1,5 +1,5 @@
-#include "io.h"
-#include "../69.h"
+#include "franklin/io.h"
+#include "franklin/69.h"
 
 
 

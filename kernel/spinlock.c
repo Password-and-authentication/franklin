@@ -1,6 +1,6 @@
 #include <stdint.h>
-#include "../69.h"
-#include "spinlock.h"
+#include "franklin/69.h"
+#include "franklin/spinlock.h"
 
 
 

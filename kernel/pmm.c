@@ -1,8 +1,9 @@
-#include "limine.h"
-#include "mmu.h"
-#include "defs.h"
-#include "spinlock.h"
 #include <strings.h>
+#include "limine.h"
+#include "franklin/mmu.h"
+#include "franklin/defs.h"
+#include "franklin/spinlock.h"
+
 
 
 

@@ -1,7 +1,7 @@
-#include "mmu.h"
 #include "limine.h"
-#include "defs.h"
-#include "../69.h"
+#include "franklin/mmu.h"
+#include "franklin/defs.h"
+#include "franklin/69.h"
 
 
 

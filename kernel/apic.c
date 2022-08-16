@@ -1,10 +1,12 @@
 #include <stdint.h>
 #include "../ACPI//acpi.h"
-#include "apic.h"
-#include "../69.h"
-#include "io.h"
-#include "idt.h"
+#include "franklin/apic.h"
+#include "franklin/69.h"
+#include "franklin/io.h"
+#include "franklin/idt.h"
 #include "defs.h"
+
+
 
 
 // right now its only getting the LINT pin that is connected to NMI

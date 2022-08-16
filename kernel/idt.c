@@ -1,10 +1,11 @@
 #include <stdint.h>
-#include "idt.h"
 #include "limine.h"
-#include "defs.h"
-#include "../ACPI/acpi.h"
-#include "../69.h"
-#include "io.h"
+#include "franklin/defs.h"
+#include "franklin/acpi.h"
+#include "franklin/idt.h"
+#include "franklin/69.h"
+#include "franklin/io.h"
+
 
 
 extern void *isr_table[];
