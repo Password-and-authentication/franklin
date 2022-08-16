@@ -68,8 +68,7 @@ void init_timer(uint32_t* lapic) {
 
   write32(lapic, TIMER_REG, 1 << 16); // stop timer
   ticks = ~0 - *read32(lapic, CURRENTCOUNT);
-
-  /* ticks *= 100; // interrupt every 10ms */
+    
  startimer:
     print("start lapic timer\n");
     write32(lapic, TIMER_REG, 34 | 1 << 17); // vector 34 and periodic mode
@@ -88,7 +87,6 @@ extern void isr_timer(void);
 
 void init_pit(int hz) {
   
-  /* new_irq(32, isr_timer); */
   int divisor = 1193180 / hz;
   out(0x43, 0b110100);
   out(0x40, divisor & 0xFF);
