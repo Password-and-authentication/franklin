@@ -38,12 +38,9 @@ extern void isr_apic_timer(void);
 extern void isr_timer(void);
 
 void kmain(void) {
-    init_idt();
     struct limine_memmap_response *memmap = memmap_request.response;
+    init_idt(); 
     initbmap(memmap);
-
-    int i = 0;
-    while (isfree(i++));
 
     init_lock(&spinlock);
     init_vmm();
@@ -58,8 +55,10 @@ void kmain(void) {
     unmask_irq(0);
     init_kbd(); // init ps/2 keyboard
     init_pit(1000); // 1000 hz
-    init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
-    init_cpu();
+    
+    // sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it)
+    init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET)); 
+    init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
 
     for(;;)
         asm ("hlt");
