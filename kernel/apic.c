@@ -48,7 +48,7 @@ void init_timer(uint32_t* lapic) {
   if (configured) // 1st CPU will configure the timer
     goto startimer;
   
-  configure_timer(lapic, 1);
+  ticks = configure_timer(lapic, 1);
   configured = 1;  
     
  startimer:
