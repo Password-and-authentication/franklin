@@ -41,9 +41,8 @@ void init_apic(uint32_t* lapic) {
 
 
 
-static unsigned int ticks;
+static int ticks;
 static int configured;
-
 void init_timer(uint32_t* lapic) {
   
   if (configured) // 1st CPU will configure the timer
