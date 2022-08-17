@@ -46,13 +46,6 @@ void set_idt_entry(unsigned char vector, void(*isr)(), unsigned char flags) {
     desc->zero = 0;
 }
 
-void timerh(unsigned long t) {
-  
-  PIT_COUNTER--;
-  
-  out(0x20, 0x20);
-  return;
-}
 
 void exception_handler(unsigned long code) {
     print("\n\nError: ");

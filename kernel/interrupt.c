@@ -16,3 +16,13 @@ void init_interrupt() {
   unmask_irq(0);
   init_kbd(); // init ps/2 keyboard
 }
+
+
+void timerh(unsigned long t) {
+  
+  PIT_COUNTER--;
+  
+  out(0x20, 0x20);
+  return;
+}
+
