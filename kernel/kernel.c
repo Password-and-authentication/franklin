@@ -9,7 +9,7 @@
 #include "franklin/kbd.h"
 #include "franklin/pic.h"
 #include "franklin/acpi.h"
-#include "franklin/time.h"
+#include "franklin/interrupt.h"
 
 
 
@@ -32,9 +32,6 @@ void print(void* s) {
     release(&spinlock);
 }
 
-extern void isr_kbd(void);
-extern void isr_apic_timer(void);
-extern void isr_timer(void);
 
 void kmain(void) {
     struct limine_memmap_response *memmap = memmap_request.response;
