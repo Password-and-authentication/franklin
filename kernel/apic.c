@@ -1,11 +1,11 @@
-#include <stdint.h>
 #include "franklin/acpi.h"
 #include "franklin/apic.h"
 #include "franklin/69.h"
 #include "franklin/io.h"
-#include "franklin/idt.h"
 #include "franklin/defs.h"
 #include "franklin/spinlock.h"
+#include "franklin/interrupt.h"
+#include "franklin/time.h"
 
 
 
@@ -23,13 +23,6 @@ void walk_madt(MADT *madt) {
     }
 }
 
-void write32(unsigned long base, unsigned int reg, unsigned int val) {
-  *(volatile unsigned int*)(base + reg) = val;
-}
-
-unsigned int* read32(unsigned long base, unsigned int reg) {
-  return (unsigned int*)(base + reg);
-}
 
 
 void init_apic(uint32_t* lapic) {
@@ -47,27 +40,17 @@ void init_apic(uint32_t* lapic) {
 }
 
 
-extern void isr_apic_timer(void);
-extern void isr_timer(void);
-void init_pit(int);
 
 static unsigned int ticks;
 static int configured;
 
 void init_timer(uint32_t* lapic) {
   
-  if (configured)
+  if (configured) // 1st CPU will configure the timer
     goto startimer;
   
-  configured = 1;
-  
-  write32(lapic, DIVIDE_REG, 0); // divide by 2
-  write32(lapic, INITCOUNT, ~0);
-
-  sleep(1); // sleep for 1 ms
-
-  write32(lapic, TIMER_REG, 1 << 16); // stop timer
-  ticks = ~0 - *read32(lapic, CURRENTCOUNT);
+  configure_timer(lapic, 1);
+  configured = 1;  
     
  startimer:
     print("start lapic timer\n");
@@ -77,32 +60,15 @@ void init_timer(uint32_t* lapic) {
 }
 
 
-
 void apic_timer() {
   
 
   *EOI = 0;
 }
-extern void isr_timer(void);
-
-void init_pit(int hz) {
-  
-  int divisor = 1193180 / hz;
-  out(0x43, 0b110100);
-  out(0x40, divisor & 0xFF);
-  out(0x40, divisor >> 8);
-}
 
 
-void sleep(int us) {
-  acquire(&spinlock);
-  countdown = us;
 
-  while (countdown > 0)
-      ;
 
-  release(&spinlock);
-}
 
 
 

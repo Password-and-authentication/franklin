@@ -80,6 +80,7 @@ limine.h:
 
 # Link rules for the final kernel executable.
 $(KERNEL): $(OBJ)
+	echo $(OBJ)
 	$(LD) $(OBJ) $(LDFLAGS) -o $@
 
 # Include header dependencies.

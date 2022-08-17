@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include "limine.h"
 #include "franklin/defs.h"
 #include "franklin/acpi.h"
@@ -6,6 +5,7 @@
 #include "franklin/69.h"
 #include "franklin/io.h"
 #include "franklin/spinlock.h"
+#include "franklin/interrupt.h"
 
 
 
@@ -30,31 +30,31 @@ void load_idt() {
     asm("sti");
 }
 
-void new_irq(char vector, void(*isr)(void)) {
+void new_irq(unsigned char vector, void(*isr)(void)) {
   set_idt_entry(vector, isr, 0x8E);
 }
 
-void set_idt_entry(uint8_t vector, void(*isr)(), uint8_t flags) {
+void set_idt_entry(unsigned char vector, void(*isr)(), unsigned char flags) {
 
     idt_entry *desc = &idt[vector];
-    desc->isr_low = (uint64_t)isr & 0xFFFF;
+    desc->isr_low = (unsigned long)isr & 0xFFFF;
     desc->selector = (0x5 << 3);
     desc->ist = 0;
     desc->attributes = flags;
-    desc->isr_mid = ((uint64_t)isr >> 16) & 0xFFFF;
-    desc->isr_high = ((uint64_t)isr >> 32) & 0xFFFFFFFF;
+    desc->isr_mid = ((unsigned long)isr >> 16) & 0xFFFF;
+    desc->isr_high = ((unsigned long)isr >> 32) & 0xFFFFFFFF;
     desc->zero = 0;
 }
 
-void timerh(uint64_t t) {
+void timerh(unsigned long t) {
   
-  countdown--;
+  PIT_COUNTER--;
   
   out(0x20, 0x20);
   return;
 }
 
-void exception_handler(uint64_t code) {
+void exception_handler(unsigned long code) {
     print("\n\nError: ");
     char s[20];
     itoa(code, s);

@@ -1,5 +1,3 @@
-#include <stdint.h>
-#include <stddef.h>
 #include "limine.h"
 #include "franklin/defs.h"
 #include "franklin/mmu.h"
@@ -11,6 +9,7 @@
 #include "franklin/kbd.h"
 #include "franklin/pic.h"
 #include "franklin/acpi.h"
+#include "franklin/time.h"
 
 
 

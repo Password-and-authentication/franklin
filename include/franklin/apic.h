@@ -1,11 +1,7 @@
-
-#include "acpi.h"
-
 #ifndef _APIC_
 #define _APIC_
 
-
-
+#include "acpi.h"
 
 #define EOI_REG 0xB0
 #define SPURIOUS_VECTOR 0xF0
@@ -18,16 +14,12 @@
 #define LINT1 0x360
 
 
-volatile uint32_t *EOI;
-
-
-uint8_t NMI_LINT;
+volatile unsigned int *EOI;
+char NMI_LINT;
 
 void apic(void);
 void walk_madt(MADT*);
-void init_apic(uint32_t*);
-void init_timer( uint32_t*);
-
-void sleep(int);
+void init_apic(unsigned int*);
+void init_timer(unsigned int*);
 
 #endif

@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include "franklin/69.h"
 #include "franklin/spinlock.h"
 

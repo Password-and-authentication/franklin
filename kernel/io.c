@@ -12,3 +12,13 @@ char in(char port) {
     asm volatile("in %%dx, %%al" : "=a"(buffer) : "d"(port));
     return buffer;
 }
+
+void write32(unsigned long base, unsigned int reg, unsigned int val) {
+  *(volatile unsigned int*)(base + reg) = val;
+}
+
+unsigned int* read32(unsigned long base, unsigned int reg) {
+  return (unsigned int*)(base + reg);
+}
+
+

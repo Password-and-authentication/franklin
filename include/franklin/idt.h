@@ -5,37 +5,36 @@
 
 
 typedef struct {
-    uint16_t isr_low;
-    uint16_t selector;
-    uint8_t ist;
-    uint8_t attributes;
-    uint16_t isr_mid;
-    uint32_t isr_high;
-    uint32_t zero;
+    unsigned short isr_low;
+    unsigned short selector;
+    unsigned char ist;
+    unsigned char attributes;
+    unsigned short isr_mid;
+    unsigned int isr_high;
+    unsigned int zero;
 } __attribute__((packed)) idt_entry;
 
 
 typedef struct {
-    uint16_t size;
-    uint64_t base;
+    unsigned short size;
+    unsigned long base;
 } __attribute__((packed)) idtr_t;
 
 
 __attribute__((noreturn))
-void exception_handler(uint64_t);
+void exception_handler(unsigned long);
 
-void timerh(uint64_t);
+void timerh(unsigned long);
 
 
 extern void *isr_table[];
 idtr_t idtr;
-volatile int countdown;
-int x;
+
 
 void init_idt(void);
 void load_idt(void);
-void new_irq(char, void(*)(void));
-void set_idt_entry(uint8_t, void(*)(void), uint8_t);
+void new_irq(unsigned char, void(*)(void));
+void set_idt_entry(unsigned char, void(*)(void), unsigned char);
 void isr_apic_timer(void);
 void isr_kbd(void);
 

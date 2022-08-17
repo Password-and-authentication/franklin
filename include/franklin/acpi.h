@@ -12,40 +12,40 @@
 
 
 typedef struct {
-    uint64_t signature;
-    uint8_t checksum;
-    char OEMID[6];
-    uint8_t revision;
-    uint32_t rsdtaddr;
-    uint32_t length;
-    uint64_t xsdtaddr;
-    uint8_t xchecksum;
-    char zero[3];
+    unsigned long signature;
+    unsigned char checksum;
+    unsigned char OEMID[6];
+    unsigned char revision;
+    unsigned int rsdtaddr;
+    unsigned int length;
+    unsigned long xsdtaddr;
+    unsigned char xchecksum;
+    unsigned char zero[3];
 } __attribute__((packed))RSDP;
 
 typedef struct {
-    uint32_t signature;
-    uint32_t length;
-    uint8_t revision;
-    uint8_t checksum;
-    char OEMID[6];
-    uint64_t OEMTABLEid;
-    uint32_t OEMrevision;
-    uint32_t creatorId;
-    uint32_t creatorrevision;
+    unsigned int signature;
+    unsigned int length;
+    unsigned char revision;
+    unsigned char checksum;
+    unsigned char OEMID[6];
+    unsigned long OEMTABLEid;
+    unsigned int OEMrevision;
+    unsigned int creatorId;
+    unsigned int creatorrevision;
 } __attribute__((packed))defaultheader;
 
 
 typedef struct {
     defaultheader h;
-    uint32_t entry[];
+    unsigned int entry[];
 } __attribute__((packed))RSDT;
 
 typedef struct {
     defaultheader h;
-    uint32_t lapic;
-    uint32_t flags;
-    char entry[];
+    unsigned int lapic;
+    unsigned int flags;
+    unsigned char entry[];
 } __attribute__((packed))MADT;
 
 
@@ -53,67 +53,67 @@ typedef struct {
 
 typedef struct {
     defaultheader h;
-    uint32_t FIRMWARE_CONTROL;
-    uint32_t DSDT;
-    char zero;
-    char PMprofile;
-    uint16_t SCI_INT;
-    uint32_t SMI_CMD;
-    char ACPI_ENABLE;
-    char S4BIOS_REQ;
-    char PSTATE_CNT;
-    uint32_t PM1a_EVT_BLK;
-    uint32_t PM1b_EVT_BLK;
-    uint32_t PM1a_CNT_BLK;
-    uint32_t PM1b_CNT_BLK;
-    uint32_t PM2_CNT_BLK;
-    uint32_t PM_TMR_BLK;
-    uint32_t GPEO_BLK;
-    uint32_t GPE1_BLK;
-    char PM1_EVT_LEN;
-    char PM1_CNT_LEN;
-    char PM2_CNT_LEN;
-    char PM_TMR_LEN;
-    char GPE0_BLK_LEN;
-    char GPE1_BLK_LEN;
-    char GPE1_BASE;
-    char CST_CNT;
-    uint16_t P_LVL2_LAT;
-    uint16_t P_LVL3_LAT;
-    uint16_t FLUSH_SIZE;
-    uint16_t FLUSH_STRIDE;
-    char DUTY_OFFSET;
-    char DUTY_WIDTH;
-    char DAY_ALRM;
-    char MON_ALRM;
-    char CENTURY;
-    uint16_t IAPC_BOOT_ARCH;
+    unsigned int FIRMWARE_CONTROL;
+    unsigned int DSDT;
+    unsigned char zero;
+    unsigned char PMprofile;
+    unsigned short SCI_INT;
+    unsigned int SMI_CMD;
+    unsigned char ACPI_ENABLE;
+    unsigned char S4BIOS_REQ;
+    unsigned char PSTATE_CNT;
+    unsigned int PM1a_EVT_BLK;
+    unsigned int PM1b_EVT_BLK;
+    unsigned int PM1a_CNT_BLK;
+    unsigned int PM1b_CNT_BLK;
+    unsigned int PM2_CNT_BLK;
+    unsigned int PM_TMR_BLK;
+    unsigned int GPEO_BLK;
+    unsigned int GPE1_BLK;
+    unsigned char PM1_EVT_LEN;
+    unsigned char PM1_CNT_LEN;
+    unsigned char PM2_CNT_LEN;
+    unsigned char PM_TMR_LEN;
+    unsigned char GPE0_BLK_LEN;
+    unsigned char GPE1_BLK_LEN;
+    unsigned char GPE1_BASE;
+    unsigned char CST_CNT;
+    unsigned short P_LVL2_LAT;
+    unsigned short P_LVL3_LAT;
+    unsigned short FLUSH_SIZE;
+    unsigned short FLUSH_STRIDE;
+    unsigned char DUTY_OFFSET;
+    unsigned char DUTY_WIDTH;
+    unsigned char DAY_ALRM;
+    unsigned char MON_ALRM;
+    unsigned char CENTURY;
+    unsigned short IAPC_BOOT_ARCH;
 
 
 
 } __attribute__((packed)) FADT;
 
 
-uint32_t *lapicc;
+unsigned int *lapicc;
 RSDT *rsdt;
 
 
 void *get_acpi_sdt(unsigned long);
 void init_acpi(void);
-void acpi(unsigned int**, char*);
+void acpi(unsigned int**, unsigned char*);
 
 
 #endif
 
 // typedef struct {
-//     uint32_t signature;
-//     uint32_t length;
-//     uint8_t revision;
-//     uint8_t checksum;
-//     char OEMID[6];
-//     uint64_t OEMTABLEid;
-//     uint32_t OEMrevision;
-//     uint32_t creatorId;
-//     uint32_t creatorrevision;
-//     uint64_t *entry;
+//     unsigned int signature;
+//     unsigned int length;
+//     unsigned char revision;
+//     unsigned char checksum;
+//     unsigned char OEMID[6];
+//     unsigned long OEMTABLEid;
+//     unsigned int OEMrevision;
+//     unsigned int creatorId;
+//     unsigned int creatorrevision;
+//     unsigned long *entry;
 // } __attribute__((packed))XSDT;
