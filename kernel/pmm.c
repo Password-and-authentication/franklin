@@ -8,10 +8,10 @@
 
 
 void togglepage(int page) {
-    bitmap[page / 64] ^= (UINT64_C(1) << (page % 64));
+  bitmap[page / 64] ^= (1ULL << (page % 64));
 };
 uint8_t isfree(int page) {
-    return (((bitmap[page / 64] & (UINT64_C(1) << (page % 64)))) == 0);
+    return (((bitmap[page / 64] & (1ULL << (page % 64)))) == 0);
 }
 
 

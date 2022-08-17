@@ -128,7 +128,7 @@ void test() {
     for (int i = 10; i < 20; ++i)
         mappage(i * PGSIZE, 0, KFLAGS);
 
-    for (int i = 10; i < 20; ++i) 
+    for (int i = 10; i < 20; ++i)
         unmappage(i * PGSIZE);
 
 

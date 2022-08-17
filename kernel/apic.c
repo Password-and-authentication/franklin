@@ -61,7 +61,7 @@ void init_timer(uint32_t* lapic) {
 
 void apic_timer() {
   
-
+  /* print("ee"); */
   *EOI = 0;
 }
 
