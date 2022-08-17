@@ -52,10 +52,10 @@ void init_timer(uint32_t* lapic) {
   configured = 1;  
     
  startimer:
-    print("start lapic timer\n");
-    write32(lapic, TIMER_REG, 34 | 1 << 17); // vector 34 and periodic mode
-    write32(lapic, DIVIDE_REG, 0);
-    write32(lapic, INITCOUNT, ticks);
+  print("start lapic timer\n");
+  write32(lapic, TIMER_REG, 34 | 1 << 17); // vector 34 and periodic mode
+  write32(lapic, DIVIDE_REG, 0);
+  write32(lapic, INITCOUNT, ticks);
 }
 
 

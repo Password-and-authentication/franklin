@@ -35,7 +35,6 @@ void print(void* s) {
 
 void kmain(void) {
     struct limine_memmap_response *memmap = memmap_request.response;
-    init_idt(); 
     initbmap(memmap);
 
     init_lock(&spinlock);
@@ -43,13 +42,7 @@ void kmain(void) {
     init_acpi(); // set global variable RSDT
     MADT *madt = get_acpi_sdt(MADT_C);
     walk_madt(madt); // get info about MADT table
-    pic_remap(0x20); 
-    new_irq(33, isr_kbd); 
-    new_irq(34, isr_apic_timer);
-    new_irq(32, isr_timer);
-    unmask_irq(1);
-    unmask_irq(0);
-    init_kbd(); // init ps/2 keyboard
+    init_interrupt();
     init_pit(1000); // 1000 hz
     
     // sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it)
