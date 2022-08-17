@@ -15,16 +15,15 @@ void sleep(int us) {
   release(&spinlock);
 }
 
-static int ticks;
 
-void configure_timer(unsigned int* lapic, int ms) {
+int configure_timer(unsigned int* lapic, int ms) {
   write32(lapic, DIVIDE_REG, 0); // divide by 2
   write32(lapic, INITCOUNT, ~0);
 
   sleep(ms); // sleep for 1 ms
 
   write32(lapic, TIMER_REG, 1 << 16); // stop timer
-  ticks = ~0 - *read32(lapic, CURRENTCOUNT);
+  return ~0 - *read32(lapic, CURRENTCOUNT);
 }
 
 void init_pit(int hz) {
