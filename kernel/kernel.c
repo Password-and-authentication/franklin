@@ -32,6 +32,7 @@ void print(void* s) {
     release(&spinlock);
 }
 
+void init_tss(void);
 
 void kmain(void) {
     struct limine_memmap_response *memmap = memmap_request.response;
@@ -49,7 +50,7 @@ void kmain(void) {
     init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
     init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
 
-
+    init_tss();
     
     for(;;)
         asm ("hlt");
