@@ -7,8 +7,15 @@ int strlen(char *s) {
     return n;
 }
 
+void memcpy(void *dest, const void *src, int n) {
 
-void print(char *);
+  char *d = dest;
+  const char *s = src;
+  while (n--) {
+    *d++ = *s++;
+  }
+}
+
 
 void itoa(int x, char* s) {
     int r, i = 0, arr[10];

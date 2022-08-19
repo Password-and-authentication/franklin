@@ -1,49 +1,23 @@
 #include "franklin/mmu.h"
 #include "franklin/69.h"
+#include "franklin/gdt.h"
+#include "franklin/string.h"
 
-
-static struct {
-  unsigned short size;
-  unsigned long addr;
-} __attribute__((packed))gdtr;
-
-typedef struct gdt_desc_struct{
-  unsigned short segment_limit;
-  unsigned char base_addr[3];
-  unsigned char attributes_1;
-  unsigned char segment_limit2: 4;
-  unsigned char attributes_2: 4;
-  unsigned char base_addr2;
-} __attribute__((packed))gdt_desc;
+static tss_desc_t init_tss(void);
 
 __attribute__((aligned(0x8)))
 static gdt_desc *gdt;
+static unsigned int tss[3]; // only RSP0
 
-void new_descriptor(int, int);
-
-
-void memcpy(void *dest, const void *src, int n) {
-
-  char *d = dest;
-  const char *s = src;
-  while (n--) {
-    *d++ = *s++;
-  }
-}
-
-typedef struct {
-  gdt_desc desc;
-  unsigned int base_high;
-} __attribute__((packed))tss_desc_t;
-
-
-static unsigned int tss[3];
-tss_desc_t init_tss(void);
 
 void init_gdt() {
   gdt_desc userdata, usercode;
+  struct {
+  unsigned short size;
+  unsigned long addr;
+  } __attribute__((packed))gdtr;
+  
   gdt = (gdt_desc*)P2V(palloc(1));
-
   asm volatile("sgdt %0" : "=m"(gdtr));
   memcpy(gdt, (const void*)gdtr.addr, gdtr.size);
 
@@ -72,7 +46,7 @@ void init_gdt() {
 
 
 
-tss_desc_t init_tss() {
+static tss_desc_t init_tss() {
   tss_desc_t tss_desc;
   unsigned long rsp0 = P2V(palloc(1));
   tss[1] = rsp0 & 0xFFFFFFFF;

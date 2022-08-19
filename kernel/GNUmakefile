@@ -65,7 +65,7 @@ override NASMFLAGS += \
     -f elf64
 
 # Use find to glob all *.c, *.S, and *.asm files in the directory and extract the object names.
-override CFILES := $(shell find ../ACPI ./ -type f -name '*.c')
+override CFILES := $(shell find ../ -type f -name '*.c' ! -name 'limine*')
 override ASFILES := $(shell find ./ -type f -name '*.S')
 override NASMFILES := $(shell find ./ -type f -name '*.asm')
 override OBJ := $(CFILES:.c=.o) $(ASFILES:.S=.o) $(NASMFILES:.asm=.o)

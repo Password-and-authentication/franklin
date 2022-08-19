@@ -10,6 +10,8 @@
 #include "franklin/pic.h"
 #include "franklin/acpi.h"
 #include "franklin/interrupt.h"
+#include "franklin/string.h"
+#include "franklin/gdt.h"
 
 
 
@@ -32,7 +34,7 @@ void print(void* s) {
     release(&spinlock);
 }
 
-void init_tss(void);
+
 
 void kmain(void) {
     struct limine_memmap_response *memmap = memmap_request.response;
@@ -47,18 +49,15 @@ void kmain(void) {
 
     print("ii got an idea, lets FUCK!\n");
     init_interrupt();
-    init_pit(1000); // 1000 hz
-    int x = 10;
+    init_pit(1000); // 1000 hz, 1000 IRQ0's in a second
 
-    
-    
 
 
     /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
     init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
+    
     init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
 
-    /* void init_gdt(void); */
 
 
     

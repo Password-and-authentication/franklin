@@ -3,7 +3,7 @@
 #include "franklin/defs.h"
 #include "franklin/69.h"
 
-
+static pte_t *getpte(uint64_t);
 
 
 uintptr_t V2P(uintptr_t V) {
@@ -72,7 +72,7 @@ void memzero(char* mem, int n) {
 }
 
 
-pte_t *getpte(uint64_t vaddr) {
+static pte_t *getpte(uint64_t vaddr) {
     uintptr_t paddr;
     uint16_t index = vaddr >> 39;
     if ((PML4E[index] & PRESENT) == 0)

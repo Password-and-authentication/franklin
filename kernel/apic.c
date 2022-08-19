@@ -8,7 +8,7 @@
 #include "franklin/time.h"
 
 
-
+static void init_timer(unsigned int*);
 
 // right now its only getting the LINT pin that is connected to NMI
 void walk_madt(MADT *madt) {
@@ -25,7 +25,7 @@ void walk_madt(MADT *madt) {
 
 
 
-void init_apic(uint32_t* lapic) {
+void init_apic(unsigned int* lapic) {
     // set the correct LINT pin for NMI
     if (NMI_LINT == 1) {
       write32(lapic, LINT1, 1 << 10);
@@ -41,14 +41,14 @@ void init_apic(uint32_t* lapic) {
 
 
 
-static int ticks;
-static int configured;
-void init_timer(uint32_t* lapic) {
+static void init_timer(unsigned int* lapic) {
+  static int ticks;
+  static int configured;
   
   if (configured) // 1st CPU will configure the timer
     goto startimer;
   
-  ticks = configure_timer(lapic, 1);
+  ticks = 100 * configure_timer(lapic); // return ticks in 1ms, multiply by 100 to get 100ms
   configured = 1;  
     
  startimer:
@@ -60,8 +60,9 @@ void init_timer(uint32_t* lapic) {
 
 
 void apic_timer() {
+
+  /* print("E"); */
   
-  /* print("ee"); */
   *EOI = 0;
 }
 

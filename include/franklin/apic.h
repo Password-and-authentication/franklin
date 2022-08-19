@@ -17,9 +17,11 @@
 volatile unsigned int *EOI;
 char NMI_LINT;
 
-void apic(void);
+
 void walk_madt(MADT*);
 void init_apic(unsigned int*);
-void init_timer(unsigned int*);
+void apic_timer(void);
+
+
 
 #endif

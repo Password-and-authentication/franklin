@@ -4,7 +4,6 @@
 void sleep(int);
 
 void init_pit(int);
-int configure_timer(unsigned int*, int);
-
+int configure_timer(unsigned int*);
 
 #endif
