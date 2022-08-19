@@ -43,24 +43,14 @@ void kmain(void) {
     init_acpi(); // set global variable RSDT
     MADT *madt = get_acpi_sdt(MADT_C);
     walk_madt(madt); // get info about MADT table
-    init_gdt();
-
-    print("ii got an idea, lets FUCK!\n");
     init_interrupt();
     init_pit(1000); // 1000 hz
-    int x = 10;
-
     
-    
-
-
-    /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
+    // sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it)
     init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
     init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
 
-    /* void init_gdt(void); */
-
-
+    init_tss();
     
     for(;;)
         asm ("hlt");

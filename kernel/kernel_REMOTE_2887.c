@@ -48,12 +48,7 @@ void kmain(void) {
     print("ii got an idea, lets FUCK!\n");
     init_interrupt();
     init_pit(1000); // 1000 hz
-    int x = 10;
-
     
-    
-
-
     /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
     init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
     init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
