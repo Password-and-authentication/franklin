@@ -28,9 +28,9 @@
 	%endmacro
 
 	
-extern exception_handler
+	extern exception_handler
 
-%macro isr_err 1
+	%macro isr_err 1
 isr_stub_%1:
 	cld
 	pushregs
@@ -40,9 +40,9 @@ isr_stub_%1:
 	mov rsp, r15
 	popregs
         iretq
-%endmacro
+	%endmacro
 
-%macro isr_no_err 1
+	%macro isr_no_err 1
 isr_stub_%1:
 	cld
 	pushregs
@@ -53,7 +53,34 @@ isr_stub_%1:
 	popregs
         add rsp, 8 ; get rid of error code
         iretq
-%endmacro
+	%endmacro
+
+
+	%macro irq_handler 2	
+%1:
+	cld
+	pushregs
+	mov r15, rsp
+	and rsp, -16
+	call %2
+	mov rsp, r15
+	popregs
+	iretq
+	%endmacro
+
+	global isr_timer
+	extern timerh
+	irq_handler isr_timer, timerh
+
+	global isr_kbd
+	extern kbd_press
+	irq_handler isr_kbd, kbd_press
+
+	global isr_apic_timer
+	extern apic_timer
+	irq_handler isr_apic_timer, apic_timer
+
+
 
 
 
@@ -91,46 +118,7 @@ isr_err     30
 isr_no_err  31
 
 
-global isr_timer
-extern timerh
-isr_timer:
-	cld
-	pushregs
-	mov r15, rsp
-	and rsp, -16
-	call timerh
-	mov rsp, r15
-	popregs
-	iretq
-
-global isr_kbd
-extern kbd_press
-isr_kbd:
-	cld
-	pushregs
-	mov r15, rsp
-	and rsp, -16
-	call kbd_press
-	mov rsp, r15
-	popregs
-	iretq
-
-
-global isr_apic_timer
-extern apic_timer
-isr_apic_timer:
-	cld
-	pushregs
-	mov r15, rsp
-	and rsp, -16
-	call apic_timer
-	mov rsp, r15
-	popregs
-	iretq
-
-
 global isr_table
-
 isr_table:
     %assign i 0
     %rep    32

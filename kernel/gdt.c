@@ -62,14 +62,12 @@ void init_gdt() {
   gdtr.addr = (unsigned long)gdt;
   gdtr.size = PGSIZE;
 
-  tss_desc_t tss_desc = init_tss();
   tss_desc_t *tss_p = (tss_desc_t*)&gdt[++i];
+  *tss_p = init_tss();
 
-
-    
-  unsigned int tr = --i << 3;
-  asm("ltr %0" :: "m"(tr));
+  unsigned short tr = i << 3;
   asm("lgdt %0" :: "m"(gdtr));
+  asm("ltr %0" :: "a"(tr));
 }
 
 
