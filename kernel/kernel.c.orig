@@ -53,9 +53,14 @@ void kmain(void) {
     
 <<<<<<< HEAD
     
-=======
->>>>>>> acc1385 (init_gdt)
+
+
     /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
+||||||| parent of acc1385 (init_gdt)
+    // sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it)
+=======
+    /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
+>>>>>>> acc1385 (init_gdt)
     init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
     init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
 
