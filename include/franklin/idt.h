@@ -13,10 +13,6 @@ typedef struct {
 } __attribute__((packed)) idt_entry;
 
 
-typedef struct {
-    unsigned short size;
-    unsigned long base;
-} __attribute__((packed)) idtr_t;
 
 
 __attribute__((noreturn))
@@ -24,7 +20,7 @@ void exception_handler(unsigned long);
 
 
 extern void *isr_table[];
-idtr_t idtr;
+
 
 
 void init_idt(void);

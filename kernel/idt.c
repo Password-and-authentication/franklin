@@ -13,6 +13,17 @@
 __attribute__((aligned(0x10)))
 static idt_entry idt[256];
 
+static struct {
+    unsigned short size;
+    unsigned long base;
+} __attribute__((packed)) idtr;
+
+
+void load_idt() {
+    asm("lidt %0" :: "m" (idtr));
+    asm("sti");
+}
+
 void init_idt() {
     idtr.base = (uintptr_t)&idt[0];
     idtr.size = (uint16_t)sizeof(idt_entry) * IDT_MAX_DESC - 1;
@@ -21,14 +32,9 @@ void init_idt() {
         set_idt_entry(vector, isr_table[vector], 0x8E);
     }
 
-    asm("lidt %0" :: "m" (idtr));
-    asm("sti");
+    load_idt();
 }
 
-void load_idt() {
-    asm("lidt %0" :: "m" (idtr));
-    asm("sti");
-}
 
 void new_irq(unsigned char vector, void(*isr)(void)) {
   set_idt_entry(vector, isr, 0x8E);

@@ -62,7 +62,13 @@ static tss_desc_t init_tss() {
   tss_desc.desc.base_addr[2] = (char)((unsigned long)tss >> 16);
   tss_desc.base_high = (unsigned int)((unsigned long)tss >> 32);
 
+
   tss_desc.desc.attributes_1 = 9 | 1 << 7;
   tss_desc.desc.attributes_2 = 0;
   return tss_desc;
 }
+
+
+
+
+

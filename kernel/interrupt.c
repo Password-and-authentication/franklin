@@ -2,6 +2,7 @@
 #include "franklin/pic.h"
 #include "franklin/interrupt.h"
 #include "franklin/kbd.h"
+#include "franklin/switch.h"
 
 
 
@@ -19,7 +20,8 @@ void init_interrupt() {
 
 
 void timerh(unsigned long t) {
-  
+
+
   PIT_COUNTER--;
   
   out(0x20, 0x20);

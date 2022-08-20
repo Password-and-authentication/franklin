@@ -12,6 +12,7 @@
 #include "franklin/interrupt.h"
 #include "franklin/string.h"
 #include "franklin/gdt.h"
+#include "franklin/switch.h"
 
 
 
@@ -34,34 +35,46 @@ void print(void* s) {
     release(&spinlock);
 }
 
-
+void testing() {
+  int x = 10;
+  int y = 20;
+  print("lol");
+  for(;;)
+    asm("hlt");
+}
+extern unsigned long stack[];
+extern thread t2;
 
 void kmain(void) {
-    struct limine_memmap_response *memmap = memmap_request.response;
-    initbmap(memmap);
+  stack[13] = testing;
+  t2.rsp = stack;
 
-    init_lock(&spinlock);
-    init_vmm();
-    init_acpi(); // set global variable RSDT
-    MADT *madt = get_acpi_sdt(MADT_C);
-    walk_madt(madt); // get info about MADT table
-    init_gdt();
 
-    print("ii got an idea, lets FUCK!\n");
-    init_interrupt();
-    init_pit(1000); // 1000 hz, 1000 IRQ0's in a second
+  struct limine_memmap_response *memmap = memmap_request.response;
+  initbmap(memmap);
+
+  
+  init_lock(&spinlock);
+  init_vmm();
+  init_acpi(); // set global variable RSDT
+  MADT *madt = get_acpi_sdt(MADT_C);
+  walk_madt(madt); // get info about MADT table
+  init_gdt();
+
+  print("ii got an idea, lets FUCK!\n");
+  init_interrupt();
+  init_pit(1000); // 1000 hz, 1000 IRQ0's in a second
 
 
     /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
-    init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
+  init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
     
-    init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
-
+  init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
 
 
     
-    for(;;)
-        asm ("hlt");
+  for(;;)
+    asm ("hlt");
 }
 
 

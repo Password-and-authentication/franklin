@@ -78,9 +78,18 @@ isr_stub_%1:
 
 	global isr_apic_timer
 	extern apic_timer
-	irq_handler isr_apic_timer, apic_timer
+isr_apic_timer:
+	cld
+	push 69
+	pushregs
+	call apic_timer
+	popregs
+	add rsp, 8
+	ret
+	
 
 
+	
 
 
 
