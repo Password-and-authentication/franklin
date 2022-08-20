@@ -21,9 +21,10 @@ void init_cpu() {
     smp->cpus[1]->goto_address = cpu;
 }
 
-
+void load_gdt(void);
 void cpu(struct limine_smp_info *info) {
     load_idt();
+    load_gdt();
     MADT *madt = get_acpi_sdt(MADT_C);
     init_apic((unsigned int*)((unsigned long)HHDM_OFFSET + madt->lapic));
 

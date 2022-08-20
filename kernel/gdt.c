@@ -9,13 +9,19 @@ __attribute__((aligned(0x8)))
 static gdt_desc *gdt;
 static unsigned int tss[3]; // only RSP0
 
+static unsigned short tr; // task register
+static struct {
+  unsigned short size;
+  unsigned long addr;
+} __attribute__((packed))gdtr;
+
+void load_gdt() {
+  asm("lgdt %0" :: "m"(gdtr));
+  asm("ltr %0" :: "a"(tr));
+}
 
 void init_gdt() {
   gdt_desc userdata, usercode;
-  struct {
-  unsigned short size;
-  unsigned long addr;
-  } __attribute__((packed))gdtr;
   
   gdt = (gdt_desc*)P2V(palloc(1));
   asm volatile("sgdt %0" : "=m"(gdtr));
@@ -39,11 +45,8 @@ void init_gdt() {
   tss_desc_t *tss_p = (tss_desc_t*)&gdt[++i];
   *tss_p = init_tss();
 
-  unsigned short tr = i << 3;
-  asm("lgdt %0" :: "m"(gdtr));
-  asm("ltr %0" :: "a"(tr));
+  tr = i << 3;
 }
-
 
 
 static tss_desc_t init_tss() {
