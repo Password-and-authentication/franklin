@@ -9,6 +9,9 @@
 #include "franklin/switch.h"
 
 
+
+
+
 static void init_timer(unsigned int*);
 
 // right now its only getting the LINT pin that is connected to NMI
@@ -60,28 +63,15 @@ static void init_timer(unsigned int* lapic) {
 }
 
 thread t1, t2;
-
-
-#define swit(prev, next) do {				\
-    asm volatile(					\
-		 "mov %%rsp, %[prev_sp];"		\
-		 "mov %[next_sp], %%rsp;"		\
-		 : [prev_sp] "=m" (prev->rsp)		\
-		 : [next_sp] "m" (next->rsp)		\
-    							\
-						);	\
-  } while(0)
-
 unsigned long stack[100];
 
+static context *contex;
 
-void apic_timer() {
-  /* asm("mov %%rsp, %0"::"m"(t2.rsp)); */
-  /* swit(((thread*)&t1), ((thread*)&t2)); */
+extern void ret(void);
+extern void switc(regs_t*, context*, uint32_t*);
+void apic_timer(regs_t *regs) {
 
-
-
-  *EOI = 0;
+  switc(regs, contex, EOI);
 }
 
 

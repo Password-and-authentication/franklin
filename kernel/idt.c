@@ -40,22 +40,22 @@ void new_irq(unsigned char vector, void(*isr)(void)) {
   set_idt_entry(vector, isr, 0x8E);
 }
 
+
+
 void set_idt_entry(unsigned char vector, void(*isr)(), unsigned char flags) {
 
     idt_entry *desc = &idt[vector];
-    desc->isr_low = (unsigned long)isr & 0xFFFF;
-    desc->selector = (0x5 << 3);
-    desc->ist = 0;
+    desc->isr_low = (unsigned short)isr;
+    desc->selector = (0x5 << 3); // kernel code segment in GDT
+    desc->ist = 0; 
     desc->attributes = flags;
-    desc->isr_mid = ((unsigned long)isr >> 16) & 0xFFFF;
-    desc->isr_high = ((unsigned long)isr >> 32) & 0xFFFFFFFF;
+    desc->isr_mid =  (unsigned short)((unsigned long)isr >> 16);
+    desc->isr_high = (unsigned int)((unsigned long)isr >> 32);
     desc->zero = 0;
 }
 
-extern void apic_timer(void);
-extern void kbd_press(void);
 
-
+extern unsigned int* EOI;
 void trap(regs_t *regs) {
   if (regs->code < 32) {
     char s[20];
@@ -65,7 +65,6 @@ void trap(regs_t *regs) {
     asm("cli; hlt");
   }
 
-
   switch(regs->code) {
   case 32:
     timerh(10);
@@ -74,7 +73,7 @@ void trap(regs_t *regs) {
     kbd_press();
     break;
   case 34:
-    apic_timer();
+    apic_timer(regs);
     break;
   }
 

@@ -1,3 +1,7 @@
+#ifndef _IDT_
+#define _IDT_
+
+#include "switch.h"
 
 #define IDT_MAX_DESC 256
 
@@ -14,10 +18,6 @@ typedef struct {
 
 
 
-typedef struct {
-  unsigned long s[10];
-  unsigned long code;
-} __attribute__((packed))regs_t;
 
 
 __attribute__((noreturn))
@@ -34,3 +34,4 @@ void new_irq(unsigned char, void(*)(void));
 void set_idt_entry(unsigned char, void(*)(void), unsigned char);
 
 
+#endif

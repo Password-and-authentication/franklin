@@ -32,4 +32,5 @@ void init_pit(int hz) {
   out(0x43, 0b110100);
   out(0x40, divisor & 0xFF);
   out(0x40, divisor >> 8);
+
 }

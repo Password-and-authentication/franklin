@@ -13,6 +13,7 @@
 #include "franklin/string.h"
 #include "franklin/gdt.h"
 #include "franklin/switch.h"
+#include "franklin/time.h"
 
 
 
@@ -64,7 +65,7 @@ void kmain(void) {
   print("ii got an idea, lets FUCK!\n");
   init_interrupt();
   init_pit(1000); // 1000 hz, 1000 IRQ0's in a second
-  unsigned short x = 0;
+
 
   /* asm("syscall"); */
 

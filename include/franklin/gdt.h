@@ -1,6 +1,6 @@
 
 
-
+void init_gdt(void);
 
 
 typedef struct gdt_desc_struct{
