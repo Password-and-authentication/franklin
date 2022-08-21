@@ -74,9 +74,12 @@ thread t1, t2;
 
 unsigned long stack[100];
 
+
 void apic_timer() {
   /* asm("mov %%rsp, %0"::"m"(t2.rsp)); */
-  swit(((thread*)&t1), ((thread*)&t2));
+  /* swit(((thread*)&t1), ((thread*)&t2)); */
+
+
 
   *EOI = 0;
 }

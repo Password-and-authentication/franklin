@@ -52,14 +52,31 @@ void set_idt_entry(unsigned char vector, void(*isr)(), unsigned char flags) {
     desc->zero = 0;
 }
 
+extern void apic_timer(void);
 
-void exception_handler(unsigned long code) {
-    print("\n\nError: ");
+
+void trap(regs_t *regs) {
+  print("e\n");
+  if (regs->code < 32) {
     char s[20];
-    itoa(code, s);
+    itoa(regs->code, s);
+    print("trap error: ");
     print(s);
-    if (code == 0)
-        print("Division By Zero\n");
-
     asm("cli; hlt");
+  }
+
+  switch(regs->code) {
+  case 32:
+    timerh(10);
+    break;
+  case 33:
+    kbd_press();
+    break;
+  case 34:
+    apic_timer();
+    break;
+  }
+
+
+
 };

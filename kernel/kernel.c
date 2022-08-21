@@ -46,8 +46,8 @@ extern unsigned long stack[];
 extern thread t2;
 
 void kmain(void) {
-  stack[13] = testing;
-  t2.rsp = stack;
+  /* stack[13] = testing; */
+  /* t2.rsp = stack; */
 
 
   struct limine_memmap_response *memmap = memmap_request.response;
@@ -64,12 +64,14 @@ void kmain(void) {
   print("ii got an idea, lets FUCK!\n");
   init_interrupt();
   init_pit(1000); // 1000 hz, 1000 IRQ0's in a second
+  unsigned short x = 0;
 
+  /* asm("syscall"); */
 
     /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
   init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
     
-  init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
+  /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
 
 
     

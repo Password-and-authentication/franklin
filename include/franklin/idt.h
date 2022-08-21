@@ -14,9 +14,14 @@ typedef struct {
 
 
 
+typedef struct {
+  unsigned long s[10];
+  unsigned long code;
+} __attribute__((packed))regs_t;
+
 
 __attribute__((noreturn))
-void exception_handler(unsigned long);
+void trap(regs_t*);
 
 
 extern void *isr_table[];
