@@ -53,10 +53,10 @@ void set_idt_entry(unsigned char vector, void(*isr)(), unsigned char flags) {
 }
 
 extern void apic_timer(void);
+extern void kbd_press(void);
 
 
 void trap(regs_t *regs) {
-  print("e\n");
   if (regs->code < 32) {
     char s[20];
     itoa(regs->code, s);
@@ -64,6 +64,7 @@ void trap(regs_t *regs) {
     print(s);
     asm("cli; hlt");
   }
+
 
   switch(regs->code) {
   case 32:
@@ -76,7 +77,6 @@ void trap(regs_t *regs) {
     apic_timer();
     break;
   }
-
 
 
 };

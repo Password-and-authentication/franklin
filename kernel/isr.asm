@@ -30,62 +30,21 @@
 	
 	extern trap
 
-	%macro isr_err 1
-isr_stub_%1:
-	cld
-	pushregs
-	mov rbp, rsp
-	and rsp, ~0xf
-        call trap
-	mov rsp, rbp
-	popregs
-        iretq
-	%endmacro
-
-	%macro isr_no_err 1
-isr_stub_%1:
-	cld
-	pushregs
-	mov rbp, rsp
-	and rsp, ~0xf
-        call trap
-	mov rbp, rsp
-	popregs
-        add rsp, 8 ; get rid of error code
-        iretq
-	%endmacro
-
-	.global ret
-	%macro irq_handler 2	
+	%macro irq_stub 2
 %1:
-	cld
-	pushregs
-	mov rbp, rsp
-	and rsp, ~0xf
-	call %2
-	mov rsp, rbp
-	popregs
-	iretq
+	push %2
+	jmp alltraps
 	%endmacro
 	
 
-
-
-
-
-	
 	global isr_timer
-	extern timerh
-	irq_handler isr_timer, timerh
-
 	global isr_kbd
-	extern kbd_press
-	irq_handler isr_kbd, kbd_press
-
 	global isr_apic_timer
-	extern apic_timer
-	irq_handler isr_apic_timer, apic_timer
-	
+
+	irq_stub isr_timer, 32
+	irq_stub isr_kbd, 33
+	irq_stub isr_apic_timer, 34
+
 
 
 	%macro isr_stub 1
@@ -105,6 +64,7 @@ alltraps:
 ret:	
 	mov rsp, rbp
 	popregs
+	add rsp, 8
 	iretq
 
 	
@@ -117,20 +77,20 @@ isr_stub  4
 isr_stub  5
 isr_stub  6
 isr_stub  7
-isr_stub     8
+isr_stub  8
 isr_stub  9
-isr_stub     10
-isr_stub     11
-isr_stub     12
-isr_stub     13
-isr_stub     14
+isr_stub  10
+isr_stub  11
+isr_stub  12
+isr_stub  13
+isr_stub  14
 isr_stub  15
 isr_stub  16
-isr_stub     17
+isr_stub  17
 isr_stub  18
 isr_stub  19
 isr_stub  20
-isr_stub     21
+isr_stub  21
 isr_stub  22
 isr_stub  23
 isr_stub  24
@@ -138,15 +98,15 @@ isr_stub  25
 isr_stub  26
 isr_stub  27
 isr_stub  28
-isr_stub     29 
-isr_stub     30
+isr_stub  29 
+isr_stub  30
 isr_stub  31
 
 
 global isr_table
 isr_table:
     %assign i 0
-    %rep    7
+    %rep    32
         dq isr_handler_%+i
     %assign i i+1
     %endrep

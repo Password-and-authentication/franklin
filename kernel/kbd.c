@@ -43,7 +43,7 @@ void init_kbd() {
     setconfb(config & 0b111100); // disable translation and both ports
 
     /* testps2control(); // commented out because apparently it can reset some settings */
-    testps2port(1);
+    /* testps2port(1); */
 
     // for debugging
     buffer = gettype();

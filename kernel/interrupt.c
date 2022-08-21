@@ -3,6 +3,7 @@
 #include "franklin/interrupt.h"
 #include "franklin/kbd.h"
 #include "franklin/switch.h"
+#include "franklin/69.h"
 
 
 
@@ -16,6 +17,7 @@ void init_interrupt() {
   unmask_irq(1);
   unmask_irq(0);
   init_kbd(); // init ps/2 keyboard
+
 }
 
 
