@@ -52,7 +52,7 @@ static void init_timer(unsigned int* lapic) {
   if (configured) // 1st CPU will configure the timer
     goto startimer;
   
-  ticks = 100 * configure_timer(lapic); // return ticks in 1ms, multiply by 100 to get 100ms
+  ticks = 1000 * configure_timer(lapic); // return ticks in 1ms, multiply by 100 to get 100ms
   configured = 1;  
     
  startimer:
@@ -65,7 +65,7 @@ static void init_timer(unsigned int* lapic) {
 
 
 void scheduler(void);
-void helo(void);
+extern void helo(void);
 
 stack cc = {
 	     .rip = helo,
@@ -102,20 +102,16 @@ extern void switc(stack*, stack*, uint32_t*);
  */
 
 
-static stack *contex;
-void helo() {
-
-
-  for (;;) {
-    print("ee");
-    switc(&c, contex, EOI);
-  }
-}
-
+stack *contex;
+static int x;
 void apic_timer(regs_t *regs) {
 
-  switc(&contex, c, EOI);
+  /* print("e"); */
 
+
+
+  /* switc(&contex, c, EOI); */
+  *EOI = 0;
   
 }
 

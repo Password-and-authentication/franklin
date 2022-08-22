@@ -20,10 +20,10 @@ int configure_timer(unsigned int* lapic) {
   write32(lapic, DIVIDE_REG, 0); // divide by 2 (NOTE: dividor is only used so the counter have a smaller value)
   write32(lapic, INITCOUNT, ~0);
 
-  sleep(1);
+  sleep(1); // 1 ms
 
   write32(lapic, TIMER_REG, 1 << 16); // stop timer
-  return ~0 - *read32(lapic, CURRENTCOUNT);
+  return ~0 - (*read32(lapic, CURRENTCOUNT));
 }
 
 void init_pit(int hz) {
