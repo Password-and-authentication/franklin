@@ -40,16 +40,16 @@ void testing() {
   int x = 10;
   int y = 20;
   print("lol");
-  for(;;)
-    asm("hlt");
+
 }
-extern unsigned long stack[];
-extern thread t2;
+
+extern void ff(void);
 
 void kmain(void) {
   /* stack[13] = testing; */
   /* t2.rsp = stack; */
 
+  ff();
 
   struct limine_memmap_response *memmap = memmap_request.response;
   initbmap(memmap);

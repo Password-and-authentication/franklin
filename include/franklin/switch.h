@@ -22,6 +22,7 @@ typedef struct {
 } __attribute__((packed))regs_t;
 
 typedef struct {
+  unsigned long rbp;
   unsigned long rip;
 } __attribute__((packed))context;
 

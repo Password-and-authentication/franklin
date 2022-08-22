@@ -62,7 +62,8 @@ alltraps:
 	mov rdi, rbp
 	call trap
 ret:	
-	mov rsp, rbp
+	mov rsp, rbp       	; this works even after scheduling, because 'trap'
+				; will save the rbp on entry
 	popregs
 	add rsp, 8
 	iretq

@@ -67,11 +67,59 @@ unsigned long stack[100];
 
 static context *contex;
 
-extern void ret(void);
-extern void switc(regs_t*, context*, uint32_t*);
+void helo(void);
+
+context cc = {
+	     .rip = helo,
+};
+context *c;
+
+void ff() {
+  c = &cc;
+}
+
+extern void switc(context*, context*, uint32_t*);
+
+
+/*
+ * - isr_stub pushes the trap number on the stack,
+ * - and jmps to 'alltraps'
+ * - 
+ * -'alltraps' saves all registers on the kernel stack, and aligns the stack
+ * - and it will call trap, with the RSP in RDI
+ *
+ * - 'trap' calls 'apic_timer' which will call 'switc'
+ * 
+ * - 'switc' will save the RIP and RBP of the current thread
+ * - then it will store the RSP in the thread's context
+ * - then it replaces RSP with the new thread's stack pointer
+ * 
+ * - if the thread is new, the new stack will only contain the RIP,
+ * - which points to the entry point of the thread
+ * 
+ * - if the thread has run previously, the stack will contain:
+ * - the RIP (last instruction), trapframe for 'trap' and 'alltraps'
+ * - and all the saved registers
+ * -
+ */
+
+
+
+void helo() {
+
+
+  for (;;) {
+    print("ee");
+    switc(&c, contex, EOI);
+  }
+
+}
+
 void apic_timer(regs_t *regs) {
 
-  switc(regs, contex, EOI);
+  switc(&contex, c, EOI);
+
+  
 }
 
 
