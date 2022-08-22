@@ -62,23 +62,21 @@ static void init_timer(unsigned int* lapic) {
   write32(lapic, INITCOUNT, ticks);
 }
 
-thread t1, t2;
-unsigned long stack[100];
 
-static context *contex;
 
+void scheduler(void);
 void helo(void);
 
-context cc = {
+stack cc = {
 	     .rip = helo,
 };
-context *c;
+stack *c;
 
 void ff() {
   c = &cc;
 }
 
-extern void switc(context*, context*, uint32_t*);
+extern void switc(stack*, stack*, uint32_t*);
 
 
 /*
@@ -91,7 +89,7 @@ extern void switc(context*, context*, uint32_t*);
  * - 'trap' calls 'apic_timer' which will call 'switc'
  * 
  * - 'switc' will save the RIP and RBP of the current thread
- * - then it will store the RSP in the thread's context
+ * - then it will store the RSP in the thread's stack
  * - then it replaces RSP with the new thread's stack pointer
  * 
  * - if the thread is new, the new stack will only contain the RIP,
@@ -104,7 +102,7 @@ extern void switc(context*, context*, uint32_t*);
  */
 
 
-
+static stack *contex;
 void helo() {
 
 
@@ -112,7 +110,6 @@ void helo() {
     print("ee");
     switc(&c, contex, EOI);
   }
-
 }
 
 void apic_timer(regs_t *regs) {

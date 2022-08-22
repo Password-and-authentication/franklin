@@ -24,7 +24,7 @@ typedef struct {
 typedef struct {
   unsigned long rbp;
   unsigned long rip;
-} __attribute__((packed))context;
+} __attribute__((packed))stack;
 
 
 typedef struct {
