@@ -2,4 +2,6 @@
 *.d
 *.elf
 *.iso
+*~
+*#
 limine
