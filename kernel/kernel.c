@@ -60,7 +60,9 @@ void kmain(void) {
   init_lock(&spinlock);
   init_vmm();
   init_acpi(); // set global variable RSDT
+  
   init_scheduler();
+  
   MADT *madt = get_acpi_sdt(MADT_C);
   walk_madt(madt); // get info about MADT table
   init_gdt();
@@ -75,7 +77,7 @@ void kmain(void) {
     /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
   init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
     
-  /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
+  init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
 
 
     

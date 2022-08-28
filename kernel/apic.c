@@ -66,45 +66,10 @@ static void init_timer(unsigned int* lapic) {
 
 
 extern void scheduler(void);
-
-
-/* stack cc = { */
-	     /* .rip = scheduler, */
-/* }; */
-
 extern stack *c;
 extern stack *contex;
 
-/* void ff() { */
-  /* c = &cc; */
-/* } */
-
-
-
 extern void switc(stack*, stack*, uint32_t*);
-
-
-/*
- * - isr_stub pushes the trap number on the stack,
- * - and jmps to 'alltraps'
- * - 
- * -'alltraps' saves all registers on the kernel stack, and aligns the stack
- * - and it will call trap, with the RSP in RDI
- *
- * - 'trap' calls 'apic_timer' which will call 'switc'
- * 
- * - 'switc' will save the RIP and RBP of the current thread
- * - then it will store the RSP in the thread's stack
- * - then it replaces RSP with the new thread's stack pointer
- * 
- * - if the thread is new, the new stack will only contain the RIP,
- * - which points to the entry point of the thread
- * 
- * - if the thread has run previously, the stack will contain:
- * - the RIP (last instruction), trapframe for 'trap' and 'alltraps'
- * - and all the saved registers
- * -
- */
 
 void apic_timer(regs_t *regs) {
 

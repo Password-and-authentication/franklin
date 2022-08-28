@@ -5,20 +5,26 @@
 #include "franklin/string.h"
 
 
-static tss_desc_t init_tss(void);
+static tss_desc_t alloc_tss(void);
+
+
+
 
 __attribute__((aligned(0x8)))
 static gdt_desc *gdt;
 
-static unsigned short tr; // task register
-static struct {
-  unsigned short size;
+static int gdt_index;
+static uint16_t tr; // task register
+struct {
+  uint16_t size;
   uint64_t addr;
 } __attribute__((packed))gdtr;
 
+uint16_t t;
 void load_gdt() {
   asm("lgdt %0" :: "m"(gdtr));
-  asm("ltr %0" :: "a"(tr));
+  /* asm volatile("str %0" : "=m"(t)); */
+  /* asm("ltr %0" :: "a"(tr)); */
 }
 
 void init_gdt() {
@@ -29,30 +35,39 @@ void init_gdt() {
   
   memcpy(gdt, (const void*)gdtr.addr, gdtr.size);
   
-  int i = gdtr.size / sizeof(long); 
+  gdt_index = gdtr.size / sizeof(long); 
   
   /* flags = data segment, Privilege level 3, S bit and P bit set */
   userdata.attributes_1 = 2 | (3 << 5) | (1 << 7) | (1 << 4);
   userdata.attributes_2 = 0;
-  gdt[++i] = userdata;
+  gdt[++gdt_index] = userdata;
 
   /* flags = code segment, Privilege level 3, S bit and P bit set */
   usercode.attributes_1 = 8 | (3 << 5) | (1 << 7) | (1 << 4);
   usercode.attributes_2 = (1 << 1);
-  gdt[++i] = usercode;
+  gdt[++gdt_index] = usercode;
 
   gdtr.addr = (uint64_t)gdt;
   gdtr.size = PGSIZE;
 
-  tss_desc_t *tss_p = (tss_desc_t*)&gdt[++i];
-  *tss_p = init_tss();
-  
-  tr = i << 3;
+
   load_gdt();
+  tr = init_tss();
+  ltr(tr);
+}
+
+void ltr(uint16_t tr) {
+  asm("ltr %0"::"m"(tr));
+}
+
+int init_tss() {
+  tss_desc_t *tss_p = (tss_desc_t*)&gdt[++gdt_index];
+  *tss_p = alloc_tss();
+  return gdt_index << 3;
 }
 
 
-static tss_desc_t init_tss() {
+static tss_desc_t alloc_tss() {
 
   uint64_t rsp0 = P2V((uint64_t)palloc(1));
 

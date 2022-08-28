@@ -21,15 +21,27 @@ void init_cpu() {
     smp->cpus[1]->goto_address = cpu;
 }
 
+
 void load_gdt(void);
+extern int init_tss();
+
 void cpu(struct limine_smp_info *info) {
-    load_idt();
-    load_gdt();
-    MADT *madt = get_acpi_sdt(MADT_C);
-    init_apic((unsigned int*)((unsigned long)HHDM_OFFSET + madt->lapic));
 
-    char *l = palloc(100);
-    freepg(P2V((uintptr_t)l), 100);
+  uint16_t tr;
+  MADT *madt;
+  
+  load_idt();
+  load_gdt();
+  tr = init_tss();
+  ltr(tr);
+  
+  
+  
+  madt = get_acpi_sdt(MADT_C);
+  init_apic((unsigned int*)((unsigned long)HHDM_OFFSET + madt->lapic));
 
-    for(;;);
+  char *l = palloc(100);
+  freepg(P2V((uintptr_t)l), 100);
+
+  for(;;);
 }
