@@ -61,7 +61,7 @@ alltraps:
 	and rsp, ~0xf
 	mov rdi, rbp
 	call trap
-	;; add rsp, 8
+	add rsp, 8
 ret:	
 	mov rsp, rbp       	; this works even after scheduling, because 'trap'
 				; will save the rbp on entry

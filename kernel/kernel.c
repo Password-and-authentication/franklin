@@ -60,7 +60,11 @@ void kmain(void) {
   init_lock(&spinlock);
   init_vmm();
   init_acpi(); // set global variable RSDT
-  
+
+  void testt();
+  void another();
+  /* allocproc(testt); */
+  allocproc(another);
   init_scheduler();
   
   MADT *madt = get_acpi_sdt(MADT_C);
@@ -71,18 +75,54 @@ void kmain(void) {
   init_interrupt();
   init_pit(1000); // 1000 hz, 1000 IRQ0's in a second
 
+  /* asm("int $0x21"); */
+
 
 
 
     /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
   init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
     
-  init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
+  /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
+
 
 
     
   for(;;)
     asm ("hlt");
 }
+
+
+void geex() {
+  asm("sti");
+
+  for (;;) {
+    print("gfeeeex\n");
+  }
+}
+
+void another() {
+  asm("sti");
+
+  for (;;) {
+    print("lol\n");
+    asm("hlt");
+  }
+}
+
+void testt() {
+
+  // interrupts get disabled on trap entry
+  asm("sti");
+
+  for(;;) {
+    /* print("ex\n"); */
+    asm("hlt");
+  }
+
+}
+
+
+
 
 

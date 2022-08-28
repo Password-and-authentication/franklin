@@ -1,10 +1,11 @@
 #include "franklin/switch.h"
 #include "franklin/apic.h"
 #include "franklin/mmu.h"
+#include "franklin/proc.h"
 
 
 
-extern void switc(stack*, stack*, uint32_t*);
+extern void switc(stack**, stack*, uint32_t*);
 void scheduler(void);
 stack *c;
 stack *contex;
@@ -12,22 +13,55 @@ stack *contex;
 void scheduler(void);
 
 
-void allocproc() {
+
+
+
+
+struct proc *curproc;
+struct proc ptable[20];
+static int ptable_index;
+
+
+
+void allocproc(uintptr_t *entry) {
+
+  struct proc *p;
   
+  p = &ptable[ptable_index++];
+  
+  p->stack = P2V(palloc(1));
+  p->stack->rip = entry;
+  p->state = RUNNABLE;
 }
+
+
 
 void init_scheduler() {
   c = palloc(1);
   contex = palloc(1);
   c->rip = scheduler;
+  struct proc p1 = {
+	       .stack = palloc(1),
+  };
+
 }
+
 
 void scheduler() {
 
-
+  struct proc *p;
+  
   for (;;) {
-    /* print("ee"); */
-    switc(&c, contex, EOI);
+
+    for (p = ptable; p != &ptable[20]; ++p) {
+      if (p->state != RUNNABLE)
+	continue;
+
+      print("scheduler");
+      curproc = p;
+      p->state = RUNNING;
+      switc(&c, p->stack, EOI);
+    }
   }
 }
 
