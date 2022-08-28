@@ -64,17 +64,22 @@ static void init_timer(unsigned int* lapic) {
 
 
 
-void scheduler(void);
-extern void helo(void);
 
-stack cc = {
-	     .rip = helo,
-};
-stack *c;
+extern void scheduler(void);
 
-void ff() {
-  c = &cc;
-}
+
+/* stack cc = { */
+	     /* .rip = scheduler, */
+/* }; */
+
+extern stack *c;
+extern stack *contex;
+
+/* void ff() { */
+  /* c = &cc; */
+/* } */
+
+
 
 extern void switc(stack*, stack*, uint32_t*);
 
@@ -101,14 +106,9 @@ extern void switc(stack*, stack*, uint32_t*);
  * -
  */
 
-
-stack *contex;
-static int x;
 void apic_timer(regs_t *regs) {
 
   switc(&contex, c, EOI);
-  
-  
 }
 
 

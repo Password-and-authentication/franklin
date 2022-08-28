@@ -43,22 +43,24 @@ void testing() {
 
 }
 
-extern void ff(void);
+extern void init_scheduler(void);
 
 
 void kmain(void) {
   /* stack[13] = testing; */
   /* t2.rsp = stack; */
 
-  ff();
+
 
   struct limine_memmap_response *memmap = memmap_request.response;
   initbmap(memmap);
+
 
   
   init_lock(&spinlock);
   init_vmm();
   init_acpi(); // set global variable RSDT
+  init_scheduler();
   MADT *madt = get_acpi_sdt(MADT_C);
   walk_madt(madt); // get info about MADT table
   init_gdt();
@@ -66,6 +68,7 @@ void kmain(void) {
   print("ii got an idea, lets FUCK!\n");
   init_interrupt();
   init_pit(1000); // 1000 hz, 1000 IRQ0's in a second
+
 
 
 
