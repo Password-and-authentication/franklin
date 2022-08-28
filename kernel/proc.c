@@ -11,7 +11,7 @@ void helo() {
 
 
   for (;;) {
-    /* print("ee"); */
+    print("ee");
     switc(&c, contex, EOI);
   }
 }

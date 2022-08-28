@@ -68,7 +68,6 @@ void kmain(void) {
   init_pit(1000); // 1000 hz, 1000 IRQ0's in a second
 
 
-  /* asm("syscall"); */
 
     /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
   init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));

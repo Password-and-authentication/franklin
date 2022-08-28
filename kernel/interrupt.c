@@ -21,10 +21,8 @@ void init_interrupt() {
 }
 
 
-
+static int x;
 void timerh(unsigned long t) {
-
-
   PIT_COUNTER--;
   
   out(0x20, 0x20);
