@@ -53,7 +53,7 @@ static void init_timer(unsigned int* lapic) {
   if (configured) // 1st CPU will configure the timer
     goto startimer;
   
-  ticks = 1000 * configure_timer(lapic); // return ticks in 1ms, multiply by 100 to get 100ms
+  ticks = 100 * configure_timer(lapic); // return ticks in 1ms, multiply by 100 to get 100ms
   configured = 1;  
     
  startimer:
@@ -63,26 +63,19 @@ static void init_timer(unsigned int* lapic) {
   write32(lapic, INITCOUNT, ticks);
 }
 
-
-
-
 extern void scheduler(void);
-extern stack *c;
-extern stack *contex;
-
-extern void switc(stack**, stack*, uint32_t*);
-
-
-stack *l;
 extern struct proc *curproc;
-void apic_timer(regs_t *regs) {
 
-  if (curproc) {
-    curproc->state = RUNNABLE;
-    switc(&curproc->stack, c, EOI);
-  } 
-  else
-    switc(&l, c, EOI);
+void apic_timer(regs_t *regs) {
+  *EOI = 0;
+  /* if (curproc) */
+    /* curproc->state = RUNNABLE;     */
+
+  curproc->state = RUNNABLE;
+  scheduler();
+  /* release(&spinlock); */
+
+
 }
 
 

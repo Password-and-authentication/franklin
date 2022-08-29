@@ -26,7 +26,7 @@ void load_gdt(void);
 extern int init_tss();
 
 void cpu(struct limine_smp_info *info) {
-
+  asm("cli");
   uint16_t tr;
   MADT *madt;
   
@@ -43,5 +43,6 @@ void cpu(struct limine_smp_info *info) {
   char *l = palloc(100);
   freepg(P2V((uintptr_t)l), 100);
 
+  asm("sti");
   for(;;);
 }

@@ -40,11 +40,12 @@
 	global isr_timer
 	global isr_kbd
 	global isr_apic_timer
+	global spurious
 
 	irq_stub isr_timer, 32
 	irq_stub isr_kbd, 33
 	irq_stub isr_apic_timer, 34
-
+	irq_stub spurious, 255
 
 
 	%macro isr_stub 1
@@ -61,7 +62,6 @@ alltraps:
 	and rsp, ~0xf
 	mov rdi, rbp
 	call trap
-	add rsp, 8
 ret:	
 	mov rsp, rbp       	; this works even after scheduling, because 'trap'
 				; will save the rbp on entry

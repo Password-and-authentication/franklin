@@ -14,6 +14,9 @@
 #include "franklin/gdt.h"
 #include "franklin/switch.h"
 #include "franklin/time.h"
+#include "franklin/proc.h"
+
+
 
 
 
@@ -50,7 +53,7 @@ void kmain(void) {
   /* stack[13] = testing; */
   /* t2.rsp = stack; */
 
-
+  asm("cli");
 
   struct limine_memmap_response *memmap = memmap_request.response;
   initbmap(memmap);
@@ -63,9 +66,11 @@ void kmain(void) {
 
   void testt();
   void another();
-  /* allocproc(testt); */
+  void geex();
+  allocproc(testt);
   allocproc(another);
-  init_scheduler();
+  allocproc(geex);
+
   
   MADT *madt = get_acpi_sdt(MADT_C);
   walk_madt(madt); // get info about MADT table
@@ -79,12 +84,17 @@ void kmain(void) {
 
 
 
-
     /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
   init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
     
-  /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
+  init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
 
+  stack *l;
+  extern struct proc *curproc;
+  extern struct proc ptable[];
+  curproc = &ptable[0];
+  curproc->state = RUNNING;
+  switc(&l, ptable[0].stack);
 
 
     
@@ -97,7 +107,7 @@ void geex() {
   asm("sti");
 
   for (;;) {
-    print("gfeeeex\n");
+
   }
 }
 
@@ -105,7 +115,7 @@ void another() {
   asm("sti");
 
   for (;;) {
-    print("lol\n");
+    /* print("lol\n"); */
     asm("hlt");
   }
 }
@@ -117,8 +127,9 @@ void testt() {
 
   for(;;) {
     /* print("ex\n"); */
-    asm("hlt");
   }
+
+
 
 }
 

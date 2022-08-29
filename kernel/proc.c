@@ -2,19 +2,15 @@
 #include "franklin/apic.h"
 #include "franklin/mmu.h"
 #include "franklin/proc.h"
+#include "franklin/69.h"
 
 
 
-extern void switc(stack**, stack*, uint32_t*);
+extern void switc(stack**, stack*);
 void scheduler(void);
 stack *c;
-stack *contex;
 
 void scheduler(void);
-
-
-
-
 
 
 struct proc *curproc;
@@ -35,34 +31,26 @@ void allocproc(uintptr_t *entry) {
 }
 
 
-
-void init_scheduler() {
-  c = palloc(1);
-  contex = palloc(1);
-  c->rip = scheduler;
-  struct proc p1 = {
-	       .stack = palloc(1),
-  };
-
+void i() {
+  asm("int $33");
 }
 
 
 void scheduler() {
 
-  struct proc *p;
-  
-  for (;;) {
+  static struct proc *p, *prev;
+  static int i = 1;
 
-    for (p = ptable; p != &ptable[20]; ++p) {
-      if (p->state != RUNNABLE)
-	continue;
-
-      print("scheduler");
-      curproc = p;
-      p->state = RUNNING;
-      switc(&c, p->stack, EOI);
-    }
+  while ((p = &ptable[i++]) && p->state != RUNNABLE) {
+    if (i == 20)
+      i = 0;
   }
+
+  prev = curproc; // curproc needs to be the current process of the CPU
+  curproc = p;
+  curproc->state = RUNNING;
+  switc(&prev->stack, curproc->stack);
+  
 }
 
 

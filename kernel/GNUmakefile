@@ -28,7 +28,7 @@ CFLAGS ?= -O0 -g -Wall -Wextra -Wpedantic -pipe -I ../include
 NASMFLAGS ?= -F dwarf -g
 
 # User controllable linker flags. We set none by default.
-LDFLAGS ?=
+LDFLAGS ?= -Map kernel.map
 
 # User controllable preprocessor flags. We set none by default.
 CPPFLAGS ?=

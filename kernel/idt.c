@@ -50,16 +50,20 @@ void set_idt_entry(unsigned char vector, void(*isr)(), unsigned char flags) {
     desc->ist = 0; 
     desc->attributes = flags;
     desc->isr_mid =  (unsigned short)((unsigned long)isr >> 16);
-    desc->isr_high = (unsigned int)((unsigned long)isr >> 32);
+    desc->isr_high = (uint32_t)((unsigned long)isr >> 32);
     desc->zero = 0;
 }
 
+void l() {
+  int x;
+}
 
-extern unsigned int* EOI;
+extern uint32_t* EOI;
 void trap(regs_t *regs) {
   if (regs->code < 32) {
     char s[20];
     itoa(regs->code, s);
+    l();
     print("trap error: ");
     print(s);
     asm("cli; hlt");
@@ -73,7 +77,7 @@ void trap(regs_t *regs) {
     kbd_press();
     break;
   case 34:
-    apic_timer(regs);
+   apic_timer(regs);
     break;
   }
 
