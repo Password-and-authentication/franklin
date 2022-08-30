@@ -43,7 +43,6 @@ void print(void* s) {
 
 
 void kmain(void) {
-
   asm("cli");
 
   struct limine_memmap_response *memmap = memmap_request.response;
@@ -55,12 +54,12 @@ void kmain(void) {
   init_vmm();
   init_acpi(); // set global variable RSDT
 
-  void testt();
-  void another();
-  void geex();
-  allocproc(testt);
-  allocproc(another);
-  allocproc(geex);
+  void thread1();
+  void thread2();
+  void thread3();
+  allocproc(thread1);
+  allocproc(thread2);
+  allocproc(thread3);
 
   
   MADT *madt = get_acpi_sdt(MADT_C);
@@ -74,9 +73,6 @@ void kmain(void) {
   init_pit(1000); // 1000 hz, 1000 IRQ0's in a second
   asm("sti");
 
-  /* asm("int $0x21"); */
-
-
 
     /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
   init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
@@ -86,25 +82,12 @@ void kmain(void) {
   
   void startproc(struct proc*);
   extern struct proc ptable[];
-  extern struct proc *curproc;
-  curproc = &ptable[0];
-  asm("mov $10, %rax");
 
   
 
-  void wrmsr(uint64_t);
-  wrmsr((uint64_t)curproc);
 
-  uint64_t lol;
-  rdmsr(&lol);
-  asm("swapgs");
-  asm("swapgs");
-  asm("mov $0xc0000102, %rcx");
-  asm("rdmsr");
-  
-  
-  
-  
+  void set_current_proc(struct proc*);  
+  set_current_proc(&ptable[0]);
   startproc(&ptable[0]);
 
 
@@ -113,12 +96,8 @@ void kmain(void) {
     asm ("hlt");
 }
 
-void ll() {
 
-  asm("mov $0xc0000102, %rcx");
-  asm("wrmsr");
-}
-void geex() {
+void thread3() {
   asm("sti");
 
   for (;;) {
@@ -126,7 +105,7 @@ void geex() {
   }
 }
 
-void another() {
+void thread2() {
   asm("sti");
 
   for (;;) {
@@ -135,7 +114,7 @@ void another() {
   }
 }
 
-void testt() {
+void thread1() {
 
   // interrupts get disabled on trap entry
   asm("sti");

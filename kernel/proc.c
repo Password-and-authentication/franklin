@@ -3,7 +3,7 @@
 #include "franklin/apic.h"
 #include "franklin/mmu.h"
 #include "franklin/proc.h"
-#include "franklin/69.h"
+#include "asm/x86.h"
 
 
 
@@ -11,16 +11,33 @@ struct proc *curproc;
 struct proc ptable[20];
 static int ptable_index;
 
+static uint8_t swap = 1;
+struct proc* set_current_proc(struct proc *p) {
+  wrmsr((uint64_t)p);
+  if (swap == 0)
+    swap = 1;
+  swapgs();
+  return p;
+}
 
+struct proc* get_current_proc() {
+
+  struct proc *p;
+  if (swap)
+    swapgs(); swap = 0;
+
+  rdmsr(&p);
+  
+  return p;
+}
 
 void startproc(struct proc *p) {
   stack *l;
-  print("s");
-  curproc = p;
-  print("EE");
-  int x;
+  struct proc *current;
+  current = get_current_proc();
+  curproc = current;
   curproc->state = RUNNING;
-  switc(&l, p->stack);
+  switc(&current->stack, p->stack);
 }
 
 void allocproc(uintptr_t *entry) {
@@ -46,9 +63,9 @@ void scheduler() {
     if (i == 20)
       i = 0;
   }
- 
-  prev = curproc; // curproc needs to be the curproc process of the CPU
-  curproc = p;
+  
+  prev = get_current_proc();
+  curproc = set_current_proc(p);
   curproc->state = RUNNING;
   switc(&prev->stack, curproc->stack); 
   
