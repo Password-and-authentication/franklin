@@ -1,8 +1,10 @@
+#include <stdint.h>
+#include "asm/x86.h"
 #include "franklin/time.h"
-#include "franklin/io.h"
 #include "franklin/apic.h"
 #include "franklin/interrupt.h"
 #include "franklin/spinlock.h"
+#include "franklin/io.h"
 
 
 void sleep(int us) {
@@ -32,5 +34,4 @@ void init_pit(int hz) {
   out(0x43, 0b110100);
   out(0x40, divisor & 0xFF);
   out(0x40, divisor >> 8);
-
 }

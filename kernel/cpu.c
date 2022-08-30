@@ -1,13 +1,14 @@
+#include <stdint.h>
 #include "limine.h"
 #include "franklin/defs.h"
 #include "franklin/cpu.h"
-#include "franklin/69.h"
 #include "franklin/idt.h"
 #include "franklin/spinlock.h"
 #include "franklin/apic.h"
 #include "franklin/mmu.h"
 #include "franklin/acpi.h"
-#include <stdint.h>
+#include "asm/x86.h"
+
 
 
 

@@ -7,17 +7,21 @@
 
 
 
-
-
-
-
-
-
 struct proc *curproc;
 struct proc ptable[20];
 static int ptable_index;
 
 
+
+void startproc(struct proc *p) {
+  stack *l;
+  print("s");
+  curproc = p;
+  print("EE");
+  int x;
+  curproc->state = RUNNING;
+  switc(&l, p->stack);
+}
 
 void allocproc(uintptr_t *entry) {
 
@@ -31,20 +35,22 @@ void allocproc(uintptr_t *entry) {
 }
 
 
+
+
 void scheduler() {
 
-  static struct proc *p, *prev;
+  struct proc *p, *prev;
   static uint8_t i = 1;
 
   while ((p = &ptable[i++]) && p->state != RUNNABLE) {
     if (i == 20)
       i = 0;
   }
-
-  prev = curproc; // curproc needs to be the current process of the CPU
+ 
+  prev = curproc; // curproc needs to be the curproc process of the CPU
   curproc = p;
   curproc->state = RUNNING;
-  switc(&prev->stack, curproc->stack);
+  switc(&prev->stack, curproc->stack); 
   
 }
 
@@ -58,7 +64,7 @@ void scheduler() {
  *
  * - 'trap' calls 'apic_timer' which will call 'switc'
  * 
- * - 'switc' will save the RIP and RBP of the current thread
+ * - 'switc' will save the RIP and RBP of the curproc thread
  * - then it will store the RSP in the thread's stack
  * - then it replaces RSP with the new thread's stack pointer
  * 

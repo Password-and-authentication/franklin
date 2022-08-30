@@ -1,5 +1,6 @@
-#include "franklin/io.h"
+#include <stdint.h>
 #include "franklin/pic.h"
+#include "asm/x86.h"
 
 
 void unmask_irq(uint8_t irq) {

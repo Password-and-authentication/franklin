@@ -4,8 +4,6 @@
 #include <stdint.h>
 
 
-void out(uint8_t, uint8_t);
-uint8_t in(uint8_t);
 
 void write32(uint64_t, uint32_t, uint32_t);
 uint32_t* read32(uint64_t, uint32_t);

@@ -1,6 +1,6 @@
 #include <stdint.h>
+#include "asm/x86.h"
 #include "franklin/mmu.h"
-#include "franklin/69.h"
 #include "franklin/gdt.h"
 #include "franklin/string.h"
 
@@ -8,23 +8,19 @@
 static tss_desc_t alloc_tss(void);
 
 
-
-
 __attribute__((aligned(0x8)))
 static gdt_desc *gdt;
 
 static uint8_t gdt_index;
 static uint16_t tr; // task register
-struct {
+static struct {
   uint16_t size;
   uint64_t addr;
 } __attribute__((packed))gdtr;
 
-uint16_t t;
+
 void load_gdt() {
   asm("lgdt %0" :: "m"(gdtr));
-  /* asm volatile("str %0" : "=m"(t)); */
-  /* asm("ltr %0" :: "a"(tr)); */
 }
 
 void init_gdt() {
@@ -51,14 +47,12 @@ void init_gdt() {
   gdtr.size = PGSIZE;
 
 
+
   load_gdt();
   tr = init_tss();
   ltr(tr);
 }
 
-void ltr(uint16_t tr) {
-  asm("ltr %0"::"m"(tr));
-}
 
 // return task register
 uint16_t init_tss() {

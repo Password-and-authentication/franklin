@@ -1,8 +1,10 @@
+#include <stdint.h>
 #include "franklin/69.h"
 #include "franklin/kbd.h"
-#include "franklin/io.h"
 #include "franklin/defs.h"
 #include "franklin/acpi.h"
+#include "asm/x86.h"
+
 
 static uint8_t kbd_us[127] = {
 		    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

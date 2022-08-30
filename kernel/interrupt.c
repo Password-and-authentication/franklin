@@ -1,10 +1,11 @@
+#include <stdint.h>
 #include "franklin/idt.h"
 #include "franklin/pic.h"
 #include "franklin/interrupt.h"
 #include "franklin/kbd.h"
 #include "franklin/switch.h"
 #include "franklin/69.h"
-#include "franklin/io.h"
+#include "asm/x86.h"
 
 
 extern void spurious(void);

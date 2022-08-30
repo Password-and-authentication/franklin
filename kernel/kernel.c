@@ -1,9 +1,9 @@
+#include <stdint.h>
 #include "limine.h"
 #include "franklin/defs.h"
 #include "franklin/mmu.h"
 #include "franklin/cpu.h"
 #include "franklin/idt.h"
-#include "franklin/69.h"
 #include "franklin/spinlock.h"
 #include "franklin/apic.h"
 #include "franklin/kbd.h"
@@ -15,6 +15,7 @@
 #include "franklin/switch.h"
 #include "franklin/time.h"
 #include "franklin/proc.h"
+#include "asm/x86.h"
 
 
 
@@ -39,14 +40,6 @@ void print(void* s) {
     release(&spinlock);
 }
 
-void testing() {
-  int x = 10;
-  int y = 20;
-  print("lol");
-
-}
-
-extern void init_scheduler(void);
 
 
 void kmain(void) {
@@ -76,7 +69,10 @@ void kmain(void) {
 
   print("ii got an idea, lets FUCK!\n");
   init_interrupt();
+
+
   init_pit(1000); // 1000 hz, 1000 IRQ0's in a second
+  asm("sti");
 
   /* asm("int $0x21"); */
 
@@ -87,12 +83,29 @@ void kmain(void) {
     
   /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
 
-  stack *l;
-  extern struct proc *curproc;
+  
+  void startproc(struct proc*);
   extern struct proc ptable[];
+  extern struct proc *curproc;
   curproc = &ptable[0];
-  curproc->state = RUNNING;
-  switc(&l, ptable[0].stack);
+  asm("mov $10, %rax");
+
+  
+
+  void wrmsr(uint64_t);
+  wrmsr((uint64_t)curproc);
+
+  uint64_t lol;
+  rdmsr(&lol);
+  asm("swapgs");
+  asm("swapgs");
+  asm("mov $0xc0000102, %rcx");
+  asm("rdmsr");
+  
+  
+  
+  
+  startproc(&ptable[0]);
 
 
     
@@ -100,7 +113,11 @@ void kmain(void) {
     asm ("hlt");
 }
 
+void ll() {
 
+  asm("mov $0xc0000102, %rcx");
+  asm("wrmsr");
+}
 void geex() {
   asm("sti");
 
@@ -114,7 +131,7 @@ void another() {
 
   for (;;) {
     /* print("lol\n"); */
-    asm("hlt");
+
   }
 }
 

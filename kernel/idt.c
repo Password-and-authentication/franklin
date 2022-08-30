@@ -1,24 +1,25 @@
+#include <stdint.h>
+#include "asm/x86.h"
 #include "limine.h"
 #include "franklin/defs.h"
 #include "franklin/acpi.h"
 #include "franklin/idt.h"
-#include "franklin/69.h"
-#include "franklin/io.h"
 #include "franklin/spinlock.h"
 #include "franklin/interrupt.h"
+
 
 __attribute__((aligned(0x10)))
 static idt_entry idt[256];
 
-static struct {
+static struct idtr {
     uint16_t size;
     uint64_t base;
 } __attribute__((packed)) idtr;
 
 
 void load_idt() {
+  
     asm("lidt %0" :: "m" (idtr));
-    asm("sti");
 }
 
 void init_idt() {

@@ -10,7 +10,6 @@
 #include "franklin/proc.h"
 
 
-uint32_t h = 10;
 
 
 static void init_timer(uint32_t*);
@@ -65,6 +64,7 @@ static void init_timer(uint32_t* lapic) {
 
 extern void scheduler(void);
 extern struct proc *curproc;
+
 
 void apic_timer(regs_t *regs) {
   *EOI = 0;
