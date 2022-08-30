@@ -3,24 +3,25 @@
 #include "franklin/mmu.h"
 #include "franklin/defs.h"
 #include "franklin/spinlock.h"
+#include <stdbool.h>
 
 
 
 
-void togglepage(int page) {
+void togglepage(uint32_t page) {
   bitmap[page / 64] ^= (1ULL << (page % 64));
 };
-uint8_t isfree(int page) {
+uint8_t isfree(uint32_t page) {
     return (((bitmap[page / 64] & (1ULL << (page % 64)))) == 0);
 }
 
 
-void *palloc(int size) {
+void *palloc(uint32_t size) {
     if (size >= MAXPG)
         panic("panic: palloc, size too big");
     acquire(&spinlock);
-    int page = 0, p = 0;
-    int x = 0, i = 0;
+    uint32_t page = 0, p = 0;
+    uint32_t x = 0, i = 0;
 
     while (1) {
         if (page >= MAXPG)
@@ -58,10 +59,10 @@ void *palloc(int size) {
 }   
 
 
-void *pallocaddr(int size, uint64_t paddr) {
+void *pallocaddr(uint32_t size, uint64_t paddr) {
     acquire(&spinlock);
-    int pfn = paddr / PGSIZE;
-    for (int i = pfn; i < pfn + size; ++i) {
+    uint32_t pfn = paddr / PGSIZE;
+    for (uint32_t i = pfn; i < pfn + size; ++i) {
         if (!isfree(i))
             panic("panic: pallocaddr, page is not free\n");
         togglepage(i);
@@ -71,8 +72,8 @@ void *pallocaddr(int size, uint64_t paddr) {
 }
 
 
-void freepg(uintptr_t addr, int length) {
-    int page = addr / PGSIZE;
+void freepg(uintptr_t addr, uint32_t length) {
+    uint32_t page = addr / PGSIZE;
     acquire(&spinlock);
     do {
         togglepage(page);
@@ -85,12 +86,12 @@ void initbmap(struct limine_memmap_response *memmap) {
     struct limine_memmap_entry *entry = getentry(memmap, bitmapsz);
 
     bitmap = (uint64_t)HHDM_OFFSET + entry->base;
-    for (int i = 0; i < bitmapsz; ++i)
+    for (uint32_t i = 0; i < bitmapsz; ++i)
         togglepage(entry->base / PGSIZE + i);
 
     entry->base += bitmapsz;
     entry->length -= bitmapsz;
-    for (int i = 0; i < memmap->entry_count; ++i) {
+    for (uint32_t i = 0; i < memmap->entry_count; ++i) {
         if (memmap->entries[i]->type != 0)
             setentry(memmap->entries[i]);
     }
@@ -98,9 +99,9 @@ void initbmap(struct limine_memmap_response *memmap) {
 
 
 void setentry(struct limine_memmap_entry *entry) {
-    uint_t page = entry->base / PGSIZE;
+    uint32_t page = entry->base / PGSIZE;
     acquire(&spinlock);
-    for (int i = 0; i < (entry->length / PGSIZE); i++, page++) {
+    for (uint32_t i = 0; i < (entry->length / PGSIZE); i++, page++) {
         togglepage(page);
     }
     release(&spinlock);
@@ -119,7 +120,7 @@ uint64_t getmemsz(struct limine_memmap_response* memmap) {
 
 struct limine_memmap_entry* getentry(struct limine_memmap_response *memmap, uint64_t mapsize) {
 
-    int i = 0;
+    uint32_t i = 0;
     while (1) {
         if (memmap->entries[i]->type == 0 && memmap->entries[i]->length > mapsize)
             return memmap->entries[i];

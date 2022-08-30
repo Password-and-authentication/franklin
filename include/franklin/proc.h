@@ -1,4 +1,5 @@
-
+#ifndef _PROC_
+#define _PROC_
 
 
 
@@ -14,3 +15,6 @@ struct proc {
   stack *stack;
   enum procstate state;
 };
+
+
+#endif

@@ -3,14 +3,17 @@
 #include "franklin/mmu.h"
 #include "franklin/proc.h"
 #include "franklin/69.h"
+#include <stdint.h>
 
 
 
-extern void switc(stack**, stack*);
+
 void scheduler(void);
 stack *c;
+int x = 10;
 
 void scheduler(void);
+
 
 
 struct proc *curproc;
@@ -25,8 +28,8 @@ void allocproc(uintptr_t *entry) {
   
   p = &ptable[ptable_index++];
   
-  p->stack = P2V(palloc(1));
-  p->stack->rip = entry;
+  p->stack = (stack*)P2V((uintptr_t)palloc(1));
+  p->stack->rip = (uintptr_t)entry;
   p->state = RUNNABLE;
 }
 
@@ -39,7 +42,7 @@ void i() {
 void scheduler() {
 
   static struct proc *p, *prev;
-  static int i = 1;
+  static uint8_t i = 1;
 
   while ((p = &ptable[i++]) && p->state != RUNNABLE) {
     if (i == 20)

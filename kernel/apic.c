@@ -10,16 +10,16 @@
 #include "franklin/proc.h"
 
 
+uint32_t h = 10;
 
 
+static void init_timer(uint32_t*);
 
-static void init_timer(unsigned int*);
-
-// right now its only getting the LINT pin that is connected to NMI
+// right now its only getting the LUINT32_T pin that is connected to NMI
 void walk_madt(MADT *madt) {
 
-    char lapicId[100], x = 1;
-    for (int i = 0; i < madt->h.length;) {
+  uint8_t lapicId[100], x = 1;
+    for (uint32_t i = 0; i < madt->h.length;) {
         if (madt->entry[i] == 0)
             lapicId[x++] = madt->entry[i + 3];
         if (madt->entry[i] == 4)
@@ -30,8 +30,8 @@ void walk_madt(MADT *madt) {
 
 
 
-void init_apic(unsigned int* lapic) {
-    // set the correct LINT pin for NMI
+void init_apic(uint32_t* lapic) {
+    // set the correct LUINT32_T pin for NMI
     if (NMI_LINT == 1) {
       write32(lapic, LINT1, 1 << 10);
     } else {
@@ -46,9 +46,9 @@ void init_apic(unsigned int* lapic) {
 
 
 
-static void init_timer(unsigned int* lapic) {
-  static int ticks;
-  static int configured;
+static void init_timer(uint32_t* lapic) {
+  static uint32_t ticks;
+  static uint32_t configured;
   
   if (configured) // 1st CPU will configure the timer
     goto startimer;

@@ -45,24 +45,24 @@ typedef struct {
 void test(void);
 void init_vmm(void);
 
-int mappage(uint64_t, uint64_t, uint8_t);
+uint8_t mappage(uint64_t, uint64_t, uint8_t);
 void remappage(uint64_t, int);
 void unmappage(uint64_t);
 
 
 uint64_t *newentry(uint64_t*, uint64_t, uint8_t);
-void memzero(char*, int);
+
 
 
 
 // PMM
 
-uint8_t isfree(int);
-void togglepage(int);
+uint8_t isfree(uint32_t);
+void togglepage(uint32_t);
 
-void* palloc(int);
-void* pallocaddr(int, uint64_t);
-void freepg(uintptr_t, int);
+void* palloc(uint32_t);
+void* pallocaddr(uint32_t, uint64_t);
+void freepg(uintptr_t, uint32_t);
 
 void initbmap(struct limine_memmap_response *);
 void setentry(struct limine_memmap_entry *);

@@ -1,4 +1,4 @@
-
+#include <stdint.h>
 
 
 int strlen(char *s) {
@@ -15,6 +15,13 @@ void memcpy(void *dest, const void *src, int n) {
     *d++ = *s++;
   }
 }
+
+void memzero(uint8_t* mem, int n) {
+    for (int i = 0; i < n; ++i) {
+        mem[i] = 0;
+    }
+}
+
 
 
 void itoa(int x, char* s) {

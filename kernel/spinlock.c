@@ -5,14 +5,14 @@
 
 void acquire(lock *lock) {
 
-    unsigned int expected = 0;
+    uint32_t expected = 0;
     while (__atomic_compare_exchange_n(lock, &expected, 1, 0, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0)
         ;
     return;
 }
 
 void release(lock *lock) {
-    unsigned int val = 0;
+    uint32_t val = 0;
     __atomic_store(lock, &val, __ATOMIC_RELEASE);
 }
 

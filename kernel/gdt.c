@@ -13,7 +13,7 @@ static tss_desc_t alloc_tss(void);
 __attribute__((aligned(0x8)))
 static gdt_desc *gdt;
 
-static int gdt_index;
+static uint8_t gdt_index;
 static uint16_t tr; // task register
 struct {
   uint16_t size;
@@ -35,7 +35,7 @@ void init_gdt() {
   
   memcpy(gdt, (const void*)gdtr.addr, gdtr.size);
   
-  gdt_index = gdtr.size / sizeof(long); 
+  gdt_index = gdtr.size / sizeof(uint64_t); 
   
   /* flags = data segment, Privilege level 3, S bit and P bit set */
   userdata.attributes_1 = 2 | (3 << 5) | (1 << 7) | (1 << 4);
@@ -60,7 +60,8 @@ void ltr(uint16_t tr) {
   asm("ltr %0"::"m"(tr));
 }
 
-int init_tss() {
+// return task register
+uint16_t init_tss() {
   tss_desc_t *tss_p = (tss_desc_t*)&gdt[++gdt_index];
   *tss_p = alloc_tss();
   return gdt_index << 3;

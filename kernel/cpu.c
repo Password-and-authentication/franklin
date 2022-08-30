@@ -7,6 +7,9 @@
 #include "franklin/apic.h"
 #include "franklin/mmu.h"
 #include "franklin/acpi.h"
+#include <stdint.h>
+
+
 
 
 volatile static struct limine_smp_request smp_req = {
@@ -23,7 +26,7 @@ void init_cpu() {
 
 
 void load_gdt(void);
-extern int init_tss();
+extern uint16_t init_tss();
 
 void cpu(struct limine_smp_info *info) {
   asm("cli");
@@ -38,9 +41,9 @@ void cpu(struct limine_smp_info *info) {
   
   
   madt = get_acpi_sdt(MADT_C);
-  init_apic((unsigned int*)((unsigned long)HHDM_OFFSET + madt->lapic));
+  init_apic((uint32_t*)((uint64_t)HHDM_OFFSET + madt->lapic));
 
-  char *l = palloc(100);
+  uint8_t *l = palloc(100);
   freepg(P2V((uintptr_t)l), 100);
 
   asm("sti");

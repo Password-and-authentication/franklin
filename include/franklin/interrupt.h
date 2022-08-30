@@ -9,14 +9,14 @@ extern void isr_kbd(void);
 
 extern void apic_timer(regs_t*);
 extern void kbd_press(void);
-extern void timerh(unsigned long);
+extern void timerh();
 
 
 void init_interrupt(void);
 
 
 
-volatile int PIT_COUNTER;
+volatile uint32_t PIT_COUNTER;
 
 
 #endif

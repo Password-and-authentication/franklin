@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+
+
+
 typedef struct {
   uint64_t r11;
   uint64_t r10;
@@ -30,6 +33,8 @@ typedef struct {
 typedef struct {
   uint64_t rsp;
 } thread;
+
+extern void switc(stack**, stack*);
 
 
 

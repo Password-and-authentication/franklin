@@ -2,18 +2,18 @@
 #include "franklin/pic.h"
 
 
-void unmask_irq(char irq) {
+void unmask_irq(uint8_t irq) {
 
-    char imr = in(0x21);
+    uint8_t imr = in(0x21);
     imr ^= (1 << irq);
     out(0x21, imr);
 }
 
 
 
-void pic_remap(int offset) {
-    char mask = in(PIC1_DATA); // mask gets cleared on initalization
-    char mask2 = in(PIC2_DATA);
+void pic_remap(uint8_t offset) {
+    uint8_t mask = in(PIC1_DATA); // mask gets cleared on initalization
+    uint8_t mask2 = in(PIC2_DATA);
 
     out(PIC1_COMMAND, ICW1 | 0x01);     // initalization
     out(PIC2_COMMAND, ICW1 | 0x01);

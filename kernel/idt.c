@@ -7,15 +7,12 @@
 #include "franklin/spinlock.h"
 #include "franklin/interrupt.h"
 
-
-
-
 __attribute__((aligned(0x10)))
 static idt_entry idt[256];
 
 static struct {
-    unsigned short size;
-    unsigned long base;
+    uint16_t size;
+    uint64_t base;
 } __attribute__((packed)) idtr;
 
 
@@ -36,21 +33,21 @@ void init_idt() {
 }
 
 
-void new_irq(unsigned char vector, void(*isr)(void)) {
+void new_irq(uint8_t vector, void(*isr)(void)) {
   set_idt_entry(vector, isr, 0x8E);
 }
 
 
 
-void set_idt_entry(unsigned char vector, void(*isr)(), unsigned char flags) {
+void set_idt_entry(uint8_t vector, void(*isr)(), uint8_t flags) {
 
     idt_entry *desc = &idt[vector];
-    desc->isr_low = (unsigned short)isr;
+    desc->isr_low = (uint16_t)isr;
     desc->selector = (0x5 << 3); // kernel code segment in GDT
     desc->ist = 0; 
     desc->attributes = flags;
-    desc->isr_mid =  (unsigned short)((unsigned long)isr >> 16);
-    desc->isr_high = (uint32_t)((unsigned long)isr >> 32);
+    desc->isr_mid =  (uint16_t)((uint64_t)isr >> 16);
+    desc->isr_high = (uint32_t)((uint64_t)isr >> 32);
     desc->zero = 0;
 }
 
@@ -61,7 +58,7 @@ void l() {
 extern uint32_t* EOI;
 void trap(regs_t *regs) {
   if (regs->code < 32) {
-    char s[20];
+    uint8_t s[20];
     itoa(regs->code, s);
     l();
     print("trap error: ");

@@ -2,6 +2,7 @@
 #include "franklin/mmu.h"
 #include "franklin/defs.h"
 #include "franklin/69.h"
+#include "franklin/string.h"
 
 static pte_t *getpte(uint64_t);
 
@@ -22,12 +23,12 @@ uintptr_t getpaddr(uint64_t entry) {
 
 void init_vmm() {
     uint64_t addr;
-    PML4E = P2V((uintptr_t)palloc(1));
-    memzero((char*)PML4E, PGSIZE);
+    PML4E = (pml4_t*)P2V((uintptr_t)palloc(1));
+    memzero((uint8_t*)PML4E, PGSIZE);
     test();    
 }   
 
-int mappage(uint64_t vaddr, uint64_t paddr, uint8_t flags) {
+uint8_t mappage(uint64_t vaddr, uint64_t paddr, uint8_t flags) {
     uint64_t *PDPTE, *PDE, *PTE;
     Table tablearr[4] = {{PML4E, 39}, {PDPTE, 30}, {PDE, 21}, {PTE, 12}};
     uint16_t index;
@@ -45,8 +46,8 @@ int mappage(uint64_t vaddr, uint64_t paddr, uint8_t flags) {
 
 // get PTE and set present flag to 0 and free page from physical memory
 void unmappage(uint64_t vaddr) {
-    char *l = (char*) vaddr;
-    asm("invlpg %0" : : "m" (*(char*)vaddr) : "memory");
+    uint8_t *l = (uint8_t*) vaddr;
+    asm("invlpg %0" : : "m" (*(uint8_t*)vaddr) : "memory");
     pte_t *pte = getpte(vaddr);
     uintptr_t paddr = getpaddr(*pte);
     *pte ^= (1 << PRESENT);
@@ -65,11 +66,6 @@ void remappage(uint64_t vaddr, int pfn) {
     *pte |= (uintptr_t)pallocaddr(1, pfn * PGSIZE);
 }
 
-void memzero(char* mem, int n) {
-    for (int i = 0; i < n; ++i) {
-        mem[i] = 0;
-    }
-}
 
 
 static pte_t *getpte(uint64_t vaddr) {
@@ -107,7 +103,7 @@ uint64_t* newentry(uint64_t *table_entry, uint64_t paddr, uint8_t flags) {
     else
         page = palloc(1);
     *table_entry = (uintptr_t)page | flags;
-    memzero((char*)P2V((uintptr_t)page), PGSIZE);
+    memzero((uint8_t*)P2V((uintptr_t)page), PGSIZE);
 
     noalloc:
     paddr = getpaddr(*table_entry);

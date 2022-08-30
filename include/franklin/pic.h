@@ -10,8 +10,8 @@
 #define ICW1 0b000010000
 #define ICW2 0b1
 
-void unmask_irq(char);
-void pic_remap(int);
+void unmask_irq(uint8_t);
+void pic_remap(uint8_t);
 
 
 #endif
