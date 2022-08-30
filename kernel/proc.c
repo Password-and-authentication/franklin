@@ -1,18 +1,15 @@
+#include <stdint.h>
 #include "franklin/switch.h"
 #include "franklin/apic.h"
 #include "franklin/mmu.h"
 #include "franklin/proc.h"
 #include "franklin/69.h"
-#include <stdint.h>
 
 
 
 
-void scheduler(void);
-stack *c;
-int x = 10;
 
-void scheduler(void);
+
 
 
 
@@ -31,11 +28,6 @@ void allocproc(uintptr_t *entry) {
   p->stack = (stack*)P2V((uintptr_t)palloc(1));
   p->stack->rip = (uintptr_t)entry;
   p->state = RUNNABLE;
-}
-
-
-void i() {
-  asm("int $33");
 }
 
 

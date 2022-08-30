@@ -2,6 +2,7 @@
 #define _PROC_
 
 
+void scheduler(void);
 
 enum procstate {
 		UNUSED,

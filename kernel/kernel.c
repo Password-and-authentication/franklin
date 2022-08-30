@@ -35,7 +35,7 @@ void print(void* s) {
     struct limine_terminal_response *terminal_res = terminal_request.response;
     struct limine_terminal *terminal = terminal_res->terminals[0];
     acquire(&spinlock);
-    terminal_res->write(terminal, s, 1);
+    terminal_res->write(terminal, s, strlen(s));
     release(&spinlock);
 }
 

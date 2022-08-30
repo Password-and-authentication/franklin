@@ -6,44 +6,55 @@
 
 static uint8_t kbd_us[127] = {
 		    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'q',
+		    0, 0, '\t', 0, 0, 0, 0, 0, 0, 0, 'q',
 		    '1', 0, 0, 0, 'z', 's', 'a', 'w', '2',
 		    0, 0, 'c', 'x', 'd', 'e', '4', '3',
-		    0, 0, ' ', 
+		    0, 0, ' ', 'v', 'f', 't', 'r', '5',
+		    0, 0, 'n', 'b', 'h', 'g', 'y', '6',
+		    0, 0, 0, 'm', 'j', 'u', '7', '8',
+		    0, 0, ',', 'k', 'i', 'o', '0', '9',
+		    0, 0, '.', '/', 'l', ';', 'p', '-',
+		    0, 0, 0, 0, 0, '[', '=', 0, 0, 0,
+		    0, '\n',
 };
 
 
 static uint8_t key_release = 0;
+
 void kbd_press() {
     uint8_t keycode = in(0x60);
-    /* print("\n"); */
-    
-    /* uint8_t s[20]; */
-    /* itoa(keycode, s); */
-    /* print(s); */
-    /* print("\n"); */
+    uint8_t character[2] = {
+		       kbd_us[keycode],
+		       0
+    };
 
-    /* if (keycode != 0xF0 && keycode == 22) */
-      /* print("1"); */
-    /* if (key_release) */
-      /* print("e"); */
 
+    static uint8_t flags;
+    void print_char(uint8_t*, uint8_t);
     if (keycode == 0xF0)
       key_release = 1;
-    if (!key_release)
-      print(&kbd_us[keycode]);
+    if (keycode == 0x12)
+      flags ^= 2;
+    if (!key_release) {
+      if (keycode == 0x58)
+	flags ^= 1;
+      else if (keycode != 0x12)
+	print_char(character, flags);
+    }
     if (keycode != 0xF0 && key_release)
       key_release = 0;
     
-    if (keycode != 0xF0 && !key_release && keycode < 127)
-        /* print(&kbd_us[keycode]); */
-    if (key_release)
-        key_release = 0;
-    if (keycode == 0xF0)
-        key_release = 1;
-
-    out(0x20, 0x20);
+    out(0x20, 0x20); // eoi
     return;
+}
+
+
+void print_char(uint8_t *ch, uint8_t flags) {
+
+  // if caps lock
+  if (flags & 1 || flags & 2)
+    ch[0] -= 32;
+  print(ch);
 }
 
 

@@ -66,7 +66,7 @@ ret:
 	mov rsp, rbp       	; this works even after scheduling, because 'trap'
 				; will save the rbp on entry
 	popregs
-	add rsp, 8
+	add rsp, 8 		; irq number
 	iretq
 
 	
