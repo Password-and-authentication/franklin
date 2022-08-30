@@ -15,6 +15,7 @@ struct proc {
   regs_t *regs;
   stack *stack;
   enum procstate state;
+  uint32_t pid;
 };
 
 
