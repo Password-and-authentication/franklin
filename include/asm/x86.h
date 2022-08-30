@@ -33,18 +33,17 @@ static void swapgs() {
   asm("swapgs":::"memory");
 }
 
+
 static void rdmsr(uint64_t **val) {
-  uint64_t rdx, addr;
+  uint64_t rdx, rax;
   asm volatile(
       "mov $0xc0000102, %%rcx;"
       "rdmsr;"
-      : "=a"(addr), "=d"(rdx)
+      : "=a"(rax), "=d"(rdx)
 	       );
-  /* *val |= ((uint64_t)edx << 32); */
-  addr |= ((uint64_t)rdx << 32);
-  *val = addr;
-  
+  *val = rax | (uint64_t)rdx << 32;
 }
+
 
 static void wrmsr(uint64_t val) {
   asm(
