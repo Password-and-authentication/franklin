@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "d.h"
 #include "franklin/switch.h"
 #include "franklin/apic.h"
 #include "franklin/mmu.h"
@@ -12,19 +13,22 @@ struct proc ptable[NPROC];
 
 
 struct proc* set_current_proc(struct proc *p) {
-  wrmsr((uint64_t)p);
+  wrmsr(MSR_GS, (uint64_t)p);
   swapgs();
   return p;
 }
 
+
+
 struct proc* get_current_proc() {
 
   struct proc *p;
-
+  
   swapgs();
-  rdmsr(&p);
-  if (p == 0) // if p = 0, it means swapgs() swapped the wrong way, so we need to swap again
-    swapgs(); rdmsr(&p);
+  if ((p = (struct proc*)rdmsr(MSR_GS)) == 0) {
+    swapgs();
+    p = (struct proc*)rdmsr(MSR_GS);
+  }
   
   return p;
 }
@@ -42,7 +46,7 @@ void startproc(struct proc *p) {
   switc(&discard, p->stack);
 }
 
-void allocproc(uintptr_t *entry) {
+void allocproc(void (*entry)()) {
   static uint32_t nextpid = 0;
   struct proc *p;
   

@@ -1,17 +1,17 @@
 #include <strings.h>
+#include <stdbool.h>
+#include "d.h"
 #include "limine.h"
 #include "franklin/mmu.h"
 #include "franklin/defs.h"
 #include "franklin/spinlock.h"
-#include <stdbool.h>
-
 
 
 
 void togglepage(uint32_t page) {
   bitmap[page / 64] ^= (1ULL << (page % 64));
 };
-uint8_t isfree(uint32_t page) {
+bool isfree(uint32_t page) {
     return (((bitmap[page / 64] & (1ULL << (page % 64)))) == 0);
 }
 
@@ -21,7 +21,7 @@ void *palloc(uint32_t size) {
         panic("panic: palloc, size too big");
     acquire(&spinlock);
     uint32_t page = 0, p = 0;
-    uint32_t x = 0, i = 0;
+
 
     while (1) {
         if (page >= MAXPG)
@@ -55,13 +55,15 @@ void *palloc(uint32_t size) {
     };
     releaselock:
     release(&spinlock);
-    return (void*)((uintptr_t)(page * PGSIZE));
+    return (void*)((uint64_t)(page * PGSIZE));
 }   
 
 
 void *pallocaddr(uint32_t size, uint64_t paddr) {
-    acquire(&spinlock);
+    
     uint32_t pfn = paddr / PGSIZE;
+
+    acquire(&spinlock);
     for (uint32_t i = pfn; i < pfn + size; ++i) {
         if (!isfree(i))
             panic("panic: pallocaddr, page is not free\n");
@@ -72,8 +74,9 @@ void *pallocaddr(uint32_t size, uint64_t paddr) {
 }
 
 
-void freepg(uintptr_t addr, uint32_t length) {
+void freepg(uint64_t addr, uint32_t length) {
     uint32_t page = addr / PGSIZE;
+    
     acquire(&spinlock);
     do {
         togglepage(page);
@@ -85,7 +88,7 @@ void initbmap(struct limine_memmap_response *memmap) {
     uint64_t bitmapsz = getmemsz(memmap);
     struct limine_memmap_entry *entry = getentry(memmap, bitmapsz);
 
-    bitmap = (uint64_t)HHDM_OFFSET + entry->base;
+    bitmap = (uint64_t*)P2V(entry->base);
     for (uint32_t i = 0; i < bitmapsz; ++i)
         togglepage(entry->base / PGSIZE + i);
 

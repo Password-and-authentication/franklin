@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "d.h"
 #include "asm/x86.h"
 #include "franklin/mmu.h"
 #include "franklin/gdt.h"

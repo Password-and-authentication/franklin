@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "d.h"
 #include "limine.h"
 #include "franklin/defs.h"
 #include "franklin/mmu.h"
@@ -66,8 +67,10 @@ void kmain(void) {
   walk_madt(madt); // get info about MADT table
   init_gdt();
 
-  print("ii got an idea, lets FUCK!\n");
+  print("\nwhat we gon' do tomorrow?\n");
+  print("i got an idea.. , lets FUCK!\n\n");
   init_interrupt();
+
 
 
   init_pit(1000); // 1000 hz, 1000 IRQ0's in a second
@@ -75,18 +78,18 @@ void kmain(void) {
 
 
     /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
-  init_apic((unsigned int*)((unsigned long)madt->lapic + HHDM_OFFSET));
+  init_apic((uint32_t*)((uintptr_t)madt->lapic + HHDM_OFFSET));
     
   /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
 
   
-  void startproc(struct proc*);
+
   extern struct proc ptable[];
 
   
 
 
-  void set_current_proc(struct proc*);  
+
   set_current_proc(&ptable[0]);
   startproc(&ptable[0]);
 

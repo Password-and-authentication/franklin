@@ -3,6 +3,7 @@
 
 #include "switch.h"
 
+
 #define IDT_MAX_DESC 256
 
 
@@ -20,8 +21,7 @@ typedef struct {
 
 
 
-__attribute__((noreturn))
-void trap(regs_t*);
+void trap(struct regs*);
 
 
 extern void *isr_table[];

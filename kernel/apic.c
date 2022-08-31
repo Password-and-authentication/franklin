@@ -1,4 +1,5 @@
 #include "franklin/acpi.h"
+#include "d.h"
 #include "franklin/apic.h"
 #include "franklin/69.h"
 #include "franklin/io.h"

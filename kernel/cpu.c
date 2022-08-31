@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "limine.h"
+#include "d.h"
 #include "franklin/defs.h"
 #include "franklin/cpu.h"
 #include "franklin/idt.h"
@@ -13,7 +14,7 @@
 
 
 
-volatile static struct limine_smp_request smp_req = {
+static volatile struct limine_smp_request smp_req = {
     .id = LIMINE_SMP_REQUEST,
     .revision = 0,
 };

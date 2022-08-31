@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "d.h"
 #include "asm/x86.h"
 #include "franklin/time.h"
 #include "franklin/apic.h"

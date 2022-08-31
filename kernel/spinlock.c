@@ -1,4 +1,5 @@
 #include "franklin/69.h"
+#include "d.h"
 #include "franklin/spinlock.h"
 
 

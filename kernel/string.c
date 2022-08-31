@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "d.h"
 
 
 int strlen(char *s) {

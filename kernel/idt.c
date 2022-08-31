@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "asm/x86.h"
+#include "d.h"
 #include "limine.h"
 #include "franklin/defs.h"
 #include "franklin/acpi.h"
@@ -27,7 +28,7 @@ void init_idt() {
     idtr.size = (uint16_t)sizeof(idt_entry) * IDT_MAX_DESC - 1;
 
     for (uint8_t vector = 0; vector < 32; vector++) {
-        set_idt_entry(vector, isr_table[vector], 0x8E);
+      set_idt_entry(vector, isr_table[vector], 0x8E);
     }
 
     load_idt();
@@ -43,7 +44,7 @@ void new_irq(uint8_t vector, void(*isr)(void)) {
 void set_idt_entry(uint8_t vector, void(*isr)(), uint8_t flags) {
 
     idt_entry *desc = &idt[vector];
-    desc->isr_low = (uint16_t)isr;
+    desc->isr_low = (uint16_t)(uint64_t)isr;
     desc->selector = (0x5 << 3); // kernel code segment in GDT
     desc->ist = 0; 
     desc->attributes = flags;
@@ -51,17 +52,14 @@ void set_idt_entry(uint8_t vector, void(*isr)(), uint8_t flags) {
     desc->isr_high = (uint32_t)((uint64_t)isr >> 32);
     desc->zero = 0;
 }
+#include "franklin/switch.h"
 
-void l() {
-  int x;
-}
-
+struct regs;
 extern uint32_t* EOI;
-void trap(regs_t *regs) {
+void trap(struct regs *regs) {
   if (regs->code < 32) {
     uint8_t s[20];
     itoa(regs->code, s);
-    l();
     print("trap error: ");
     print(s);
     asm("cli; hlt");

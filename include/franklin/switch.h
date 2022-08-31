@@ -6,7 +6,7 @@
 
 
 
-typedef struct {
+typedef struct regs {
   uint64_t r11;
   uint64_t r10;
   uint64_t r9;

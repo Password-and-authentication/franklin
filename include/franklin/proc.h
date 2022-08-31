@@ -1,7 +1,11 @@
 #ifndef _PROC_
 #define _PROC_
 
-
+struct proc;
+struct proc *get_current_proc();
+struct proc *set_current_proc(struct proc*);
+void startproc(struct proc*);
+void allocproc(void (*)());
 void scheduler(void);
 
 enum procstate {

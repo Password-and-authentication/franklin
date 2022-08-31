@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "d.h"
 #include "franklin/69.h"
 #include "franklin/kbd.h"
 #include "franklin/defs.h"
@@ -30,9 +31,9 @@ void kbd_press() {
 		       0
     };
 
-
     static uint8_t flags;
     void print_char(uint8_t*, uint8_t);
+    
     if (keycode == 0xF0)
       key_release = 1;
     if (keycode == 0x12)

@@ -1,29 +1,31 @@
 #include "limine.h"
+#include "d.h"
 #include "franklin/mmu.h"
 #include "franklin/defs.h"
 #include "franklin/69.h"
 #include "franklin/string.h"
 
+
+
 static pte_t *getpte(uint64_t);
 
 
-uintptr_t V2P(uintptr_t V) {
+uint64_t V2P(uint64_t V) {
     return V - HHDM_OFFSET;
 }
 
-uintptr_t P2V(uintptr_t P) {
+uint64_t P2V(uint64_t P) {
    return P + HHDM_OFFSET; 
 }
 
-uintptr_t getpaddr(uint64_t entry) {
+uint64_t getpaddr(uint64_t entry) {
     return (entry >> PAGE_SHIFT) << PAGE_SHIFT;
 }
 
 
 
 void init_vmm() {
-    uint64_t addr;
-    PML4E = (pml4_t*)P2V((uintptr_t)palloc(1));
+    PML4E = (pml4_t*)P2V((uint64_t)palloc(1));
     memzero((uint8_t*)PML4E, PGSIZE);
     test();    
 }   
@@ -32,7 +34,6 @@ uint8_t mappage(uint64_t vaddr, uint64_t paddr, uint8_t flags) {
     uint64_t *PDPTE, *PDE, *PTE;
     Table tablearr[4] = {{PML4E, 39}, {PDPTE, 30}, {PDE, 21}, {PTE, 12}};
     uint16_t index;
-    uintptr_t addr;
     for (int i = 0; i < 3; ++i) {
         index = (vaddr >> (tablearr[i].shift)) & 0x1FF;
         tablearr[i + 1].table = newentry(&tablearr[i].table[index], 0, flags);
@@ -46,10 +47,9 @@ uint8_t mappage(uint64_t vaddr, uint64_t paddr, uint8_t flags) {
 
 // get PTE and set present flag to 0 and free page from physical memory
 void unmappage(uint64_t vaddr) {
-    uint8_t *l = (uint8_t*) vaddr;
     asm("invlpg %0" : : "m" (*(uint8_t*)vaddr) : "memory");
     pte_t *pte = getpte(vaddr);
-    uintptr_t paddr = getpaddr(*pte);
+    uint64_t paddr = getpaddr(*pte);
     *pte ^= (1 << PRESENT);
     freepg(paddr, 1);
 }
@@ -60,16 +60,16 @@ void remappage(uint64_t vaddr, int pfn) {
     if (!isfree(pfn))
         panic("panic: remappage, pfn: is not free\n");
     pte_t *pte = getpte(vaddr);
-    uintptr_t paddr = getpaddr(*pte);
+    uint64_t paddr = getpaddr(*pte);
     freepg(paddr, 1);
     *pte &= 0x1FF;
-    *pte |= (uintptr_t)pallocaddr(1, pfn * PGSIZE);
+    *pte |= (uint64_t)pallocaddr(1, pfn * PGSIZE);
 }
 
 
 
 static pte_t *getpte(uint64_t vaddr) {
-    uintptr_t paddr;
+    uint64_t paddr;
     uint16_t index = vaddr >> 39;
     if ((PML4E[index] & PRESENT) == 0)
         panic("ERROR: getpte(), PML4E not in use\n");
@@ -97,13 +97,13 @@ uint64_t* newentry(uint64_t *table_entry, uint64_t paddr, uint8_t flags) {
     if (*table_entry & PRESENT)
         goto noalloc;    
         
-    uint64_t *page, vaddr;
+    uint64_t *page;
     if (paddr != 0)
         page = pallocaddr(1, paddr);
     else
         page = palloc(1);
-    *table_entry = (uintptr_t)page | flags;
-    memzero((uint8_t*)P2V((uintptr_t)page), PGSIZE);
+    *table_entry = (uint64_t)page | flags;
+    memzero((uint8_t*)P2V((uint64_t)page), PGSIZE);
 
     noalloc:
     paddr = getpaddr(*table_entry);

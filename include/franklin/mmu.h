@@ -1,12 +1,13 @@
-
+#ifndef _MMU_
+#define _MMU_
 #include <stdint.h>
-
+#include <stdbool.h>
 
 #define PGSIZE 4096
 uint64_t MAXPG;
 
-uintptr_t V2P(uintptr_t);
-uintptr_t P2V(uintptr_t);
+uint64_t V2P(uint64_t);
+uint64_t P2V(uint64_t);
 
 typedef uint64_t pde_t;
 typedef uint64_t pte_t;
@@ -57,15 +58,16 @@ uint64_t *newentry(uint64_t*, uint64_t, uint8_t);
 
 // PMM
 
-uint8_t isfree(uint32_t);
+bool isfree(uint32_t);
 void togglepage(uint32_t);
 
 void* palloc(uint32_t);
 void* pallocaddr(uint32_t, uint64_t);
-void freepg(uintptr_t, uint32_t);
+void freepg(uint64_t, uint32_t);
 
 void initbmap(struct limine_memmap_response *);
 void setentry(struct limine_memmap_entry *);
 uint64_t getmemsz(struct limine_memmap_response*);
 struct limine_memmap_entry* getentry(struct limine_memmap_response*, uint64_t);
 
+#endif

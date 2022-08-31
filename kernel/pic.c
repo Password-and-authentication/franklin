@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "d.h"
 #include "franklin/pic.h"
 #include "asm/x86.h"
 
