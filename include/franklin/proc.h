@@ -20,6 +20,7 @@ struct proc {
   stack *stack;
   enum procstate state;
   uint32_t pid;
+  uint64_t *pml4;
 };
 
 

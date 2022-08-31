@@ -1,15 +1,14 @@
 #include "franklin/69.h"
 #include "d.h"
 #include "franklin/spinlock.h"
+#include <stdatomic.h>
 
 
 
 void acquire(lock *lock) {
 
-    uint32_t expected = 0;
-    while (__atomic_compare_exchange_n(lock, &expected, 1, 0, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED) == 0)
-        ;
-    return;
+  while (atomic_exchange(lock, 1))
+    ;
 }
 
 void release(lock *lock) {

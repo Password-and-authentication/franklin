@@ -61,6 +61,8 @@ void kmain(void) {
   allocproc(thread1);
   allocproc(thread2);
   allocproc(thread3);
+  init_plock();
+
 
   
   MADT *madt = get_acpi_sdt(MADT_C);
@@ -79,19 +81,19 @@ void kmain(void) {
 
     /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
   init_apic((uint32_t*)((uintptr_t)madt->lapic + HHDM_OFFSET));
-    
-  /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
+
+  
+  wrmsr(MSR_GS, 100);
+  init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
 
   
 
-  extern struct proc ptable[];
+
 
   
 
-
-
-  set_current_proc(&ptable[0]);
-  startproc(&ptable[0]);
+  void init_proc();
+  init_proc(0);
 
 
     
@@ -102,6 +104,7 @@ void kmain(void) {
 
 void thread3() {
   asm("sti");
+  r();
 
   for (;;) {
 
@@ -110,6 +113,7 @@ void thread3() {
 
 void thread2() {
   asm("sti");
+  r();
 
   for (;;) {
     /* print("lol\n"); */
@@ -118,9 +122,10 @@ void thread2() {
 }
 
 void thread1() {
-
-  // interrupts get disabled on trap entry
+  
+    // interrupts get disabled on trap entry
   asm("sti");
+  r();
 
   for(;;) {
     /* print("ex\n"); */

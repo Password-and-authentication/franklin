@@ -68,12 +68,22 @@ extern struct proc *curproc;
 
 
 void apic_timer(regs_t *regs) {
-  *EOI = 0;
-  /* if (curproc) */
-    /* curproc->state = RUNNABLE;     */
 
-  curproc->state = RUNNABLE;
+  struct proc *current;
+  *EOI = 0;
+
+  // lock needs to be held, because
+  // the CPU might set state to runnable,
+  // and then another CPU might run the process
+  // this would result in 2 CPUs running on the same stack
+  
+
+  acq();
+  current = get_current_proc();
+  current->state = RUNNABLE;
   scheduler();
+  r();
+
   /* release(&spinlock); */
 
 
