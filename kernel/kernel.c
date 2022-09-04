@@ -41,7 +41,7 @@ void print(void* s) {
     release(&spinlock);
 }
 
-
+static uint64_t ar[3] = {3, 3, 4};
 
 void kmain(void) {
   asm("cli");
@@ -83,14 +83,9 @@ void kmain(void) {
   init_apic((uint32_t*)((uintptr_t)madt->lapic + HHDM_OFFSET));
 
   
-  wrmsr(MSR_GS, 100);
+  /* wrmsr(MSR_GS, 100); */
   init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
 
-  
-
-
-
-  
 
   void init_proc();
   init_proc(0);

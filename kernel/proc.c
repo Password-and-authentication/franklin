@@ -10,7 +10,7 @@
 
 struct proc *curproc;
 
-struct {
+static struct {
   uint32_t lock;
   struct proc proc[NPROC];
 } ptable;
@@ -52,13 +52,13 @@ get_current_proc(void)
 void
 startproc(struct proc *p)
 {
-
   struct proc *current;
+  acq();
   
   current = set_current_proc(p);
   current->state = RUNNING;
 
-  acq();
+
   
   // this useless stack needs to be "saved" somewhere
   stack *discard;
@@ -69,21 +69,29 @@ startproc(struct proc *p)
 void
 allocproc(void (*entry)())
 {
+  uint8_t index = 0;
   static uint32_t nextpid = 0;
   struct proc *p;
-  
-  p = &ptable.proc[nextpid];
-  p->pid = nextpid++;
 
+  acquire(&ptable.lock);
+  p = getproc(UNUSED, &index);
+  release(&ptable.lock);
+
+  if (p == 0)
+    return 0;
+
+  p->pid = ++nextpid;
   // palloc(1) allocates 1 page in phys memory and returns a physical addr
   p->stack = (stack*)P2V((uintptr_t)palloc(1));
   extern void ret(void);
-  p->stack->rip = ret;
-  p->regs = p->stack + sizeof(stack);
-  p->regs->rip = entry;
-  p->stack->rbp = p->regs;
+
+  // CS and EFLAGS NEED TO BE SET IF THIS IS USED
+  /* p->stack->rip = (uintptr_t)ret; */
+  /* p->regs = p->stack + sizeof(stack); */
+  /* p->regs->rip = entry; */
+  /* p->stack->rbp = p->regs; */
     
-  /* p->regs->rip = (uintptr_t)entry; */
+  p->stack->rip = (uintptr_t)entry;
     
   p->state = RUNNABLE;
 }
@@ -95,17 +103,18 @@ scheduler()
   
   struct proc *p, *prev, *current;
   static uint8_t i = 2; // note: this is static
+  
 
   // find next runnable process
-  for (; p->state != RUNNABLE; p = &ptable.proc[i++]) {
-    if (i == NPROC) {
-      release(&ptable.lock);
-      i = 0;
-    }
-    if (i == 0)
-      acquire(&ptable.lock);
+  for (;;) {
+
+    if ((p = getproc(RUNNABLE, &i)))
+      break;
+    i = 0;
+    release(&ptable.lock);
+    acquire(&ptable.lock);
   }
-    
+ found:
 
   
   prev = get_current_proc();
@@ -119,6 +128,17 @@ scheduler()
   // if new thread is same as last one,
   // return from scheduler to trap to interrupt handler to thread
   return;
+}
+
+
+static struct proc* getproc(enum procstate state, uint8_t *index) {
+
+  while (*index < NPROC) {
+    if (ptable.proc[*index].state == state)
+      return &ptable.proc[*index];
+    (*index)++;
+  }
+  return 0;
 }
 
 
