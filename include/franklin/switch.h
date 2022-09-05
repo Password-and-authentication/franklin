@@ -22,9 +22,11 @@ typedef struct regs {
   uint64_t rip;
   uint64_t cs;
   uint64_t eflags;
+  uint64_t rsp;
+  uint64_t ss;
 } __attribute__((packed))regs_t;
 
-typedef struct {
+typedef struct stack {
   uint64_t rbp;
   uint64_t rbx;
   uint64_t r12;

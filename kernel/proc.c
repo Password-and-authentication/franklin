@@ -6,9 +6,9 @@
 #include "franklin/proc.h"
 #include "asm/x86.h"
 
-#define NPROC 255
 
-struct proc *curproc;
+
+static struct proc *curproc;
 
 static struct {
   uint32_t lock;
@@ -69,7 +69,7 @@ startproc(struct proc *p)
 void
 allocproc(void (*entry)())
 {
-  uint8_t index = 0;
+  uint8_t *stack, index = 0;
   static uint32_t nextpid = 0;
   struct proc *p;
 
@@ -81,18 +81,32 @@ allocproc(void (*entry)())
     return 0;
 
   p->pid = ++nextpid;
+  
   // palloc(1) allocates 1 page in phys memory and returns a physical addr
-  p->stack = (stack*)P2V((uintptr_t)palloc(1));
+  uint64_t a;
+  stack = (uint8_t*)P2V((uintptr_t)palloc(1));
+  stack += PGSIZE;
+  a = stack;
   extern void ret(void);
 
-  // CS and EFLAGS NEED TO BE SET IF THIS IS USED
-  /* p->stack->rip = (uintptr_t)ret; */
-  /* p->regs = p->stack + sizeof(stack); */
-  /* p->regs->rip = entry; */
-  /* p->stack->rbp = p->regs; */
+  stack -= sizeof(struct regs);
+  
+  p->regs = (struct regs*)stack;
+  p->regs->rip = (uintptr_t)entry;
+  p->regs->cs = 0x28;
+  p->regs->eflags = 0x92;
+
+  stack -= sizeof(struct stack);
+  p->stack = (struct stack*)stack;
+  
+  p->stack->rip = (uintptr_t)ret;
+  
+  p->regs->rsp = stack;
+  /* p->regs->ss = 0x500; */
     
-  p->stack->rip = (uintptr_t)entry;
-    
+  /* p->stack->rip = (uintptr_t)entry; */
+
+  // this should be removed later
   p->state = RUNNABLE;
 }
 
@@ -107,14 +121,13 @@ scheduler()
 
   // find next runnable process
   for (;;) {
-
     if ((p = getproc(RUNNABLE, &i)))
       break;
     i = 0;
-    release(&ptable.lock);
-    acquire(&ptable.lock);
+    // let other CPUs gain entry to scheduler
+    /* release(&ptable.lock); */
+    /* acquire(&ptable.lock); */
   }
- found:
 
   
   prev = get_current_proc();
@@ -131,7 +144,9 @@ scheduler()
 }
 
 
-static struct proc* getproc(enum procstate state, uint8_t *index) {
+static struct proc*
+getproc(enum procstate state, uint8_t *index)
+{
 
   while (*index < NPROC) {
     if (ptable.proc[*index].state == state)

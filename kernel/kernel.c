@@ -84,8 +84,8 @@ void kmain(void) {
 
   
   /* wrmsr(MSR_GS, 100); */
-  init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
-
+  /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
+ 
 
   void init_proc();
   init_proc(0);
@@ -100,18 +100,26 @@ void kmain(void) {
 void thread3() {
   asm("sti");
   r();
+  static int h;
+
 
   for (;;) {
-
+    asm("cli");
+    print("3");
+    asm("sti");
+    asm("hlt");
+    
   }
 }
 
 void thread2() {
   asm("sti");
   r();
+  static int x;
+
+  
 
   for (;;) {
-    /* print("lol\n"); */
 
   }
 }
@@ -123,7 +131,7 @@ void thread1() {
   r();
 
   for(;;) {
-    /* print("ex\n"); */
+    /* print("1\n"); */
   }
 
 

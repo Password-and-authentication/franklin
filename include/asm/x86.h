@@ -39,7 +39,7 @@ static void swapgs() {
 static uint64_t rdmsr(uint32_t msr) {
 
   uint32_t a, d;
-  asm("rdmsr" : "=a"(a), "=d"(d), "=c"(msr));
+  asm("rdmsr" : "=a"(a), "=d"(d) :"c"(msr));
   return (uint64_t)d << 32 | a;
 }
 

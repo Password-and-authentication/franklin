@@ -1,6 +1,8 @@
 #ifndef _PROC_
 #define _PROC_
 
+#define NPROC 255
+
 enum procstate;
 struct proc;
 struct proc *get_current_proc();
