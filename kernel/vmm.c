@@ -7,8 +7,6 @@
 
 
 
-static pte_t *getpte(uint64_t);
-
 
 uint64_t V2P(uint64_t V) {
     return V - HHDM_OFFSET;

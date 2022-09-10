@@ -22,7 +22,7 @@ $(eval $(call DEFAULT_VAR,LD,ld))
 
 
 # User controllable CFLAGS.
-CFLAGS ?= -O0 -g -Wall -Wextra -Wpedantic -pipe -I ../include -pthread
+CFLAGS ?= -O0 -g -Wall -Wextra -Wpedantic -pipe -I ../include 
 
 # User controllable nasm flags.
 NASMFLAGS ?= -F dwarf -g
@@ -80,7 +80,6 @@ limine.h:
 
 # Link rules for the final kernel executable.
 $(KERNEL): $(OBJ)
-	echo $(OBJ)
 	$(LD) $(OBJ) $(LDFLAGS) -o $@
 
 # Include header dependencies.

@@ -19,6 +19,10 @@
 #include "asm/x86.h"
 
 
+#include "franklin/fs/vfs.h"
+
+
+
 
 
 
@@ -73,6 +77,7 @@ void kmain(void) {
   print("i got an idea.. , lets FUCK!\n\n");
   init_interrupt();
 
+  vfs_mount("/", "ramfs");
 
 
   init_pit(1000); // 1000 hz, 1000 IRQ0's in a second
