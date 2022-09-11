@@ -46,52 +46,19 @@ struct slab {
   struct slab *next;
   size_t size; // size of a block
   size_t refcount; // the amount of blocks that are in use
+  int id; 
 
   struct block *freelist;
 };
 
 static struct slab *slab_head; // linked list of slabs
 
-static struct slab* new_slab(size_t size) {
 
-  struct slab *slab;
-  struct block *blk;
-  size_t i = 1;
-
-  // palloc(1) allocates one page, and returns the physical address
-  // P2V converts it into a virtual address
-  slab = (struct slab*) P2V((uintptr_t)palloc(1));
-  slab->size = size;
-  slab->refcount = 0;
-  
-  slab->next = slab_head;
-  slab_head = slab;
-
-  blk = (struct block*) ((char*)slab + sizeof(struct slab));
-  slab->freelist = blk;
-
-  // setup linked list of free blocks
-  for (; (char*)blk < (char*)slab + PGSIZE; i++) {
-    blk->next = (struct block*) ((char*)slab->freelist + (i * size));
-    blk = blk->next;
-  }
-    
-  return slab;
-}
-
-// allocate one block in the slab
-static struct block* block_alloc(struct slab *slab) {
-  struct block *blk;
-
-  slab->refcount++;
-  
-  blk = slab->freelist;
-  slab->freelist = slab->freelist->next;
-  return blk;
-};
 
 // allocate 'size' amount of bytes
-void* kalloc(size_t size) {
+void*
+kalloc(size_t size)
+{
   struct slab *slab;
 
   // MIN block size is 8
@@ -111,11 +78,14 @@ void* kalloc(size_t size) {
 }
 
 // free a block in a slab
-void kfree(void *ptr) {
+void
+kfree(void *ptr)
+{
   struct slab* slab;
+  struct block *blk = (struct block*)ptr;
   
   for (slab = slab_head; slab; slab = slab->next) {
-    if ((void*)slab > ptr || (char*)ptr > ((char*)slab + PGSIZE))
+    if ((void*)slab > ptr || (char*)ptr >= ((char*)slab + PGSIZE))
       continue;
 
     // if refcount is already 0, it means the slab was already freed
@@ -128,8 +98,8 @@ void kfree(void *ptr) {
     if (slab->refcount == 0)
       freeslab(slab);
     else {
-      slab->freelist->next = slab->freelist;
-      slab->freelist = ptr;
+      blk->next = slab->freelist;
+      slab->freelist = blk;
     }
 
     return;
@@ -137,10 +107,120 @@ void kfree(void *ptr) {
 };
 
 
-static void freeslab(struct slab *slab) {
-  // free the page starting at address 'slab'
-  // V2P converts it to a physical address
+// allocate new slab and add it to the linked list of slabs
+static struct slab*
+new_slab(size_t size)
+{
+  struct slab *slab;
+  struct block *blk;
+  size_t i = 1;
+  static int id;
+
+  // try to find an existing slab in the linked list to reuse
+  /* for (slab = slab_head; slab; slab = slab->next) */
+    /* if (slab->refcount == 0) */
+      /* break; */
+
+  slab = (struct slab*) P2V((uintptr_t)palloc(1));
+  
+  slab->size = size;
+  slab->refcount = 0;
+  slab->id = id++;
+
+  
+  slab->next = slab_head;
+  slab_head = slab;
+
+  blk = &slab->freelist;
+  while (blk < ((char*)slab + PGSIZE) - size) {
+    blk->next = (char*)&slab->freelist + (i * size);
+    blk = blk->next;
+    i++;
+  }
+  
+    
+  return slab;
+}
+
+// allocate one block in the slab
+static struct block*
+block_alloc(struct slab *slab)
+{
+  struct block *blk;
+
+  slab->refcount++;
+  
+  blk = slab->freelist;
+  slab->freelist = slab->freelist->next;
+  return blk;
+};
+
+
+
+// free slab and remove it from the linked list
+static void
+freeslab(struct slab *slab)
+{
+  struct slab *prev, *slabptr = slab_head;
+  
+  while (slabptr != slab) {
+    prev = slabptr;    
+    slabptr = slabptr->next;
+  }
+  prev->next = slabptr->next;
+  
+
   freepg(V2P((uintptr_t)slab), 1);
 }
 
 
+void
+test_slab(void)
+{
+
+
+  int *in = kalloc(sizeof(int));
+  int *in2 = kalloc(sizeof(int));
+  *in = 10;
+  *in2 = 100;
+  
+  char *g = kalloc(8);
+  kalloc(8);
+  kfree(g);
+  char *xx = kalloc(16);
+  kalloc(32);
+  kalloc(16);
+  kalloc(32);
+  g = kalloc(8);
+  kfree(g);
+  g = kalloc(8);
+  kfree(g);
+
+  
+  char *f = palloc(1);
+  char *ff = palloc(1);
+  kfree(xx);
+  g = kalloc(8);
+  kfree(g);
+  char *addr[1000];
+
+  for (int i = 0; i < 1000; ++i)
+    addr[i] = kalloc(8);
+  for (int i = 0; i < 1000; ++i)
+    kfree(addr[i]);
+
+  struct l {
+    int x;
+    int y;
+  };
+  struct l *l = kalloc(sizeof(struct l));
+  kfree(l);
+  int *x = kalloc(1000);
+  kfree(x);
+
+  if (*in != 10 || *in2 != 100)
+    panic("panic:_ slab test");
+
+  
+  
+}

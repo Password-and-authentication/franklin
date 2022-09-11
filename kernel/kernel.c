@@ -69,21 +69,15 @@ void kmain(void) {
   allocproc(thread3);
   init_plock();
 
-  char *g = kalloc(8);
-  kfree(g);
-  /* kfree(g); */
 
-  for (int i = 0; i < 550; ++i);
-    /* kalloc(8); */
+
   
-  struct l {
-    int x;
-    int y;
-  };
-  /* struct l *l = kalloc(sizeof(struct l)); */
+  
 
-  /* kfree(g); */
-  /* kfree(l); */
+
+  test_slab();
+  
+
 
 
   
