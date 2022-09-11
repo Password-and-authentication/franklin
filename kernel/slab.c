@@ -41,7 +41,6 @@ struct block {
 struct slab {
   struct slab *next;
   size_t size;
-  void *start;
 
   struct block *freelist;
 };
@@ -54,28 +53,22 @@ static struct slab* new_slab(size_t size) {
   struct block *blk;
   size_t i = 1;
 
-  slab = P2V((uintptr_t)palloc(1));
+  slab = (struct slab*) P2V((uintptr_t)palloc(1));
   slab->size = size;
   
   slab->next = slab_head;
   slab_head = slab;
 
-  blk = (void*)slab + sizeof(struct slab);
+  blk = (struct block*) ((char*)slab + sizeof(struct slab));
   slab->freelist = blk;
 
-  for (; blk < (void*)slab + PGSIZE; blk = blk->next, ++i)
-    blk->next = (void*)slab->freelist + (i * size);
+  for (; (char*) blk < (char*) slab + PGSIZE; blk = blk->next, ++i)
+    blk->next = (struct block*) ((char*)slab->freelist + (i * size));
 
-
-  // slab->freelist = 085c020
-  // slab-
 
   return slab;
 }
 
-void init_slab() {
-  slab_head = new_slab(8);
-}
 
 static struct block* slab_alloc(struct slab *slab) {
   struct block *ret;
@@ -101,7 +94,7 @@ void free(void *ptr) {
   struct slab* slab;
   
   for (slab = slab_head; slab; slab = slab->next) {
-    if (slab > ptr || ptr > (void*)slab + PGSIZE)
+    if ((void*)slab > ptr || (char*)ptr > (char*)slab + PGSIZE)
       continue;
     
     slab->freelist->next = slab->freelist;

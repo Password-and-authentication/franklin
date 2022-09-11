@@ -70,17 +70,18 @@ void kmain(void) {
   init_plock();
 
   char *g = kalloc(8);
-  char *x = kalloc(sizeof(char));
+
 
   struct l {
     int x;
     int y;
   };
   struct l *l = kalloc(sizeof(struct l));
-  char *b = kalloc(sizeof(char));
+
   free(g);
   free(l);
-  free(b);
+
+
   
 
 
