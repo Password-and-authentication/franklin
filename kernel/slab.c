@@ -98,6 +98,7 @@ kfree(void *ptr)
     if (slab->refcount == 0)
       freeslab(slab);
     else {
+      // otherwise add the block to the free blocks list
       blk->next = slab->freelist;
       slab->freelist = blk;
     }
@@ -116,26 +117,21 @@ new_slab(size_t size)
   size_t i = 1;
   static int id;
 
-  // try to find an existing slab in the linked list to reuse
-  /* for (slab = slab_head; slab; slab = slab->next) */
-    /* if (slab->refcount == 0) */
-      /* break; */
-
+  // allocate 1 page for the slab
   slab = (struct slab*) P2V((uintptr_t)palloc(1));
   
   slab->size = size;
   slab->refcount = 0;
-  slab->id = id++;
+  slab->id = id++; // id is for debugging
 
-  
   slab->next = slab_head;
   slab_head = slab;
 
   blk = &slab->freelist;
-  while (blk < ((char*)slab + PGSIZE) - size) {
+  // init the free block list
+  for (; blk < ((char*)slab + PGSIZE) - size; ++i) {
     blk->next = (char*)&slab->freelist + (i * size);
     blk = blk->next;
-    i++;
   }
   
     

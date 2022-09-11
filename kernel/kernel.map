@@ -231,16 +231,16 @@ LOAD ./isr.o
                 0xffffffff80002992                thread3
                 0xffffffff800029a7                thread2
                 0xffffffff800029bc                thread1
- .text          0xffffffff800029d1      0x490 ../kernel/slab.o
+ .text          0xffffffff800029d1      0x48e ../kernel/slab.o
                 0xffffffff800029d1                kalloc
                 0xffffffff80002a57                kfree
                 0xffffffff80002c97                test_slab
- .text          0xffffffff80002e61       0x96 ../fs/vfs.o
-                0xffffffff80002e61                vfs_mount
- .text          0xffffffff80002ef7       0x58 ../fs/ramfs.o
-                0xffffffff80002ef7                ramfs_mount
-                0xffffffff80002f21                ramfs_root
- *fill*         0xffffffff80002f4f        0x1 
+ .text          0xffffffff80002e5f       0x96 ../fs/vfs.o
+                0xffffffff80002e5f                vfs_mount
+ .text          0xffffffff80002ef5       0x58 ../fs/ramfs.o
+                0xffffffff80002ef5                ramfs_mount
+                0xffffffff80002f1f                ramfs_root
+ *fill*         0xffffffff80002f4d        0x3 
  .text          0xffffffff80002f50       0x1b ./switch.o
                 0xffffffff80002f50                switc
  *fill*         0xffffffff80002f6b        0x5 
@@ -496,7 +496,7 @@ OUTPUT(kernel.elf elf64-x86-64)
  .debug_aranges
                 0x00000000000003f0       0x30 ./isr.o
 
-.debug_line     0x0000000000000000     0x20ff
+.debug_line     0x0000000000000000     0x211f
  .debug_line    0x0000000000000000      0x156 ../ACPI/acpi.o
  .debug_line    0x0000000000000156       0xde ../kernel/spinlock.o
  .debug_line    0x0000000000000234       0xb8 ../kernel/panic.o
@@ -515,11 +515,11 @@ OUTPUT(kernel.elf elf64-x86-64)
  .debug_line    0x0000000000001968      0x184 ../kernel/cpu.o
  .debug_line    0x0000000000001aec        0x0 ../kernel/tmpfs.o
  .debug_line    0x0000000000001aec      0x1f7 ../kernel/kernel.o
- .debug_line    0x0000000000001ce3      0x258 ../kernel/slab.o
- .debug_line    0x0000000000001f3b       0x98 ../fs/vfs.o
- .debug_line    0x0000000000001fd3       0x79 ../fs/ramfs.o
- .debug_line    0x000000000000204c       0x42 ./switch.o
- .debug_line    0x000000000000208e       0x71 ./isr.o
+ .debug_line    0x0000000000001ce3      0x278 ../kernel/slab.o
+ .debug_line    0x0000000000001f5b       0x98 ../fs/vfs.o
+ .debug_line    0x0000000000001ff3       0x79 ../fs/ramfs.o
+ .debug_line    0x000000000000206c       0x42 ./switch.o
+ .debug_line    0x00000000000020ae       0x71 ./isr.o
 
 .debug_str      0x0000000000000000      0xe32
  .debug_str     0x0000000000000000      0x243 ../ACPI/acpi.o
