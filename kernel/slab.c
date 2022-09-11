@@ -12,6 +12,11 @@
  when a block is allocated, the free block
  is removed from the linked list
 
+ the free block list starts at the BEGINNING
+ of the slab to make it cacheline aligned
+ and the slab struct is allocated, at
+ the end of the slab
+
  when a block is freed, it is added back
  to the linked list, but if the slab
  has no more blocks in use, free the whole slab
@@ -27,9 +32,13 @@
 */
 
 
-#include "franklin/mmu.h"
-#include <stddef.h>
+// TODO: add macro to iterate linked list and check locks
 
+
+#include "franklin/mmu.h"
+#include "franklin/spinlock.h"
+#include <stddef.h>
+#include <stdbool.h>
 
 
 static struct slab* new_slab(size_t);
@@ -39,8 +48,9 @@ static void freeslab(struct slab *);
 
 // block of memory
 struct block {
-  struct block *next; 
+  struct block *next;
 };
+
 
 struct slab {
   struct slab *next;
@@ -51,7 +61,11 @@ struct slab {
   struct block *freelist;
 };
 
-static struct slab *slab_head; // linked list of slabs
+static struct {
+  struct slab *slab_head;
+  lock lock;
+} slabber;
+/* static struct slab *slab_head; // linked list of slabs */
 
 
 
@@ -60,22 +74,29 @@ void*
 kalloc(size_t size)
 {
   struct slab *slab;
+  struct block *blk;
 
   // MIN block size is 8
-  if (size < 8)
-    size = 8;
-  
-  for (slab = slab_head; slab; slab = slab->next) {
-    if (slab->size == size && slab->freelist)
-      return (void*)block_alloc(slab);
+  if (size < sizeof(void*))
+    size = sizeof(void*);
+
+  acquire(&slabber.lock);
+  for (slab = slabber.slab_head; slab; slab = slab->next) {
+    if (slab->size == size && slab->freelist) {
+      blk = block_alloc(slab);
+      goto ret;
+    }
   }
   // if there is no free slab for the corresponding size,
-  // make a new slab
+  // make a new slab and then allocate a block in that slab
   slab = new_slab(size);
+  blk = block_alloc(slab);
 
-  // and then allocate a block in that slab
-  return (void*)block_alloc(slab);
+ ret:
+  release(&slabber.lock);
+  return (void*)blk;
 }
+
 
 // free a block in a slab
 void
@@ -83,8 +104,9 @@ kfree(void *ptr)
 {
   struct slab* slab;
   struct block *blk = (struct block*)ptr;
-  
-  for (slab = slab_head; slab; slab = slab->next) {
+
+  acquire(&slabber.lock);
+  for (slab = slabber.slab_head; slab; slab = slab->next) {
     if ((void*)slab > ptr || (char*)ptr >= ((char*)slab + PGSIZE))
       continue;
 
@@ -92,6 +114,7 @@ kfree(void *ptr)
     // and there can be no blocks in the slab
     if (slab->refcount == 0)
       panic("kfree, double free");
+
     
     slab->refcount--;
     // free the slab if there are no more blocks in use
@@ -102,9 +125,9 @@ kfree(void *ptr)
       blk->next = slab->freelist;
       slab->freelist = blk;
     }
-
-    return;
+    break;
   }
+  release(&slabber.lock);
 };
 
 
@@ -112,33 +135,39 @@ kfree(void *ptr)
 static struct slab*
 new_slab(size_t size)
 {
+  char *start;
   struct slab *slab;
   struct block *blk;
   size_t i = 1;
   static int id;
 
   // allocate 1 page for the slab
-  slab = (struct slab*) P2V((uintptr_t)palloc(1));
+  start = (char*)P2V((uintptr_t)palloc(1));
+  blk = (struct block*)start;
+  
+  slab = (struct slab*)(((char*)start + PGSIZE) - sizeof(struct slab));
+
   
   slab->size = size;
   slab->refcount = 0;
   slab->id = id++; // id is for debugging
+  slab->freelist = blk;
 
-  slab->next = slab_head;
-  slab_head = slab;
+  slab->next = slabber.slab_head;
+  slabber.slab_head = slab;
 
-  blk = &slab->freelist;
-  // init the free block list
-  for (; blk < ((char*)slab + PGSIZE) - size; ++i) {
-    blk->next = (char*)&slab->freelist + (i * size);
+
+  for (; (char*)blk < ((char*)slab - sizeof(struct block)); ++i) {
+    blk->next = (struct block*)(start + (i * size));
     blk = blk->next;
   }
-  
+
     
   return slab;
 }
 
 // allocate one block in the slab
+// LOCK HAS TO BE HELD
 static struct block*
 block_alloc(struct slab *slab)
 {
@@ -157,7 +186,7 @@ block_alloc(struct slab *slab)
 static void
 freeslab(struct slab *slab)
 {
-  struct slab *prev, *slabptr = slab_head;
+  struct slab *prev, *slabptr = slabber.slab_head;
   
   while (slabptr != slab) {
     prev = slabptr;    
@@ -188,6 +217,9 @@ test_slab(void)
   kalloc(16);
   kalloc(32);
   g = kalloc(8);
+  kalloc(8);
+  kalloc(8);
+  kfree(g);
   kfree(g);
   g = kalloc(8);
   kfree(g);
