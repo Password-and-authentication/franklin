@@ -2,6 +2,7 @@
 #define _MMU_
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #define PGSIZE 4096
 uint64_t MAXPG;
@@ -30,6 +31,11 @@ uint64_t *bitmap;
 #define PAGE_SHIFT 12
 
 
+
+
+// 7 FIGURE SLABBER
+
+void *kalloc(size_t);
 
 
 // VMM  

@@ -1,7 +1,32 @@
 #include <stdint.h>
 #include "franklin/fs/vfs.h"
 
+/*
+   mount plan
 
+   vfs_mount() takes in the mount point string
+   and the file system type string,
+
+   1. find the correct vfsops struct for
+      the file system type by iterating
+      the vfsops linked list and comparing
+      vfsops->name == fstype
+
+   2. find the vnode corresponding to the
+      mntpoint string with vnode->lookup()
+
+   3. allocate a vfs struct and set vfs->ops = vfsops
+
+   4. set vnode->mountedhere = vfs and,
+      add vfs to the vfs linked list
+      then call vfs_mount()
+
+   5. vfs_mount() will allocate a root inode
+      and a fs specific mount structure,
+      and set mount->root = root
+      
+
+*/
 
 
 void vfs_mount(const char *mntpoint, const char *fstype) {
@@ -12,16 +37,22 @@ void vfs_mount(const char *mntpoint, const char *fstype) {
       break;
   }
 
-    
+  static struct vfs *prev;  
   struct vfs vfs;
+  struct vnode **s;
+  
+  ramfs_root(&vfs, &s);
+  
+  vfs.next = prev;
+  prev = &vfs;
+  
+  
   vfs.ops = vfslist;
   vfs.ops->mount(&vfs);
 
   /* vfs->mountpoint = mntpoint; */
-  
-  
-  
 }
+
 
 
 

@@ -20,6 +20,7 @@ struct vnodeops {
 };
 
 struct vfs {
+  struct vnode *next;
   struct vnode *mountpoint;
   struct vfsops *ops;
   void *data;
@@ -34,6 +35,7 @@ struct vfsops {
 };
 
 extern struct vfs rootfs;
+extern struct vfs *mountedlist;
 extern struct vfsops *vfslist;
 
 
