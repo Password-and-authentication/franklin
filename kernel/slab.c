@@ -31,7 +31,6 @@
 
 */
 
-
 // TODO: add macro to iterate linked list and check locks
 
 
@@ -45,6 +44,15 @@ static struct slab* new_slab(size_t);
 static struct block* block_alloc(struct slab*);
 static void freeslab(struct slab *);
   
+
+#define SLIST_ENTRY(type)			\
+  struct {					\
+    struct type *next;				\
+  }
+
+#define SLIST_NEXT(struc, field) ((struc)->field.next)
+
+
 
 // block of memory
 struct block {
@@ -81,7 +89,9 @@ kalloc(size_t size)
     size = sizeof(void*);
 
   acquire(&slabber.lock);
-  for (slab = slabber.slab_head; slab; slab = slab->next) {
+
+  for (slab = slabber.slab_head; slab;
+       slab = slab->next) {
     if (slab->size == size && slab->freelist) {
       blk = block_alloc(slab);
       goto ret;
@@ -106,7 +116,8 @@ kfree(void *ptr)
   struct block *blk = (struct block*)ptr;
 
   acquire(&slabber.lock);
-  for (slab = slabber.slab_head; slab; slab = slab->next) {
+  for (slab = slabber.slab_head; slab;
+       slab->next) {
     if ((void*)slab > ptr || (char*)ptr >= ((char*)slab + PGSIZE))
       continue;
 
@@ -154,6 +165,8 @@ new_slab(size_t size)
   slab->freelist = blk;
 
   slab->next = slabber.slab_head;
+
+
   slabber.slab_head = slab;
 
 
