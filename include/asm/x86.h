@@ -29,12 +29,12 @@ static uint8_t in(uint8_t port) {
 
 
 
-
 static void swapgs() {
   asm("swapgs":::"memory");
 }
 
 #define MSR_GS 0xc0000102
+
 
 static uint64_t rdmsr(uint32_t msr) {
 
