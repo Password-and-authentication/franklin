@@ -31,49 +31,42 @@
 
 */
 
-// TODO: add macro to iterate linked list and check locks
-
 
 #include "franklin/mmu.h"
 #include "franklin/spinlock.h"
+#include "franklin/list.h"
 #include <stddef.h>
 #include <stdbool.h>
 
 
-static struct slab* new_slab(size_t);
-static struct block* block_alloc(struct slab*);
+static struct slab* newslab(size_t);
+static struct block* allocblock(struct slab*);
 static void freeslab(struct slab *);
   
-
-#define SLIST_ENTRY(type)			\
-  struct {					\
-    struct type *next;				\
-  }
-
-#define SLIST_NEXT(struc, field) ((struc)->field.next)
-
 
 
 // block of memory
 struct block {
-  struct block *next;
+  SLIST_ENTRY(block) blocks;
 };
 
+SLIST_HEAD(blocks, block);
 
 struct slab {
-  struct slab *next;
+  SLIST_ENTRY(slab) slabs;
   size_t size; // size of a block
   size_t refcount; // the amount of blocks that are in use
   int id; 
 
-  struct block *freelist;
+  struct blocks freelist;
 };
 
+SLIST_HEAD(slabs, slab);
+
 static struct {
-  struct slab *slab_head;
+  struct slabs slabs;
   lock lock;
 } slabber;
-/* static struct slab *slab_head; // linked list of slabs */
 
 
 
@@ -82,29 +75,31 @@ void*
 kalloc(size_t size)
 {
   struct slab *slab;
-  struct block *blk;
+  struct block *block;
 
-  // MIN block size is 8
-  if (size < sizeof(void*))
+
+  if (size > PGSIZE)
+    panic("kalloc, size");
+  if (size < sizeof(void*)) // MIN blocksize is 8
     size = sizeof(void*);
 
   acquire(&slabber.lock);
 
-  for (slab = slabber.slab_head; slab;
-       slab = slab->next) {
-    if (slab->size == size && slab->freelist) {
-      blk = block_alloc(slab);
+  // loop until a slab is found
+  SLIST_FOREACH(slab, &slabber.slabs, slabs) {
+    if (slab->size == size && SLIST_FIRST(&slab->freelist)) {
+      block = allocblock(slab);
       goto ret;
     }
   }
   // if there is no free slab for the corresponding size,
   // make a new slab and then allocate a block in that slab
-  slab = new_slab(size);
-  blk = block_alloc(slab);
+  slab = newslab(size);
+  block = allocblock(slab);
 
  ret:
   release(&slabber.lock);
-  return (void*)blk;
+  return (void*)block;
 }
 
 
@@ -113,13 +108,19 @@ void
 kfree(void *ptr)
 {
   struct slab* slab;
-  struct block *blk = (struct block*)ptr;
+  struct block *block = (struct block*)ptr;
+  uint64_t startaddr;
 
   acquire(&slabber.lock);
-  for (slab = slabber.slab_head; slab;
-       slab->next) {
-    if ((void*)slab > ptr || (char*)ptr >= ((char*)slab + PGSIZE))
+  
+  SLIST_FOREACH(slab, &slabber.slabs, slabs) {
+
+    // startaddr is where the slab starts / where the
+    // first free block is allocated
+    startaddr = (char*)slab - (PGSIZE - sizeof(*slab));
+    if (ptr < startaddr || ptr >= slab)
       continue;
+
 
     // if refcount is already 0, it means the slab was already freed
     // and there can be no blocks in the slab
@@ -133,8 +134,7 @@ kfree(void *ptr)
       freeslab(slab);
     else {
       // otherwise add the block to the free blocks list
-      blk->next = slab->freelist;
-      slab->freelist = blk;
+      SLIST_INSERT_HEAD(block, &slab->freelist, blocks);
     }
     break;
   }
@@ -144,17 +144,17 @@ kfree(void *ptr)
 
 // allocate new slab and add it to the linked list of slabs
 static struct slab*
-new_slab(size_t size)
+newslab(size_t size)
 {
   char *start;
   struct slab *slab;
-  struct block *blk;
+  struct block *block;
   size_t i = 1;
   static int id;
 
   // allocate 1 page for the slab
   start = (char*)P2V((uintptr_t)palloc(1));
-  blk = (struct block*)start;
+  block = (struct block*)start;
   
   slab = (struct slab*)(((char*)start + PGSIZE) - sizeof(struct slab));
 
@@ -162,35 +162,30 @@ new_slab(size_t size)
   slab->size = size;
   slab->refcount = 0;
   slab->id = id++; // id is for debugging
-  slab->freelist = blk;
+  
+  // set first block to point at allocated memory
+  slab->freelist.first = block;
 
-  slab->next = slabber.slab_head;
+  // set the blocks in the slab's free blocks list
+  for (; (char*)block + size < ((char*)slab); ++i)
+    SLIST_INSERT_AFTER((char*)start + (i * size), block, blocks);
 
-
-  slabber.slab_head = slab;
-
-
-  for (; (char*)blk < ((char*)slab - sizeof(struct block)); ++i) {
-    blk->next = (struct block*)(start + (i * size));
-    blk = blk->next;
-  }
-
-    
+  // add the slab to the linked list of slabs
+  SLIST_INSERT_HEAD(slab, &slabber.slabs, slabs);
   return slab;
 }
 
 // allocate one block in the slab
+// by removing it from the free blocks list
 // LOCK HAS TO BE HELD
 static struct block*
-block_alloc(struct slab *slab)
+allocblock(struct slab *slab)
 {
-  struct block *blk;
+  struct block *block;
 
   slab->refcount++;
-  
-  blk = slab->freelist;
-  slab->freelist = slab->freelist->next;
-  return blk;
+  SLIST_REMOVE_HEAD(block, &slab->freelist, blocks);
+  return block;
 };
 
 
@@ -199,15 +194,10 @@ block_alloc(struct slab *slab)
 static void
 freeslab(struct slab *slab)
 {
-  struct slab *prev, *slabptr = slabber.slab_head;
-  
-  while (slabptr != slab) {
-    prev = slabptr;    
-    slabptr = slabptr->next;
-  }
-  prev->next = slabptr->next;
-  
+  struct slab *slabptr = slabber.slabs.first;
 
+    
+  SLIST_REMOVE_ITEM(slab, &slabber.slabs, slab, slabs);
   freepg(V2P((uintptr_t)slab), 1);
 }
 
@@ -216,7 +206,12 @@ void
 test_slab(void)
 {
 
+  kalloc(8);
+  char *sss = kalloc(16);
+  kalloc(32);
+  kfree(sss);
 
+  
   int *in = kalloc(sizeof(int));
   int *in2 = kalloc(sizeof(int));
   *in = 10;
