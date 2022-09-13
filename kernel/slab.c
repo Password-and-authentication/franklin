@@ -73,50 +73,6 @@ struct slab {
 SLIST_HEAD(slabs, slab);
 
 
-struct slot {
-  struct slot *next;
-  size_t size;
-};
-
-static struct {
-  struct slot *first;
-  size_t total;
-} manager;
-
-void initpage(size_t size) {
-  
-  struct slot *slot = manager.first;
-  int i;
-  
-  for (i = 1 ; i < PGSIZE / size; i++) {
-    slot->next = (char*)manager.first + (size * i);
-    slot = slot->next;
-  }
-}
-
-void *alloc(size_t size) {
-
-  if (manager.first == 0) {
-    manager.first = P2V(palloc(1));
-  }
-
-  struct slot *ret;
-  ret = manager.first;
-  manager.first = manager.first->next;
-  return (void*)ret;
-}
-
-void free(void *ptr) {
-
-  struct slot *slot = ptr;
-
-  // add it to the linked list
-  slot->next = manager.first;
-  manager.first = slot;
-}
-
-
-
 static struct {
   struct slabs slabs;
   lock lock;
