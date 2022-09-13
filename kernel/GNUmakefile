@@ -34,13 +34,13 @@ LDFLAGS ?= -Map kernel.map
 # User controllable preprocessor flags. We set none by default.
 CPPFLAGS ?=
 
-# Internal C flags that should not be changed by the user.
+
 override CFLAGS +=       \
-    -I.                  \
     -std=c11             \
     -ffreestanding       \
     -fno-stack-protector \
     -fno-stack-check     \
+    -fno-lto             \
     -fno-pie             \
     -fno-pic             \
     -m64                 \
@@ -52,7 +52,7 @@ override CFLAGS +=       \
     -mno-sse2            \
     -mno-red-zone        \
     -mcmodel=kernel      \
-    -MMD
+    -MMD                 \
 
 # Internal linker flags that should not be changed by the user.
 override LDFLAGS +=         \
