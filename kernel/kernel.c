@@ -79,17 +79,7 @@ void kmain(void) {
   x |= x >> 16;
   x++;
 	  
-  
-  
-
-
   test_slab();
-  
-
-
-
-  
-
 
   
   MADT *madt = get_acpi_sdt(MADT_C);

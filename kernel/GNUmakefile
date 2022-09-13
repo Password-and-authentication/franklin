@@ -54,6 +54,35 @@ override CFLAGS +=       \
     -mcmodel=kernel      \
     -MMD                 \
 
+# -ffreestanding: implies -fno-builtin
+# which makes gcc not assume that standard functions
+# have their usual definition
+
+# -fno-stack-protector:
+#	the stack protector adds a random value
+#	to the stack and checks if it has changed
+#	at the end of a function
+#
+#	it is disabled for performance
+
+# -fno-stack-check:
+# stack check accesses [rsp] everytime
+# rsp crosses a page boundary
+# this is done to generate a page fault
+# and so the OS can check if the stack is
+# allocated too much
+#
+# this is also disabled for performance
+
+# -fno-lto:
+# 	disable link time optimization
+#	disabled because it slows
+#	compiler
+
+# -fno-pie:
+
+
+
 # Internal linker flags that should not be changed by the user.
 override LDFLAGS +=         \
     -nostdlib               \

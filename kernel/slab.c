@@ -49,19 +49,9 @@
 static struct slab* newslab(size_t);
 static struct block* allocblock(struct slab*);
 static void freeslab(struct slab *);
+uint32_t roundup(uint32_t);
 
 
-// round up n to the next power of 2
-uint32_t roundup32(uint32_t n) {
-  n--;
-  n |= n >> 1;
-  n |= n >> 2;
-  n |= n >> 4;
-  n |= n >> 8;
-  n |= n >> 16;
-  n++;
-  return n;
-}
 
 
 // block of memory
@@ -75,12 +65,57 @@ struct slab {
   SLIST_ENTRY(slab) slabs;
   size_t size; // size of a block
   size_t refcount; // the amount of blocks that are in use
-  int id; 
+  int id;
 
   struct blocks freelist;
 };
 
 SLIST_HEAD(slabs, slab);
+
+
+struct slot {
+  struct slot *next;
+  size_t size;
+};
+
+static struct {
+  struct slot *first;
+  size_t total;
+} manager;
+
+void initpage(size_t size) {
+  
+  struct slot *slot = manager.first;
+  int i;
+  
+  for (i = 1 ; i < PGSIZE / size; i++) {
+    slot->next = (char*)manager.first + (size * i);
+    slot = slot->next;
+  }
+}
+
+void *alloc(size_t size) {
+
+  if (manager.first == 0) {
+    manager.first = P2V(palloc(1));
+  }
+
+  struct slot *ret;
+  ret = manager.first;
+  manager.first = manager.first->next;
+  return (void*)ret;
+}
+
+void free(void *ptr) {
+
+  struct slot *slot = ptr;
+
+  // add it to the linked list
+  slot->next = manager.first;
+  manager.first = slot;
+}
+
+
 
 static struct {
   struct slabs slabs;
@@ -102,7 +137,7 @@ kalloc(size_t size)
   if (size < sizeof(void*)) // MIN blocksize is 8
     size = sizeof(void*);
 
-  size = (uint32_t)roundup32((uint32_t)size);
+  size = (uint32_t)roundup((uint32_t)size);
 
   acquire(&slabber.lock);
 
@@ -221,6 +256,19 @@ freeslab(struct slab *slab)
   SLIST_REMOVE_ITEM(slab, &slabber.slabs, slab, slabs);
   freepg(V2P((uintptr_t)slab), 1);
 }
+
+// round up n to the next power of 2
+uint32_t roundup(uint32_t n) {
+  n--;
+  n |= n >> 1;
+  n |= n >> 2;
+  n |= n >> 4;
+  n |= n >> 8;
+  n |= n >> 16;
+  n++;
+  return n;
+}
+
 
 
 void
