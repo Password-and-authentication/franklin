@@ -79,7 +79,6 @@ static struct {
 } slabber;
 
 
-
 // allocate 'size' amount of bytes
 void*
 kalloc(size_t size)

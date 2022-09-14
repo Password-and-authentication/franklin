@@ -1,5 +1,3 @@
-#include <stdint.h>
-#include "franklin/fs/vfs.h"
 
 /*
    mount plan
@@ -25,33 +23,82 @@
       and a fs specific mount structure,
       and set mount->root = root
       
-
 */
 
+#include <stdint.h>
+#include "franklin/fs/vfs.h"
+#include "franklin/fs/ramfs.h"
+
+
+
+
+void *kalloc(int);
 
 void vfs_mount(const char *mntpoint, const char *fstype) {
 
   struct vfsops *vfsops;
-  for (vfsops = vfslist; vfsops; vfsops = vfsops->next) {
-    if (vfsops->name == fstype)
+  
+  for (vfsops = &vfslist; vfsops; vfsops = vfsops->next) {
+    if (strcmp(vfsops->name, fstype) == 0)
       break;
-  }
+  };
+  // file system hasnt been registered
+  if (vfsops == 0)
+    return 0;
 
-  static struct vfs *prev;  
-  struct vfs vfs;
-  struct vnode **s;
-  
-  ramfs_root(&vfs, &s);
-  
-  vfs.next = prev;
-  prev = &vfs;
+  struct vnode *mntvnode; // vnode corresponding to mntpoint string
   
   
-  vfs.ops = vfslist;
-  vfs.ops->mount(&vfs);
+  struct vfs *vfs = kalloc(sizeof(struct vfs));
+  vfs->mountpoint = mntvnode;
+  vfs->ops = vfsops;
 
-  /* vfs->mountpoint = mntpoint; */
+  
+  struct vnode *vdir = kalloc(sizeof(*vdir));
+
+
+  
+  struct ramnode *dir = kalloc(sizeof(*dir));
+  vdir->data = dir;
+  dir->type = VDIR;
+  dir->dir.dentry = kalloc(sizeof(*dir->dir.dentry));
+  
+  dir->dir.dentry->name = "dirname";
+  char *n = "lmao";
+
+  n = "nice";
+  
+  struct ramdentry *e = kalloc(sizeof(*e));
+  e->name = "lmao";
+  e->next = 0;
+  dir->dir.dentry->next = e;
+
+
+  vdir->type = VDIR;
+  struct vnode **lol;
+  /* vfs->ops->lookup(vdir, &lol, "lmao"); */
+
+  
+  
+
+  
+  // if null: it's the root fs
+  if (!mntpoint)
+    rootfs = vfs;
+  else
+    mntvnode->mountedhere = vfs;
+
+  // add vfs to the vfs list
+  vfs->next = mountedlist;
+  mountedlist = vfs;
+
+  vfs->ops->mount();
 }
+
+
+void vfs_root(struct vfs *vfs) {
+  return vfs->ops->root();
+};
 
 
 
@@ -116,3 +163,4 @@ void vfs_mount(const char *mntpoint, const char *fstype) {
 
 
  */
+

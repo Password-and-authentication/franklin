@@ -80,6 +80,7 @@ void kmain(void) {
   x++;
 	  
   test_slab();
+  vfs_mount(0, "ramfs");
 
   
   MADT *madt = get_acpi_sdt(MADT_C);
@@ -90,7 +91,7 @@ void kmain(void) {
   print("i got an idea.. , lets FUCK!\n\n");
   init_interrupt();
 
-  vfs_mount("/", "ramfs");
+  /* vfs_mount("/", "ramfs"); */
 
 
   init_pit(1000); // 1000 hz, 1000 IRQ0's in a second

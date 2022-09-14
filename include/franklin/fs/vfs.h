@@ -15,12 +15,14 @@ struct vnode {
   void *data;
 };
 
+
 struct vnodeops {
   int (*open)();
+  int (*lookup)();
 };
 
 struct vfs {
-  struct vnode *next;
+  struct vfs *next;
   struct vnode *mountpoint;
   struct vfsops *ops;
   void *data;
@@ -34,9 +36,10 @@ struct vfsops {
   int (*root)();
 };
 
-extern struct vfs rootfs;
-extern struct vfs *mountedlist;
-extern struct vfsops *vfslist;
+struct vfs *rootfs;
+struct vfs *mountedlist;
+struct vfs *head;
+struct vfsops vfslist;
 
 
 #endif

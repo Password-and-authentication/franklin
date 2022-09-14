@@ -8,6 +8,19 @@ int strlen(char *s) {
     return n;
 }
 
+int strcmp(char *s, char *s2) {
+
+  int len, i;
+  if ((len = strlen(s)) != strlen(s2))
+    return -1;
+  
+  for (i = 0; i < len; ++i)
+    if (s[i] != s2[i])
+      return -1;
+  return 0;
+};
+
+
 void memcpy(void *dest, const void *src, int n) {
 
   char *d = dest;
