@@ -55,7 +55,7 @@ void *palloc(uint32_t size) {
     };
     releaselock:
     release(&spinlock);
-    return (void*)((uint64_t)(page * PGSIZE));
+    return ((uint64_t)(page * PGSIZE));
 }   
 
 
@@ -70,7 +70,7 @@ void *pallocaddr(uint32_t size, uint64_t paddr) {
         togglepage(i);
     };
     release(&spinlock);
-    return (void*)paddr;
+    return paddr;
 }
 
 
