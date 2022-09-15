@@ -1,11 +1,11 @@
+#include <stddef.h>
+
 #include "franklin/fs/vfs.h"
-#include "franklin/fs/ramfs.h"
-
-struct vnode;
-struct vfs;
-struct vfsops;
+#include "ramfs.h"
 
 
+
+static const struct vnodeops ramfs_vnode_ops;
 
 void *kalloc(int);
 
@@ -13,12 +13,20 @@ int
 ramfs_mount(struct vfs *vfs)
 {
   
-  struct ramvfs *ram = kalloc(sizeof(struct ramvfs));
-  struct ramnode *root = kalloc(sizeof(struct ramnode));
+  struct ramvfs *ram = kalloc(sizeof *ram);
+  struct ramnode *root = kalloc(sizeof *root);
+  struct ramdentry *droot = kalloc(sizeof *droot);
 
-  vfs->data = (void*)ram;
+  droot->name = "/";
+  droot->next = NULL;
+
+  vfs->data = ram;
 
   root->type = VDIR;
+  root->vnode = NULL;
+  root->dir.parent = NULL;
+  root->dir.dentry = droot;
+  
   ram->root = root;
 }
 
@@ -27,16 +35,49 @@ int
 ramfs_root(struct vfs *vfs, struct vnode **vnode)
 {
   struct ramvfs *rootvfs = vfs->data;
-  *vnode = rootvfs->root;
+  if (rootvfs->root == NULL)
+    return -1;
+  
+  
+  vfs->ops->vget(vfs, vnode, rootvfs->root);
+  return 0;
 }
 
 
-void
+// get vnode corresponding to the ramnode 'ino'
+int
+ramfs_vget(struct vfs *vfs, struct vnode **vnode, ino_t ino) {
+
+  struct ramnode *node = (struct ramnode*)ino;
+
+  if (node->vnode) {
+    node->vnode->refcount++;
+    *vnode = node->vnode;
+    return 0;
+  } else {
+    
+    struct vnode *vn = kalloc(sizeof *vn);
+    node->vnode = vn;
+    
+    vn->mountedhere = NULL;
+    vn->ops = &ramfs_vnode_ops;
+    vn->type = node->type;
+    vn->refcount = 1;
+    vn->data = node;
+    vn->vfs = vfs;
+
+    *vnode = vn;
+  };
+  return 0;
+};
+
+
+int
 ramfs_lookup(struct vnode *vdir, struct vnode **vpp, const char *target)
 {
 
   if (vdir->type != VDIR)
-    return;
+    return 0;
 
   struct ramnode *ram = vdir->data;
   struct ramdentry *entry;
@@ -44,21 +85,25 @@ ramfs_lookup(struct vnode *vdir, struct vnode **vpp, const char *target)
   for (entry = ram->dir.dentry; entry; entry = entry->next) {
     if (strcmp(entry->name, target) == 0) {
       *vpp = entry;
-      return;
+      return 1;
     }
   };
 };
 
 
+static const struct vnodeops ramfs_vnode_ops = {
+					 .lookup = ramfs_lookup,
+};
 
-static const struct vfsops ram_ops = {
+
+const struct vfsops ram_ops = {
 			 .name = "ramfs",
 			 .mount = ramfs_mount,
 			 .root = ramfs_root,
+			 .vget = ramfs_vget,
 			 /* .lookup = ramfs_lookup, */
 };
 
-struct vfsops vfslist = ram_ops;
 
 
 

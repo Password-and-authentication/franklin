@@ -26,77 +26,103 @@
 */
 
 #include <stdint.h>
+#include <stddef.h>
+
+#include "std/string.h"
 #include "franklin/fs/vfs.h"
-#include "franklin/fs/ramfs.h"
-
-
+#include "ramfs.h"
 
 
 void *kalloc(int);
 
-void vfs_mount(const char *mntpoint, const char *fstype) {
+struct vfsops ram_ops;
 
+void init_rootfs() {
+  vfslist = ram_ops;
+  
+};
+
+struct vnode*
+lookup(const char *path) {
+
+  struct vfs *vfs;
+  struct vnode *vn;
+  char component[20];
+  
+  if (path[0] == '/') {
+
+    strcpy(component, path);
+    vfs = rootfs;
+    vfs->ops->root(vfs, &vn);
+    if (vn->mountedhere) {
+      vn = vn->mountedhere->ops->root(vn->mountedhere);
+    };
+  }
+  return vn;
+};
+
+void
+solve() {
+  struct vnode *vn;
+  vn = lookup("/");
+}
+
+int
+vfs_mount(char *mntpoint, const char *fstype) {
+
+  
+  struct vnode *mntvnode; // vnode corresponding to mntpoint string
   struct vfsops *vfsops;
+  struct vfs *vfs;
+
   
   for (vfsops = &vfslist; vfsops; vfsops = vfsops->next) {
     if (strcmp(vfsops->name, fstype) == 0)
       break;
   };
-  // file system hasnt been registered
-  if (vfsops == 0)
-    return 0;
+  if (vfsops == NULL)
+    return;
 
-  struct vnode *mntvnode; // vnode corresponding to mntpoint string
-  
-  
-  struct vfs *vfs = kalloc(sizeof(struct vfs));
-  vfs->mountpoint = mntvnode;
-  vfs->ops = vfsops;
+  vfs = kalloc(sizeof *vfs);
 
-  
-  struct vnode *vdir = kalloc(sizeof(*vdir));
-
-
-  
-  struct ramnode *dir = kalloc(sizeof(*dir));
-  vdir->data = dir;
-  dir->type = VDIR;
-  dir->dir.dentry = kalloc(sizeof(*dir->dir.dentry));
-  
-  dir->dir.dentry->name = "dirname";
-  char *n = "lmao";
-
-  n = "nice";
-  
-  struct ramdentry *e = kalloc(sizeof(*e));
-  e->name = "lmao";
-  e->next = 0;
-  dir->dir.dentry->next = e;
-
-
-  vdir->type = VDIR;
-  struct vnode **lol;
-  /* vfs->ops->lookup(vdir, &lol, "lmao"); */
-
-  
-  
-
-  
-  // if null: it's the root fs
-  if (!mntpoint)
-    rootfs = vfs;
-  else
+  if (mntpoint) {
+    mntvnode = lookup(mntpoint);
+    if (mntvnode == NULL)
+      return;
+    
+    vfs->mountpoint = mntvnode;
     mntvnode->mountedhere = vfs;
+  } else {
+    rootfs = vfs;
+    rootfs->next = NULL;
+  }
+   
+  vfs->ops = vfsops;
+  
 
   // add vfs to the vfs list
   vfs->next = mountedlist;
   mountedlist = vfs;
 
-  vfs->ops->mount();
+  vfs->ops->mount(vfs);
 }
 
 
-void vfs_root(struct vfs *vfs) {
+
+struct vnode*
+getnewvnode(void) {
+
+  struct vnode *vnode = kalloc(sizeof *vnode);
+
+  vnode->type = VNON;
+  vnode->refcount = 0;
+  vnode->data = NULL;
+  return vnode;
+};
+
+
+void
+vfs_root(struct vfs *vfs) {
   return vfs->ops->root();
 };
 

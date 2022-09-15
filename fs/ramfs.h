@@ -2,6 +2,18 @@
 
 
 
+struct ramvfs {
+  struct ramnode *root;
+};
+
+struct ramdentry {
+  struct ramdentry *next;
+  struct ramnode *node;
+  
+  char *name;
+};
+
+
 struct ramnode {
   struct vnode *vnode;
   enum vtype type;
@@ -18,3 +30,5 @@ struct ramnode {
     } reg;
   }
 };
+
+

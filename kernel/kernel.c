@@ -80,8 +80,14 @@ void kmain(void) {
   x++;
 	  
   test_slab();
-  vfs_mount(0, "ramfs");
+  init_rootfs();
 
+  
+  vfs_mount(0, "ramfs");
+  vfs_mount("/", "ramfs");
+
+
+  solve();
   
   MADT *madt = get_acpi_sdt(MADT_C);
   walk_madt(madt); // get info about MADT table

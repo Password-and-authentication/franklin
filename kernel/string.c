@@ -1,14 +1,18 @@
 #include <stdint.h>
+#include <stddef.h>
 #include "d.h"
 
 
-int strlen(char *s) {
+
+size_t
+strlen(char *s) {
     int n = 0;
     while (++n && s[n]);
     return n;
 }
 
-int strcmp(char *s, char *s2) {
+int
+strcmp(char *s, char *s2) {
 
   int len, i;
   if ((len = strlen(s)) != strlen(s2))
@@ -20,8 +24,15 @@ int strcmp(char *s, char *s2) {
   return 0;
 };
 
+int strcpy(char *s, char *s2) {
+  while ((*s++ = *s2++))
+	 ;
+  *s = 0;
+}
 
-void memcpy(void *dest, const void *src, int n) {
+
+
+int memcpy(void *dest, const void *src, size_t n) {
 
   char *d = dest;
   const char *s = src;
@@ -30,7 +41,7 @@ void memcpy(void *dest, const void *src, int n) {
   }
 }
 
-void memzero(uint8_t* mem, int n) {
+void memzero(uint8_t* mem, size_t n) {
     for (int i = 0; i < n; ++i) {
         mem[i] = 0;
     }
