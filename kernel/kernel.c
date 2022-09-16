@@ -84,8 +84,8 @@ void kmain(void) {
 
   
   vfs_mount(0, "ramfs");
-  vfs_mount("/", "ramfs");
-
+  /* vfs_mount("/", "ramfs"); */
+  testt();
 
   solve();
   

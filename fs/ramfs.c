@@ -9,25 +9,138 @@ static const struct vnodeops ramfs_vnode_ops;
 
 void *kalloc(int);
 
+static struct ramnode* ramfs_alloc_node(struct ramvfs*, struct ramnode*, enum vtype);
+
+
+/* mount ramfs
+ - doesn't create a dentry for the root
+ - initialize root ramnode and root mount struct
+ 
+ */
 int
 ramfs_mount(struct vfs *vfs)
 {
-  
   struct ramvfs *ram = kalloc(sizeof *ram);
-  struct ramnode *root = kalloc(sizeof *root);
-  struct ramdentry *droot = kalloc(sizeof *droot);
+  struct ramnode *root;
 
-  droot->name = "/";
-  droot->next = NULL;
+  // init root ramnode
+  root = ramfs_alloc_node(ram, NULL, VDIR);
 
   vfs->data = ram;
+}
 
-  root->type = VDIR;
-  root->vnode = NULL;
-  root->dir.parent = NULL;
-  root->dir.dentry = droot;
+void testt() {
   
+  struct ramvfs *ram = rootfs->data;
+  struct ramnode *root, *c;
+  struct vnode *vn, *v;
+  root = ramfs_alloc_node(ram, NULL, VDIR);
   ram->root = root;
+
+  struct ramdentry *de, *dc;
+  ramfs_alloc_dentry(root, &de, "..");
+  
+  c = ramfs_alloc_node(ram, root, VREG);
+  ramfs_alloc_dentry(c, &dc, "lmao");
+
+  ramfs_dir_attach(de, dc);
+  
+  rootfs->ops->vget(rootfs, &vn, (ino_t)root);
+  rootfs->ops->vget(rootfs, &v, (ino_t)c);
+
+  ramfs_lookup(vn, &v, "lmao");
+};
+
+
+/* 
+   create new ramnode
+
+   - if type is VDIR,
+     dir points at the parent (unless root)
+
+   - adds the node to the list of all nodes
+     in the filesystem (ram)
+
+   - (DOESN'T ALLOC A DENTRY)
+ */
+static struct ramnode*
+ramfs_alloc_node(struct ramvfs *ram, struct ramnode *dir, enum vtype type)
+{
+  
+  struct ramnode *node = kalloc(sizeof *node);
+
+  // add node to the list of all
+  // ramnodes in the *ram filesystem
+  node->nextnode = ram->nodes;
+  ram->nodes = node;
+  
+  node->type = type;
+  node->vnode = NULL;
+
+  switch (node->type) {
+  case VDIR:
+    node->dir.parent = (dir == NULL) ? node : dir;
+    break;
+  case VREG:
+    break;
+  }
+
+  return node;
+}
+
+/*
+  allocates a dentry for a ramnode
+*/
+int
+ramfs_alloc_dentry(struct ramnode *node, struct ramdentry **de, const char *name)
+{
+  
+  struct ramdentry *dentry = kalloc(sizeof *dentry);
+
+  dentry->name = strdup(name);
+  dentry->node = node;
+  dentry->next = NULL;
+
+  if (node->type == VDIR)
+    node->dir.dentry = dentry;
+  
+  *de = dentry;
+  return 0;
+}
+
+/*
+  add dentry to the parent
+*/
+void
+ramfs_dir_attach(struct ramdentry *parent, struct ramdentry *dentry)
+{
+  dentry->next = parent->next;
+  parent->next = dentry;
+}
+
+/* tmpfs create plan
+   
+   tmpfs(vp, nm, va, e, m, vpp, c)
+
+   vp = dir vnode
+   nm = new file name (dentry)
+   va = vattr
+   vpp = results
+
+   alloc new vnode, ramnode and dentry
+ */
+
+int
+ramfs_create(struct vnode *vp, struct vnode **vpp, const char *nm, enum vtype type)
+{
+
+  if (vp->type != VDIR)
+    return 0;
+
+  struct ramnode *node;
+  node = ramfs_alloc_node(vp->vfs, vp->data, type);
+
+  vp->vfs->ops->vget(vp->vfs, vpp, (ino_t)node);
 }
 
 
@@ -72,6 +185,12 @@ ramfs_vget(struct vfs *vfs, struct vnode **vnode, ino_t ino) {
 };
 
 
+/*
+  ramfs_lookup
+
+  - lookup the vnode corresponding
+    to target in the directory vdir
+*/
 int
 ramfs_lookup(struct vnode *vdir, struct vnode **vpp, const char *target)
 {
@@ -84,7 +203,7 @@ ramfs_lookup(struct vnode *vdir, struct vnode **vpp, const char *target)
   
   for (entry = ram->dir.dentry; entry; entry = entry->next) {
     if (strcmp(entry->name, target) == 0) {
-      *vpp = entry;
+      vdir->vfs->ops->vget(vdir->vfs , vpp, entry->node);
       return 1;
     }
   };

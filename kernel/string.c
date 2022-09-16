@@ -4,9 +4,11 @@
 
 
 
+void *kalloc(size_t);
+
 size_t
 strlen(char *s) {
-    int n = 0;
+    size_t n = 0;
     while (++n && s[n]);
     return n;
 }
@@ -14,7 +16,7 @@ strlen(char *s) {
 int
 strcmp(char *s, char *s2) {
 
-  int len, i;
+  size_t len, i;
   if ((len = strlen(s)) != strlen(s2))
     return -1;
   
@@ -24,10 +26,23 @@ strcmp(char *s, char *s2) {
   return 0;
 };
 
-int strcpy(char *s, char *s2) {
+int
+strcpy(char *s, char *s2) {
   while ((*s++ = *s2++))
 	 ;
   *s = 0;
+}
+
+char *
+strdup(const char *s) {
+
+  size_t i, len = strlen(s);
+  char *ss = kalloc(len);
+
+  for (i = 0; i < len; ++i)
+    ss[i] = s[i];
+  ss[i] = 0;
+  return ss;
 }
 
 

@@ -4,10 +4,12 @@
 
 struct ramvfs {
   struct ramnode *root;
+  struct ramnode *nodes; // list of all ram nodes
 };
 
+
 struct ramdentry {
-  struct ramdentry *next;
+  struct ramdentry *next; // list of dentries in the parent dir
   struct ramnode *node;
   
   char *name;
@@ -16,6 +18,7 @@ struct ramdentry {
 
 struct ramnode {
   struct vnode *vnode;
+  struct ramnode *nextnode; // list of all ramnodes
   enum vtype type;
 
   union {
@@ -28,7 +31,7 @@ struct ramnode {
     struct {
       
     } reg;
-  }
+  };
 };
 
 

@@ -84,6 +84,10 @@ vfs_mount(char *mntpoint, const char *fstype) {
     return;
 
   vfs = kalloc(sizeof *vfs);
+  
+  vfs->ops = vfsops;
+  /* ramfs_alloc_node(); */
+  
 
   if (mntpoint) {
     mntvnode = lookup(mntpoint);
