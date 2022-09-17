@@ -253,7 +253,6 @@ test_slab(void)
   kalloc(8);
   kalloc(8);
   kfree(g);
-  kfree(g);
   g = kalloc(8);
   kfree(g);
 

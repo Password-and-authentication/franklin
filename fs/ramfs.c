@@ -9,6 +9,24 @@ static const struct vnodeops ramfs_vnode_ops;
 
 void *kalloc(int);
 
+
+void ramfs_t() {
+
+  struct vnode *vn, *v, *vv, *new, *w1, *w2, *w3, *w4;
+  rootfs->ops->root(rootfs, &vn);
+  ramfs_create(vn, &v, "lmao", VDIR);
+  ramfs_create(v, &vv, "main.c", VREG);
+  ramfs_create(vn, &new, "newdir", VDIR);
+
+    
+  ramfs_create(new, &w1, "main.c", VREG);
+  ramfs_create(new, &w2, "main.h", VREG);
+  ramfs_create(new, &w3, "main.o", VREG);
+  ramfs_create(new, &w4, "makemake", VREG);
+  ramfs_create(new, &w4, "print", VDIR);
+
+}
+
 static struct ramnode* ramfs_alloc_node(struct ramvfs*, struct ramnode*, enum vtype);
 
 
@@ -25,31 +43,59 @@ ramfs_mount(struct vfs *vfs)
 
   // init root ramnode
   root = ramfs_alloc_node(ram, NULL, VDIR);
+  ram->root = root;
 
   vfs->data = ram;
 }
 
+int ramfs_alloc_file(struct vnode *vdir, struct vnode **vpp, const char *name, enum vtype type);
+
 void testt() {
-  
-  struct ramvfs *ram = rootfs->data;
-  struct ramnode *root, *c;
-  struct vnode *vn, *v;
-  root = ramfs_alloc_node(ram, NULL, VDIR);
-  ram->root = root;
 
-  struct ramdentry *de, *dc;
-  ramfs_alloc_dentry(root, &de, "..");
-  
-  c = ramfs_alloc_node(ram, root, VREG);
-  ramfs_alloc_dentry(c, &dc, "lmao");
 
-  ramfs_dir_attach(de, dc);
-  
-  rootfs->ops->vget(rootfs, &vn, (ino_t)root);
-  rootfs->ops->vget(rootfs, &v, (ino_t)c);
-
-  ramfs_lookup(vn, &v, "lmao");
+  /* ramfs_alloc_file(); */
 };
+
+
+/*
+ Create a file in vdir directory
+ with name nm
+*/
+int
+ramfs_create(struct vnode *vdir, struct vnode **vpp, const char *name, enum vtype type)
+{
+  ramfs_alloc_file(vdir, vpp, name, type);
+};
+
+
+/*
+ Allocate a new file of type type
+ and add it to the parent directory dir
+*/
+int
+ramfs_alloc_file(struct vnode *vdir, struct vnode **vpp, const char *name, enum vtype type)
+{
+  
+  if (vdir->type != VDIR)
+    panic("panic: ramfs_ alloc_file");
+  
+  struct ramvfs *ram = vdir->vfs->data;
+  struct ramnode *node, *parent = vdir->data;
+  struct ramdentry *de;
+  struct vnode *vn;
+
+  node = ramfs_alloc_node(ram, parent, type);
+
+  // alloc a dentry for the ramnode
+  ramfs_alloc_dentry(node, &de, name);
+
+  // add dentry to the parent's list
+  // of dentries
+  ramfs_dir_attach(parent, de);
+  
+  vdir->vfs->ops->vget(vdir->vfs, &vn, node);
+  *vpp = vn;
+}
 
 
 /* 
@@ -100,22 +146,19 @@ ramfs_alloc_dentry(struct ramnode *node, struct ramdentry **de, const char *name
   dentry->name = strdup(name);
   dentry->node = node;
   dentry->next = NULL;
-
-  if (node->type == VDIR)
-    node->dir.dentry = dentry;
   
   *de = dentry;
   return 0;
 }
 
 /*
-  add dentry to the parent
+  add dentry to the parent ramnode
 */
 void
-ramfs_dir_attach(struct ramdentry *parent, struct ramdentry *dentry)
+ramfs_dir_attach(struct ramnode *parent, struct ramdentry *dentry)
 {
-  dentry->next = parent->next;
-  parent->next = dentry;
+  dentry->next = parent->dir.dentry;
+  parent->dir.dentry = dentry;
 }
 
 /* tmpfs create plan
@@ -129,20 +172,6 @@ ramfs_dir_attach(struct ramdentry *parent, struct ramdentry *dentry)
 
    alloc new vnode, ramnode and dentry
  */
-
-int
-ramfs_create(struct vnode *vp, struct vnode **vpp, const char *nm, enum vtype type)
-{
-
-  if (vp->type != VDIR)
-    return 0;
-
-  struct ramnode *node;
-  node = ramfs_alloc_node(vp->vfs, vp->data, type);
-
-  vp->vfs->ops->vget(vp->vfs, vpp, (ino_t)node);
-}
-
 
 int
 ramfs_root(struct vfs *vfs, struct vnode **vnode)
@@ -192,26 +221,34 @@ ramfs_vget(struct vfs *vfs, struct vnode **vnode, ino_t ino) {
     to target in the directory vdir
 */
 int
-ramfs_lookup(struct vnode *vdir, struct vnode **vpp, const char *target)
+ramfs_lookup(struct vnode *vdir, struct vnode **vpp, struct componentname *path)
 {
+
+  struct ramnode *node = vdir->data;
+  struct ramdentry *entry;
 
   if (vdir->type != VDIR)
     return 0;
 
-  struct ramnode *ram = vdir->data;
-  struct ramdentry *entry;
+  if (strncmp(path->nm, "..", path->len) == 0) {
+    *vpp = node->dir.parent->vnode;
+    return 0;
+  }
   
-  for (entry = ram->dir.dentry; entry; entry = entry->next) {
-    if (strcmp(entry->name, target) == 0) {
-      vdir->vfs->ops->vget(vdir->vfs , vpp, entry->node);
-      return 1;
+  for (entry = node->dir.dentry; entry; entry = entry->next) {
+    if (strncmp(entry->name, path->nm, path->len) == 0) {
+      vdir->vfs->ops->vget(vdir->vfs, vpp, entry->node);
+      return 0;
     }
   };
+  *vpp = 0;
+  return -1;
 };
 
 
 static const struct vnodeops ramfs_vnode_ops = {
 					 .lookup = ramfs_lookup,
+					 .create = ramfs_create,
 };
 
 

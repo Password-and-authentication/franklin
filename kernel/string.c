@@ -27,6 +27,16 @@ strcmp(char *s, char *s2) {
 };
 
 int
+strncmp(char *s, char *s2, size_t n) {
+
+  for (size_t i = 0; i < n; ++i)
+    if (s[i] != s2[i])
+      return -1;
+  
+  return 0;
+}
+
+int
 strcpy(char *s, char *s2) {
   while ((*s++ = *s2++))
 	 ;
@@ -37,11 +47,12 @@ char *
 strdup(const char *s) {
 
   size_t i, len = strlen(s);
-  char *ss = kalloc(len);
-
+  char *ss = kalloc(len + 1); // account null byte
+  
   for (i = 0; i < len; ++i)
     ss[i] = s[i];
   ss[i] = 0;
+
   return ss;
 }
 

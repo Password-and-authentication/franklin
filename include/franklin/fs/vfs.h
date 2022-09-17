@@ -2,7 +2,16 @@
 #define _VFS_
 
 #include <stdint.h>
+#include <stddef.h>
 typedef uintptr_t ino_t;
+
+
+
+struct componentname {
+  char *nm;
+  size_t len;
+};
+
 
 enum vtype {VNON, VREG, VDIR, VSYM};
 
@@ -24,6 +33,7 @@ struct vnode {
 struct vnodeops {
   int (*open)();
   int (*lookup)();
+  int (*create)();
 };
 
 

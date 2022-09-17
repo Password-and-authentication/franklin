@@ -1,5 +1,7 @@
+#ifndef _RAMFS_
+#define _RAMFS_
 
-
+#include <stddef.h>
 
 
 struct ramvfs {
@@ -14,7 +16,6 @@ struct ramdentry {
   
   char *name;
 };
-
 
 struct ramnode {
   struct vnode *vnode;
@@ -35,3 +36,4 @@ struct ramnode {
 };
 
 
+#endif

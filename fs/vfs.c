@@ -42,39 +42,71 @@ void init_rootfs() {
   
 };
 
+char *
+strsep(const char **path, const char *ch)
+{
+  size_t i;
+  char *s;
+  
+  for (i = 0; *path[i] != *ch; ++i)
+    ;
+  if (i == 0)
+    return 0;
+  
+  s = strdup(*path);
+  *path += i;
+  return s;
+}
+
+
 struct vnode*
-lookup(const char *path) {
+lookup(struct componentname *path) {
 
   struct vfs *vfs;
-  struct vnode *vn;
-  char component[20];
-  
-  if (path[0] == '/') {
+  struct vnode *parent, *vn;
+  size_t i;
 
-    strcpy(component, path);
+  if (*path->nm++ == '/') {
     vfs = rootfs;
-    vfs->ops->root(vfs, &vn);
-    if (vn->mountedhere) {
-      vn = vn->mountedhere->ops->root(vn->mountedhere);
-    };
   }
+  vfs->ops->root(vfs, &parent);
+
+  for (;;) {
+    for (i = 0; path->nm[i] && path->nm[i] != '/'; ++i)
+    ;
+    if (i == 0)
+      return vn;
+    path->len = i;
+    parent->ops->lookup(parent, &vn, path);
+    
+    if (vn->type != VDIR)
+      return NULL;
+    
+    parent = vn;
+    path->nm += path->len + 1;
+  }
+  
   return vn;
 };
 
 void
 solve() {
-  struct vnode *vn;
-  vn = lookup("/");
+
 }
 
 int
 vfs_mount(char *mntpoint, const char *fstype) {
 
-  
   struct vnode *mntvnode; // vnode corresponding to mntpoint string
   struct vfsops *vfsops;
   struct vfs *vfs;
-
+  struct componentname *path = kalloc(sizeof *path);
+  
+  if (mntpoint) {
+    path->nm = strdup(mntpoint);
+    path->len = strlen(mntpoint);
+  }
+  
   
   for (vfsops = &vfslist; vfsops; vfsops = vfsops->next) {
     if (strcmp(vfsops->name, fstype) == 0)
@@ -84,13 +116,11 @@ vfs_mount(char *mntpoint, const char *fstype) {
     return;
 
   vfs = kalloc(sizeof *vfs);
-  
   vfs->ops = vfsops;
-  /* ramfs_alloc_node(); */
-  
+  path->nm = "/newdir/lmao.lol";
 
   if (mntpoint) {
-    mntvnode = lookup(mntpoint);
+    mntvnode = lookup(path);
     if (mntvnode == NULL)
       return;
     
@@ -100,9 +130,6 @@ vfs_mount(char *mntpoint, const char *fstype) {
     rootfs = vfs;
     rootfs->next = NULL;
   }
-   
-  vfs->ops = vfsops;
-  
 
   // add vfs to the vfs list
   vfs->next = mountedlist;
