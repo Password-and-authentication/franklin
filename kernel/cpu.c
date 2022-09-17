@@ -1,4 +1,5 @@
 #include <stdint.h>
+
 #include "limine.h"
 #include "d.h"
 #include "franklin/defs.h"
@@ -8,6 +9,8 @@
 #include "franklin/apic.h"
 #include "franklin/mmu.h"
 #include "franklin/acpi.h"
+#include "franklin/fs/vfs.h"
+
 #include "asm/x86.h"
 
 
@@ -47,6 +50,9 @@ void cpu(struct limine_smp_info *info) {
 
   uint8_t *l = palloc(100);
   freepg(P2V((uintptr_t)l), 100);
+
+
+  ramfs_t();
 
   init_proc(1);
   asm("sti");

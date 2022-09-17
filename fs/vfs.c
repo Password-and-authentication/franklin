@@ -37,30 +37,21 @@ void *kalloc(int);
 
 struct vfsops ram_ops;
 
-void init_rootfs() {
-  vfslist = ram_ops;
-  
+void init_rootfs()
+{
+  vfslist.first = ram_ops;
+  init_lock(&vfslist.lock);
 };
 
-char *
-strsep(const char **path, const char *ch)
-{
-  size_t i;
-  char *s;
-  
-  for (i = 0; *path[i] != *ch; ++i)
-    ;
-  if (i == 0)
-    return 0;
-  
-  s = strdup(*path);
-  *path += i;
-  return s;
-}
+struct vfs *rootfs;
 
-
+/*
+ find vnode that corresponds to path
+ vfslist.lock HAS TO BE HELD
+*/
 struct vnode*
-lookup(struct componentname *path) {
+lookup(struct componentname *path)
+{
 
   struct vfs *vfs;
   struct vnode *parent, *vn;
@@ -72,55 +63,66 @@ lookup(struct componentname *path) {
   vfs->ops->root(vfs, &parent);
 
   for (;;) {
-    for (i = 0; path->nm[i] && path->nm[i] != '/'; ++i)
-    ;
-    if (i == 0)
-      return vn;
-    path->len = i;
-    parent->ops->lookup(parent, &vn, path);
+    for (i = 0; path->nm[i] && path->nm[i + 1] != '/'; i++)
+      ;
+
+    // end of pathname
+    if ((path->len = i) == 0)
+      return parent;
     
-    if (vn->type != VDIR)
+    if (parent->type != VDIR)
+      panic("lookup, parent->type");
+
+    int z = parent->ops->lookup(parent, &vn, path);
+    if (z < 0)
       return NULL;
     
+    if (vn->mountedhere) {
+      vfs = vn->mountedhere;
+      vfs->ops->root(vfs, &vn);
+    }
+      
     parent = vn;
-    path->nm += path->len + 1;
+    path->nm += path->len;
   }
   
   return vn;
 };
 
-void
-solve() {
-
-}
 
 int
-vfs_mount(char *mntpoint, const char *fstype) {
-
+vfs_mount(char *mntpoint, const char *fstype)
+{
+  
   struct vnode *mntvnode; // vnode corresponding to mntpoint string
   struct vfsops *vfsops;
   struct vfs *vfs;
   struct componentname *path = kalloc(sizeof *path);
+
+  acquire(&vfslist.lock);
   
   if (mntpoint) {
     path->nm = strdup(mntpoint);
     path->len = strlen(mntpoint);
   }
-  
-  
-  for (vfsops = &vfslist; vfsops; vfsops = vfsops->next) {
+
+  for (vfsops = &vfslist.first; vfsops; vfsops = vfsops->next) {
     if (strcmp(vfsops->name, fstype) == 0)
       break;
   };
+
   if (vfsops == NULL)
     return;
 
   vfs = kalloc(sizeof *vfs);
   vfs->ops = vfsops;
-  path->nm = "/newdir/lmao.lol";
 
+  
   if (mntpoint) {
     mntvnode = lookup(path);
+    
+    if (mntvnode->type != VDIR)
+      panic("panic, mountpoint type");
     if (mntvnode == NULL)
       return;
     
@@ -136,6 +138,8 @@ vfs_mount(char *mntpoint, const char *fstype) {
   mountedlist = vfs;
 
   vfs->ops->mount(vfs);
+
+  release(&vfslist.lock);
 }
 
 
@@ -157,7 +161,18 @@ vfs_root(struct vfs *vfs) {
   return vfs->ops->root();
 };
 
+int
+vfs_close(struct vnode *vn) {
+  vn->ops->close(vn);
+  vn->refcount--;
 
+  if (vn->refcount == 0) {
+    vn->ops->inactive(vn);
+    kfree(vn);
+  }
+
+  return 0;
+}
 
 
 /* VFS plan
@@ -166,6 +181,7 @@ vfs_root(struct vfs *vfs) {
  available somewhere in the directory tree.
  mounting is done by attaching the root of the new filesystem
  to a mount point, the mount point is a directory in the directory tree
+
 
 
  - file systems are manipulated through the vfs struct

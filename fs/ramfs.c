@@ -9,6 +9,8 @@ static const struct vnodeops ramfs_vnode_ops;
 
 void *kalloc(int);
 
+static int ramfs_create(struct vnode*, struct vnode**, const char*, enum vtype);
+
 
 void ramfs_t() {
 
@@ -17,7 +19,6 @@ void ramfs_t() {
   ramfs_create(vn, &v, "lmao", VDIR);
   ramfs_create(v, &vv, "main.c", VREG);
   ramfs_create(vn, &new, "newdir", VDIR);
-
     
   ramfs_create(new, &w1, "main.c", VREG);
   ramfs_create(new, &w2, "main.h", VREG);
@@ -25,6 +26,17 @@ void ramfs_t() {
   ramfs_create(new, &w4, "makemake", VREG);
   ramfs_create(new, &w4, "print", VDIR);
 
+
+  ramfs_create(vn, &w1, "nice", VDIR);
+  ramfs_create(w1, &w2, "nicee", VDIR);
+  ramfs_create(w2, &w4, "main.c", VREG);
+  ramfs_create(w2, &w4, "kernel.o", VREG);
+  ramfs_create(w2, &w4, "GNUmakefile", VREG);
+  /* ramfs_create(w2, &w4, "kernel.c", VREG); */
+  /* ramfs_create(w2, &w1, "nice", VDIR); */
+
+  vfs_mount("/nice", "ramfs");
+  vfs_mount("/nice/nicee", "ramfs");
 }
 
 static struct ramnode* ramfs_alloc_node(struct ramvfs*, struct ramnode*, enum vtype);
@@ -61,11 +73,24 @@ void testt() {
  Create a file in vdir directory
  with name nm
 */
-int
+static int
 ramfs_create(struct vnode *vdir, struct vnode **vpp, const char *name, enum vtype type)
 {
   ramfs_alloc_file(vdir, vpp, name, type);
 };
+
+
+static int
+ramfs_mkdir(struct vnode *vdir, struct vnode *vpp, const char *name, enum vtype type)
+{
+  if (type != VDIR)
+    panic("panic: ramfs_mkdir type");
+
+  ramfs_alloc_file(vdir, vpp, name, type);
+}
+
+
+
 
 
 /*
@@ -241,14 +266,30 @@ ramfs_lookup(struct vnode *vdir, struct vnode **vpp, struct componentname *path)
       return 0;
     }
   };
-  *vpp = 0;
   return -1;
 };
+
+
+int
+ramfs_close(struct vnode *vn)
+{
+  // unimplemented for ramfs  
+}
+
+int
+ramfs_inactive(struct vnode *vn) {
+
+  struct ramnode *node = vn->data;
+  
+  node->vnode = NULL;
+}
 
 
 static const struct vnodeops ramfs_vnode_ops = {
 					 .lookup = ramfs_lookup,
 					 .create = ramfs_create,
+					 .mkdir = ramfs_mkdir,
+					 .close = vfs_close,
 };
 
 

@@ -86,10 +86,10 @@ void kmain(void) {
   vfs_mount(0, "ramfs");
 
   testt();
-  ramfs_t();
-  vfs_mount("/newdir", "ramfs");
 
-  solve();
+  /* vfs_mount("/newdir", "ramfs"); */
+
+  
   
   MADT *madt = get_acpi_sdt(MADT_C);
   walk_madt(madt); // get info about MADT table
@@ -111,7 +111,12 @@ void kmain(void) {
 
   
   /* wrmsr(MSR_GS, 100); */
-  init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
+
+  /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
+
+
+  ramfs_t();
+
  
 
   void init_proc();

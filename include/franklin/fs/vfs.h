@@ -1,10 +1,15 @@
 #ifndef _VFS_
 #define _VFS_
 
+#include "../spinlock.h"
+
 #include <stdint.h>
 #include <stddef.h>
 typedef uintptr_t ino_t;
 
+
+struct vnode;
+int vfs_close(struct vnode *);
 
 
 struct componentname {
@@ -30,10 +35,14 @@ struct vnode {
 };
 
 
+
 struct vnodeops {
   int (*open)();
   int (*lookup)();
   int (*create)();
+  int (*mkdir)();
+  int (*close)();
+  int (*inactive)();
 };
 
 
@@ -53,10 +62,15 @@ struct vfsops {
   int (*vget)();
 };
 
-struct vfs *rootfs;
+extern struct vfs *rootfs;
 struct vfs *mountedlist;
 struct vfs *head;
-struct vfsops vfslist;
+
+struct {
+  struct vfsops first;
+  lock lock;
+} vfslist;
+
 
 
 #endif
