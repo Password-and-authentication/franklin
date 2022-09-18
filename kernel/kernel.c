@@ -69,15 +69,10 @@ void kmain(void) {
   allocproc(thread3);
   init_plock();
 
+  int *a[3];
+  int x = sizeof(a) / sizeof(a[0]);
 
-  unsigned int x = 70;
-  x--;
-  x |= x >> 1;
-  x |= x >> 2;
-  x |= x >> 4;
-  x |= x >> 8;
-  x |= x >> 16;
-  x++;
+
 	  
   test_slab();
   init_rootfs();
@@ -85,9 +80,8 @@ void kmain(void) {
   
   vfs_mount(0, "ramfs");
 
-  testt();
-
-  /* vfs_mount("/newdir", "ramfs"); */
+  
+  /* vfs_mount("/lmaooooo/haha/fuck", "ramfs"); */
 
   
   
@@ -112,7 +106,7 @@ void kmain(void) {
   
   /* wrmsr(MSR_GS, 100); */
 
-  /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
+  init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
 
 
   ramfs_t();

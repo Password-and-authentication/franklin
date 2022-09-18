@@ -1,5 +1,6 @@
 #include <stddef.h>
 
+#include "franklin/spinlock.h"
 #include "franklin/fs/vfs.h"
 #include "ramfs.h"
 
@@ -9,65 +10,86 @@ static const struct vnodeops ramfs_vnode_ops;
 
 void *kalloc(int);
 
-static int ramfs_create(struct vnode*, struct vnode**, const char*, enum vtype);
 
+static int ramfs_create(struct vnode*, struct vnode**, const char*, enum vtype);
+static int ramfs_mkdir(struct vnode*, struct vnode**, const char*, enum vtype);
+static int ramfs_symlink(struct vnode*, const char*, const char*);
 
 void ramfs_t() {
 
   struct vnode *vn, *v, *vv, *new, *w1, *w2, *w3, *w4;
-  rootfs->ops->root(rootfs, &vn);
-  ramfs_create(vn, &v, "lmao", VDIR);
-  ramfs_create(v, &vv, "main.c", VREG);
-  ramfs_create(vn, &new, "newdir", VDIR);
+
+  vfs_mkdir("/", "yes", &vn, VDIR);
+  vfs_mkdir("/yes", "yes", &vn, VDIR);
+  vfs_mount("/yes/yes", "ramfs");
+  vfs_mkdir("/yes", "main.c", &vn, VDIR);
+  vfs_mount("/yes/main.c", "ramfs");
+
+  ramfs_symlink(vn, "lmao", "symlink");
+
+  ramfs_symlink(vn, "/yes", "hahabitch");
+
+  /* vfs_create("hahabitch", ); */
+  
+  /* vfs_create(0, "main.c", &vn, VREG); */
+
+  struct ramnode *r = vn->data;
+  struct ramdentry *d;
+
+  for (d = r->dir.dentry; d; d = d->next) {
+    print(d->name);
+    print("\n");
+  }
+					      
+
+  
+  
+  vfs_create("/yes/yes", "mina", &vn, VREG);
+  vfs_mkdir("/", "whale", &vn, VDIR);
+
+
+  vfs_mount("/whale", "ramfs");
+  vfs_mkdir("/whale/", "main.c", &vn, VDIR);
+  vfs_create("/whale/", "party.action", &vn, VREG);
+
+  vfs_mount("/whale/main.c", "ramfs");
+  vfs_create("/whale/", "lol.c", &vn, VREG);
     
-  ramfs_create(new, &w1, "main.c", VREG);
-  ramfs_create(new, &w2, "main.h", VREG);
-  ramfs_create(new, &w3, "main.o", VREG);
-  ramfs_create(new, &w4, "makemake", VREG);
-  ramfs_create(new, &w4, "print", VDIR);
-
-
-  ramfs_create(vn, &w1, "nice", VDIR);
-  ramfs_create(w1, &w2, "nicee", VDIR);
-  ramfs_create(w2, &w4, "main.c", VREG);
-  ramfs_create(w2, &w4, "kernel.o", VREG);
-  ramfs_create(w2, &w4, "GNUmakefile", VREG);
-  /* ramfs_create(w2, &w4, "kernel.c", VREG); */
-  /* ramfs_create(w2, &w1, "nice", VDIR); */
-
-  vfs_mount("/nice", "ramfs");
-  vfs_mount("/nice/nicee", "ramfs");
+  struct componentname name = {
+			  .nm = "/whale/main.c",
+			  .len = 20,
+  };
+  vn = lookup(&name);
+  if (!vn)
+    print("not");
 }
 
-static struct ramnode* ramfs_alloc_node(struct ramvfs*, struct ramnode*, enum vtype);
+static struct ramnode* ramfs_alloc_node(struct ramvfs*, struct ramnode*, enum vtype, const char*);
+static int ramfs_alloc_file(struct vnode*, struct vnode **, const char *, enum vtype, const char*);
+static void ramfs_dir_attach(struct ramnode*, struct ramdentry *);
+static int ramfs_alloc_dentry(struct ramnode*, struct ramdentry **, const char *);
+static int ramfs_vget(struct vfs *vfs, struct vnode **vnode, ino_t ino);
+
+
 
 
 /* mount ramfs
  - doesn't create a dentry for the root
  - initialize root ramnode and root mount struct
- 
- */
-int
+ - vfs is locked so no need to lock ramvfs
+*/
+static int
 ramfs_mount(struct vfs *vfs)
 {
   struct ramvfs *ram = kalloc(sizeof *ram);
   struct ramnode *root;
 
   // init root ramnode
-  root = ramfs_alloc_node(ram, NULL, VDIR);
+  root = ramfs_alloc_node(ram, NULL, VDIR, NULL);
   ram->root = root;
 
   vfs->data = ram;
 }
-
-int ramfs_alloc_file(struct vnode *vdir, struct vnode **vpp, const char *name, enum vtype type);
-
-void testt() {
-
-
-  /* ramfs_alloc_file(); */
-};
-
 
 /*
  Create a file in vdir directory
@@ -76,55 +98,57 @@ void testt() {
 static int
 ramfs_create(struct vnode *vdir, struct vnode **vpp, const char *name, enum vtype type)
 {
-  ramfs_alloc_file(vdir, vpp, name, type);
+  /* if (type != VREG || type != VREG) */
+    /* panic("ramfs_create: type"); */
+  ramfs_alloc_file(vdir, vpp, name, type, NULL);
 };
 
 
+
 static int
-ramfs_mkdir(struct vnode *vdir, struct vnode *vpp, const char *name, enum vtype type)
+ramfs_mkdir(struct vnode *vdir, struct vnode **vpp, const char *name, enum vtype type)
 {
   if (type != VDIR)
     panic("panic: ramfs_mkdir type");
 
-  ramfs_alloc_file(vdir, vpp, name, type);
+  ramfs_alloc_file(vdir, vpp, name, type, NULL);
 }
-
-
-
-
 
 /*
  Allocate a new file of type type
  and add it to the parent directory dir
 */
-int
-ramfs_alloc_file(struct vnode *vdir, struct vnode **vpp, const char *name, enum vtype type)
+static int
+ramfs_alloc_file(struct vnode *vdir, struct vnode **vpp, const char *name, enum vtype type,
+		 const char *target)
 {
-  
-  if (vdir->type != VDIR)
-    panic("panic: ramfs_ alloc_file");
+  if (trylock(&vdir->lock) == 0 || vdir->type != VDIR)
+    panic("ramfs_ alloc_file");
+  if (target && type != VLNK)
+    panic("ramfs_alloc_file");
   
   struct ramvfs *ram = vdir->vfs->data;
   struct ramnode *node, *parent = vdir->data;
   struct ramdentry *de;
   struct vnode *vn;
 
-  node = ramfs_alloc_node(ram, parent, type);
+  node = ramfs_alloc_node(ram, parent, type, target);
 
+  
   // alloc a dentry for the ramnode
-  ramfs_alloc_dentry(node, &de, name);
+  ramfs_alloc_dentry(node, &de, name); 
 
   // add dentry to the parent's list
   // of dentries
   ramfs_dir_attach(parent, de);
   
-  vdir->vfs->ops->vget(vdir->vfs, &vn, node);
+  ramfs_vget(vdir->vfs, &vn, node);
   *vpp = vn;
 }
 
 
 /* 
-   create new ramnode
+   Creates new ramnode and returns it locked
 
    - if type is VDIR,
      dir points at the parent (unless root)
@@ -135,10 +159,11 @@ ramfs_alloc_file(struct vnode *vdir, struct vnode **vpp, const char *name, enum 
    - (DOESN'T ALLOC A DENTRY)
  */
 static struct ramnode*
-ramfs_alloc_node(struct ramvfs *ram, struct ramnode *dir, enum vtype type)
+ramfs_alloc_node(struct ramvfs *ram, struct ramnode *dir, enum vtype type, const char *link)
 {
   
   struct ramnode *node = kalloc(sizeof *node);
+  init_and_acquire(&node->ramlock);
 
   // add node to the list of all
   // ramnodes in the *ram filesystem
@@ -147,83 +172,127 @@ ramfs_alloc_node(struct ramvfs *ram, struct ramnode *dir, enum vtype type)
   
   node->type = type;
   node->vnode = NULL;
+  node->linkcount = 0;
 
   switch (node->type) {
   case VDIR:
     node->dir.parent = (dir == NULL) ? node : dir;
     break;
+  case VLNK:
+    node->lnk.link = strdup(link);
   case VREG:
     break;
   }
 
+  release(&node->ramlock);
   return node;
 }
+
 
 /*
   allocates a dentry for a ramnode
 */
-int
+static int
 ramfs_alloc_dentry(struct ramnode *node, struct ramdentry **de, const char *name)
 {
   
   struct ramdentry *dentry = kalloc(sizeof *dentry);
+  acquire(&node->ramlock);
 
   dentry->name = strdup(name);
   dentry->node = node;
   dentry->next = NULL;
+  node->linkcount++;
   
+  release(&node->ramlock);
   *de = dentry;
   return 0;
 }
 
+
 /*
   add dentry to the parent ramnode
 */
-void
+static void
 ramfs_dir_attach(struct ramnode *parent, struct ramdentry *dentry)
 {
+  acquire(&parent->ramlock);
+  if (parent->type != VDIR)
+    panic("ramfs_dir_attach, parent type");
+  
   dentry->next = parent->dir.dentry;
   parent->dir.dentry = dentry;
+  release(&parent->ramlock);
 }
 
-/* tmpfs create plan
-   
-   tmpfs(vp, nm, va, e, m, vpp, c)
 
-   vp = dir vnode
-   nm = new file name (dentry)
-   va = vattr
-   vpp = results
+/*
+  (hard link)
+  Link the vnode vn to the name name,
+  in the directory vdir
 
-   alloc new vnode, ramnode and dentry
- */
+  - Allocate a dentry for the link 
+    and add it to the parent's list of dentries
 
-int
+  - A dentry is a link, which points at a file
+*/
+static int
+ramfs_link(struct vnode *vdir, struct vnode *vn, const char *name)
+{
+  struct ramnode *parent = vdir->data;
+  struct ramdentry *de;
+  
+  if (vn->type == VDIR || vn->vfs != vdir->vfs)
+    panic("ramfs_link");
+  
+  ramfs_alloc_dentry(vn, &de, name);
+  ramfs_dir_attach(parent, de);
+}
+
+/*
+  Create a symbolic link that points at 'path'
+*/
+static int
+ramfs_symlink(struct vnode *vdir, const char *target, const char *name)
+{
+  struct ramnode *vpp;
+  acquire(&vdir->lock);
+  
+  ramfs_alloc_file(vdir, &vpp, name, VLNK, target);
+  release(&vdir->lock);
+}
+
+
+/*
+  Get root vnode of the mounted filesystem
+*/
+static int
 ramfs_root(struct vfs *vfs, struct vnode **vnode)
 {
   struct ramvfs *rootvfs = vfs->data;
-  if (rootvfs->root == NULL)
-    return -1;
-  
-  
-  vfs->ops->vget(vfs, vnode, rootvfs->root);
+  ramfs_vget(vfs, vnode, rootvfs->root);
   return 0;
 }
 
 
 // get vnode corresponding to the ramnode 'ino'
-int
-ramfs_vget(struct vfs *vfs, struct vnode **vnode, ino_t ino) {
-
+static int
+ramfs_vget(struct vfs *vfs, struct vnode **vnode, ino_t ino)
+{
   struct ramnode *node = (struct ramnode*)ino;
-
-  if (node->vnode) {
-    node->vnode->refcount++;
-    *vnode = node->vnode;
-    return 0;
+  struct vnode *vn;
+  acquire(&node->ramlock);
+  
+  if ((vn = node->vnode)) {
+    acquire(&vn->lock);
+    vn->refcount++;
+    *vnode = vn;
+    goto ret;
   } else {
     
-    struct vnode *vn = kalloc(sizeof *vn);
+    vn = kalloc(sizeof *vn);
+    init_and_acquire(&vn->lock);
+    
     node->vnode = vn;
     
     vn->mountedhere = NULL;
@@ -232,9 +301,11 @@ ramfs_vget(struct vfs *vfs, struct vnode **vnode, ino_t ino) {
     vn->refcount = 1;
     vn->data = node;
     vn->vfs = vfs;
-
     *vnode = vn;
   };
+ ret:
+  release(&vn->lock);
+  release(&node->ramlock);
   return 0;
 };
 
@@ -245,12 +316,14 @@ ramfs_vget(struct vfs *vfs, struct vnode **vnode, ino_t ino) {
   - lookup the vnode corresponding
     to target in the directory vdir
 */
-int
+static int
 ramfs_lookup(struct vnode *vdir, struct vnode **vpp, struct componentname *path)
 {
 
   struct ramnode *node = vdir->data;
   struct ramdentry *entry;
+
+  acquire(&node->ramlock);
 
   if (vdir->type != VDIR)
     return 0;
@@ -262,26 +335,30 @@ ramfs_lookup(struct vnode *vdir, struct vnode **vpp, struct componentname *path)
   
   for (entry = node->dir.dentry; entry; entry = entry->next) {
     if (strncmp(entry->name, path->nm, path->len) == 0) {
+      
       vdir->vfs->ops->vget(vdir->vfs, vpp, entry->node);
+      release(&node->ramlock);
       return 0;
     }
   };
+  release(&node->ramlock);
   return -1;
 };
 
 
-int
+static int
 ramfs_close(struct vnode *vn)
 {
-  // unimplemented for ramfs  
+  (void)vn;
 }
 
-int
+static int
 ramfs_inactive(struct vnode *vn) {
 
   struct ramnode *node = vn->data;
-  
+  acquire(&node->ramlock);
   node->vnode = NULL;
+  release(&node->ramlock);
 }
 
 
@@ -289,7 +366,8 @@ static const struct vnodeops ramfs_vnode_ops = {
 					 .lookup = ramfs_lookup,
 					 .create = ramfs_create,
 					 .mkdir = ramfs_mkdir,
-					 .close = vfs_close,
+					 .close = ramfs_close,
+					 .inactive = ramfs_inactive,
 };
 
 

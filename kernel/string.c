@@ -7,14 +7,16 @@
 void *kalloc(size_t);
 
 size_t
-strlen(char *s) {
+strlen(char *s)
+{
     size_t n = 0;
     while (++n && s[n]);
     return n;
 }
 
 int
-strcmp(char *s, char *s2) {
+strcmp(char *s, char *s2)
+{
 
   size_t len, i;
   if ((len = strlen(s)) != strlen(s2))
@@ -27,7 +29,8 @@ strcmp(char *s, char *s2) {
 };
 
 int
-strncmp(char *s, char *s2, size_t n) {
+strncmp(char *s, char *s2, size_t n)
+{
 
   for (size_t i = 0; i < n; ++i)
     if (s[i] != s2[i])
@@ -35,6 +38,18 @@ strncmp(char *s, char *s2, size_t n) {
   
   return 0;
 }
+
+char *
+strchr(char *s, int c) {
+
+  do {
+    if (*s == c)
+      return s;
+  } while (*s++);
+  
+  return s - 1;
+}
+
 
 int
 strcpy(char *s, char *s2) {

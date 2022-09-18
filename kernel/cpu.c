@@ -52,7 +52,7 @@ void cpu(struct limine_smp_info *info) {
   freepg(P2V((uintptr_t)l), 100);
 
 
-  ramfs_t();
+  /* ramfs_t(); */
 
   init_proc(1);
   asm("sti");

@@ -18,7 +18,7 @@ struct componentname {
 };
 
 
-enum vtype {VNON, VREG, VDIR, VSYM};
+enum vtype {VNON, VREG, VDIR, VLNK};
 
 struct vnodeops;
 struct vfsops;
@@ -31,6 +31,7 @@ struct vnode {
   struct vnodeops *ops;
   enum vtype type;
   int refcount;
+  lock lock;
   void *data;
 };
 
@@ -53,6 +54,7 @@ struct vfs {
   void *data;
 };
 
+
 struct vfsops {
   const char *name;
   struct vfsops *next;
@@ -61,6 +63,7 @@ struct vfsops {
   int (*root)();
   int (*vget)();
 };
+
 
 extern struct vfs *rootfs;
 struct vfs *mountedlist;

@@ -5,21 +5,40 @@
 
 
 
-void acquire(lock *lock) {
+void
+acquire(lock *lock)
+{
 
   while (atomic_exchange(lock, 1))
     ;
 }
 
-void release(lock *lock) {
+
+void
+release(lock *lock)
+{
     uint32_t val = 0;
     __atomic_store(lock, &val, __ATOMIC_RELEASE);
 }
 
-// int trylock(lock *lock) {
-//     return (__sync_val_compare_and_swap(lock, 0, 1) == 1);
-// }
+int
+trylock(lock *lock)
+{
+  int v;
+  __atomic_store(&v, lock, __ATOMIC_RELAXED);
+  return v;
+}
 
-void init_lock(lock *lock) {
+
+void
+init_lock(lock *lock)
+{
     *lock = 0;
+}
+
+void
+init_and_acquire(lock *lock)
+{
+  init_lock(lock);
+  acquire(lock);
 }

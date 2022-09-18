@@ -45,9 +45,12 @@ void init_rootfs()
 
 struct vfs *rootfs;
 
+
 /*
  find vnode that corresponds to path
- vfslist.lock HAS TO BE HELD
+ vfslist.lock has to be held
+
+ return: locked vnode or NULL
 */
 struct vnode*
 lookup(struct componentname *path)
@@ -56,38 +59,76 @@ lookup(struct componentname *path)
   struct vfs *vfs;
   struct vnode *parent, *vn;
   size_t i;
+  char *str = path->nm;
 
-  if (*path->nm++ == '/') {
+  if (*str++ == '/') {
     vfs = rootfs;
   }
-  vfs->ops->root(vfs, &parent);
+  vfs_root(vfs, &vn);
 
+  // enter loop with parent->lock held
+  // loop until pathname string has ended
   for (;;) {
-    for (i = 0; path->nm[i] && path->nm[i + 1] != '/'; i++)
-      ;
-
-    // end of pathname
+    parent = vn;
+    
+    path->nm = str;
+    str = strchr(str, '/');
+    i = str - path->nm;
+    if (*str == '/')
+      str++; // skip '/'
+    
+    // end of pathname string
     if ((path->len = i) == 0)
       return parent;
-    
+
     if (parent->type != VDIR)
       panic("lookup, parent->type");
 
-    int z = parent->ops->lookup(parent, &vn, path);
+    // return vn locked
+    int z = vfs_lookup(parent, &vn, path);
+    release(&parent->lock);
+
     if (z < 0)
-      return NULL;
-    
+      return NULL; 
+
+    // if vnode is a mountpoint, get the root
+    // vnode of the mounted filesystem
+    // and release the lock on the mountpoint vnode
     if (vn->mountedhere) {
       vfs = vn->mountedhere;
-      vfs->ops->root(vfs, &vn);
+      vfs_close(vn);
+      vfs_root(vfs, &vn);
     }
-      
-    parent = vn;
-    path->nm += path->len;
   }
   
   return vn;
 };
+
+
+
+/*
+  Lookup a vnode in a directory
+  - vnode is returned locked
+*/
+int
+vfs_lookup(struct vnode *vdir, struct vnode **vpp,
+	   struct componentname *path)
+{
+  int z = vdir->ops->lookup(vdir, vpp, path);
+  acquire(&(*vpp)->lock);
+  return z;
+}
+
+/*
+  Get root vnode of a mounted filesystem
+  returns it locked
+*/
+int
+vfs_root(struct vfs *vfs, struct vnode **root)
+{
+  vfs->ops->root(vfs, root);
+  acquire(&(*root)->lock);
+}
 
 
 int
@@ -97,37 +138,42 @@ vfs_mount(char *mntpoint, const char *fstype)
   struct vnode *mntvnode; // vnode corresponding to mntpoint string
   struct vfsops *vfsops;
   struct vfs *vfs;
-  struct componentname *path = kalloc(sizeof *path);
+  struct componentname path;
 
   acquire(&vfslist.lock);
-  
-  if (mntpoint) {
-    path->nm = strdup(mntpoint);
-    path->len = strlen(mntpoint);
-  }
 
   for (vfsops = &vfslist.first; vfsops; vfsops = vfsops->next) {
     if (strcmp(vfsops->name, fstype) == 0)
       break;
   };
 
-  if (vfsops == NULL)
-    return;
+  if (vfsops == NULL) {
+    panic("vfs_mount: no vfsops");
+  }
+
 
   vfs = kalloc(sizeof *vfs);
   vfs->ops = vfsops;
-
   
   if (mntpoint) {
-    mntvnode = lookup(path);
+    path.nm = strdup(mntpoint);
+    path.len = strlen(mntpoint);
+
+    // return mountpoint vnode locked
+    mntvnode = lookup(&path);
     
+    if (mntvnode == NULL) {
+      print(path.nm);
+      panic("\n mount: mnt vnode NULL");      
+    }
     if (mntvnode->type != VDIR)
-      panic("panic, mountpoint type");
-    if (mntvnode == NULL)
-      return;
+      panic("mount: mountpoint type");
     
     vfs->mountpoint = mntvnode;
     mntvnode->mountedhere = vfs;
+    
+     // release lock and decrement refcount
+    vfs_close(mntvnode);
   } else {
     rootfs = vfs;
     rootfs->next = NULL;
@@ -142,35 +188,77 @@ vfs_mount(char *mntpoint, const char *fstype)
   release(&vfslist.lock);
 }
 
+/*
+  Create a file in parent directory
+  Returns locked file in **vpp
 
+  - inside the function,
+    the parent gets locked and unlocked
+*/
+int
+vfs_create(const char *parent, const char *name, struct vnode **vpp, enum vtype type)
+{
+  struct vnode *vdir;
+  struct componentname cname = {
+				  .nm = strdup(parent),
+				  .len = strlen(parent),
+  };
+  
+  vdir = lookup(&cname);
+  if (vdir == NULL) {
+    print("vfs_create: parent not found.. ");
+    panic(parent);
+  }
+    
+  if (vdir->type != VDIR) {
+    print("vfs_create: type");
+    return -1;
+  }
 
-struct vnode*
-getnewvnode(void) {
-
-  struct vnode *vnode = kalloc(sizeof *vnode);
-
-  vnode->type = VNON;
-  vnode->refcount = 0;
-  vnode->data = NULL;
-  return vnode;
-};
-
-
-void
-vfs_root(struct vfs *vfs) {
-  return vfs->ops->root();
-};
+  vdir->ops->create(vdir, vpp, name, type);
+  
+  vfs_close(vdir);
+}
 
 int
-vfs_close(struct vnode *vn) {
+vfs_mkdir(const char *parent, const char *name, struct vnode **vpp, enum vtype type)
+{
+  vfs_create(parent, name, vpp, type);
+}
+
+
+int
+vfs_vget(struct vfs *vfs, struct vnode **vpp, ino_t ino)
+{
+  if (vfs)
+    vfs->ops->vget(vfs, vpp, ino);
+}
+
+
+
+/*
+  Close a vnode by decrementing it's
+  refcount, if the refcount reaches 0
+  the vnode will be freed
+
+  in: lock held
+  out: lock released
+*/
+int
+vfs_close(struct vnode *vn)
+{
+  if (trylock(&vn->lock) == 0)
+    panic("vfs_close, lock");
+
   vn->ops->close(vn);
   vn->refcount--;
 
   if (vn->refcount == 0) {
     vn->ops->inactive(vn);
     kfree(vn);
-  }
-
+  } else
+    release(&vn->lock);
+  
   return 0;
 }
 
