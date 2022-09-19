@@ -1,6 +1,8 @@
 #include <stddef.h>
+#include <sys/types.h>
 
 #include "franklin/spinlock.h"
+#include "franklin/uio.h"
 #include "franklin/fs/vfs.h"
 #include "ramfs.h"
 
@@ -14,6 +16,8 @@ void *kalloc(int);
 static int ramfs_create(struct vnode*, struct vnode**, const char*, enum vtype);
 static int ramfs_mkdir(struct vnode*, struct vnode**, const char*, enum vtype);
 static int ramfs_symlink(struct vnode*, const char*, const char*);
+static int ramfs_readlink(struct vnode*, struct uio*);
+static int ramfs_vget(struct vfs*, struct vnode**, ino_t);
 
 void ramfs_t() {
 
@@ -25,43 +29,83 @@ void ramfs_t() {
   vfs_mkdir("/yes", "main.c", &vn, VDIR);
   vfs_mount("/yes/main.c", "ramfs");
 
-  ramfs_symlink(vn, "lmao", "symlink");
+  /* vfs_create("/yes", "nice.c", &vn, VREG); */
+  struct componentname nam = {
+			       .nm = "/yes/..",
+			       .len = 4,
+  };
+  vfs_create("/yes/", "hahahahahahhahahaha", &vn, VDIR);
 
-  ramfs_symlink(vn, "/yes", "hahabitch");
+  
+  /* vv = lookup(&nam); */
+  vfs_create("/", "nice", &vv, VDIR);
+
+  rootfs->ops->root(rootfs, &vv);
+  
+  ramfs_symlink(vv, "/yes", "symlink");
+
+  vfs_create("/symlink/lol", "nice.c", &vn, VREG);
+  
+  struct uio uio = {
+		    .offset = 0,
+		    .buf = kalloc(10),
+  };
+
+  rootfs->ops->root(rootfs, &vn);
+  struct ramnode *rn = vn->data;
+  struct ramdentry *de;
+  
+  for (de = rn->dir.dentry; de; de = de->next) {
+    if (strncmp(de->name, "yes", 3) == 0)
+      break;
+  }
+  rn = de->node;
+  for (de = rn->dir.dentry; de; de = de->next) {
+    print("\n");
+    print(de->name);
+    print("\n");
+  }
+  
+  
+  /* struct ramnode *nn = ((struct ramnode*)vv->data)->dir.dentry->node; */
+  /* ramfs_vget(vv->vfs, &vn, nn); */
+  /* ramfs_readlink(vn, &uio); */
+  /* ramfs_symlink(vv, "/yes/", "hahabitch"); */
+
 
   /* vfs_create("hahabitch", ); */
   
   /* vfs_create(0, "main.c", &vn, VREG); */
 
-  struct ramnode *r = vn->data;
-  struct ramdentry *d;
+  /* struct ramnode *r = vv->data; */
+  /* struct ramdentry *d; */
 
-  for (d = r->dir.dentry; d; d = d->next) {
-    print(d->name);
-    print("\n");
-  }
+  /* for (d = r->dir.dentry; d; d = d->next) { */
+    /* print(d->name); */
+    /* print("\n"); */
+  /* } */
 					      
 
   
-  
-  vfs_create("/yes/yes", "mina", &vn, VREG);
-  vfs_mkdir("/", "whale", &vn, VDIR);
+  /* vfs_create("/yes/yes", "mina", &vn, VREG); */
+  /* vfs_mkdir("/", "whale", &vn, VDIR); */
 
 
-  vfs_mount("/whale", "ramfs");
-  vfs_mkdir("/whale/", "main.c", &vn, VDIR);
-  vfs_create("/whale/", "party.action", &vn, VREG);
+  /* vfs_mount("/whale", "ramfs"); */
+  /* vfs_mkdir("/whale/", "main.c", &vn, VDIR); */
+  /* vfs_create("/whale/", "party.action", &vn, VREG); */
 
-  vfs_mount("/whale/main.c", "ramfs");
-  vfs_create("/whale/", "lol.c", &vn, VREG);
-    
-  struct componentname name = {
-			  .nm = "/whale/main.c",
-			  .len = 20,
-  };
-  vn = lookup(&name);
-  if (!vn)
-    print("not");
+  /* vfs_mount("/whale/main.c", "ramfs"); */
+  /* vfs_create("/whale/", "lol.c", &vn, VREG); */
+
+  /* release(&vv->lock); */
+  /* struct componentname name = { */
+			  /* .nm = "/whale/main.c", */
+			  /* .len = 20, */
+  /* }; */
+  /* vn = lookup(&name); */
+  /* if (!vn) */
+    /* print("not"); */
 }
 
 static struct ramnode* ramfs_alloc_node(struct ramvfs*, struct ramnode*, enum vtype, const char*);
@@ -255,11 +299,26 @@ ramfs_link(struct vnode *vdir, struct vnode *vn, const char *name)
 static int
 ramfs_symlink(struct vnode *vdir, const char *target, const char *name)
 {
-  struct ramnode *vpp;
+  struct vnode *vpp;
   acquire(&vdir->lock);
   
   ramfs_alloc_file(vdir, &vpp, name, VLNK, target);
+  
   release(&vdir->lock);
+}
+
+static int
+ramfs_readlink(struct vnode *vn, struct uio *uio)
+{
+  struct ramnode *node = vn->data;
+  
+  if (uio->offset != 0)
+    panic("ramfs_readlink: uio offset");
+
+  if (node->type != VLNK)
+    panic("ramfs_readlink: node type");
+
+  strcpy(uio->buf, node->lnk.link);
 }
 
 
@@ -329,7 +388,7 @@ ramfs_lookup(struct vnode *vdir, struct vnode **vpp, struct componentname *path)
     return 0;
 
   if (strncmp(path->nm, "..", path->len) == 0) {
-    *vpp = node->dir.parent->vnode;
+    ramfs_vget(vdir->vfs, vpp, node->dir.parent);
     return 0;
   }
   
@@ -368,6 +427,7 @@ static const struct vnodeops ramfs_vnode_ops = {
 					 .mkdir = ramfs_mkdir,
 					 .close = ramfs_close,
 					 .inactive = ramfs_inactive,
+					 .readlink = ramfs_readlink,
 };
 
 

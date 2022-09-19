@@ -53,9 +53,11 @@ strchr(char *s, int c) {
 
 int
 strcpy(char *s, char *s2) {
-  while ((*s++ = *s2++))
-	 ;
-  *s = 0;
+
+  size_t j, i = strlen(s2);
+  for (j = 0; j < i; ++j)
+    s[j] = s2[j];
+  s[j] = 0;
 }
 
 char *

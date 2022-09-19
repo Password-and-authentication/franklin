@@ -5,10 +5,14 @@
 
 #include <stdint.h>
 #include <stddef.h>
-typedef uintptr_t ino_t;
+#include <sys/types.h>
 
 
-struct vnode;
+
+#define VROOT 1
+
+
+;struct vnode;
 int vfs_close(struct vnode *);
 
 
@@ -31,10 +35,10 @@ struct vnode {
   struct vnodeops *ops;
   enum vtype type;
   int refcount;
+  uint16_t flags;
   lock lock;
   void *data;
 };
-
 
 
 struct vnodeops {
@@ -44,6 +48,7 @@ struct vnodeops {
   int (*mkdir)();
   int (*close)();
   int (*inactive)();
+  int (*readlink)();
 };
 
 

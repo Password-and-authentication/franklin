@@ -30,6 +30,7 @@
 
 #include "std/string.h"
 #include "franklin/fs/vfs.h"
+#include "franklin/uio.h"
 #include "ramfs.h"
 
 
@@ -58,11 +59,18 @@ lookup(struct componentname *path)
 
   struct vfs *vfs;
   struct vnode *parent, *vn;
+  struct uio uio = {
+		    .offset = 0,
+		    .buf = kalloc(100),
+  };
   size_t i;
   char *str = path->nm;
 
-  if (*str++ == '/') {
+ checkabs:
+  if (str[0] == '/') {
     vfs = rootfs;
+    while (*str == '/')
+      str++;
   }
   vfs_root(vfs, &vn);
 
@@ -74,8 +82,8 @@ lookup(struct componentname *path)
     path->nm = str;
     str = strchr(str, '/');
     i = str - path->nm;
-    if (*str == '/')
-      str++; // skip '/'
+    while (*str == '/')
+      *str++;
     
     // end of pathname string
     if ((path->len = i) == 0)
@@ -84,27 +92,45 @@ lookup(struct componentname *path)
     if (parent->type != VDIR)
       panic("lookup, parent->type");
 
+    // if .. and crossing mount points and on mounted fs, find parent
+    if (strncmp(path->nm, "..", 2) == 0 && parent->flags & VROOT) {
+      parent = parent->vfs->mountpoint;
+    }
+    
     // return vn locked
     int z = vfs_lookup(parent, &vn, path);
     release(&parent->lock);
 
     if (z < 0)
-      return NULL; 
+      return NULL;
 
-    // if vnode is a mountpoint, get the root
-    // vnode of the mounted filesystem
-    // and release the lock on the mountpoint vnode
-    if (vn->mountedhere) {
+    if (vn->type == VLNK) {
+      vfs_readlink(vn, &uio);
+      str = strdup(uio.buf);
+      goto checkabs;
+      
+    } else if (vn->mountedhere) {
+      // if vnode is a mountpoint, get the root
+      // vnode of the mounted filesystem
+      // and release the lock on the mountpoint vnode
+      
       vfs = vn->mountedhere;
       vfs_close(vn);
       vfs_root(vfs, &vn);
     }
+
   }
   
   return vn;
 };
 
 
+int
+vfs_readlink(struct vnode *vn, struct uio *uio)
+{
+  vn->ops->readlink(vn, uio);
+}
+  
 
 /*
   Lookup a vnode in a directory
@@ -168,7 +194,9 @@ vfs_mount(char *mntpoint, const char *fstype)
     }
     if (mntvnode->type != VDIR)
       panic("mount: mountpoint type");
-    
+
+
+    mntvnode->flags |= VROOT;
     vfs->mountpoint = mntvnode;
     mntvnode->mountedhere = vfs;
     
