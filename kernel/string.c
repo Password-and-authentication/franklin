@@ -6,6 +6,18 @@
 
 void *kalloc(size_t);
 
+
+void *memcpy(void *dest, const void *src, size_t n)
+{
+  char *d = dest;
+  const char *s = src;
+  size_t i;
+  for (i = 0; i < n; ++i)
+    d[i] = s[i];
+  return d;
+}
+
+
 size_t
 strlen(char *s)
 {
@@ -52,7 +64,8 @@ strchr(char *s, int c) {
 
 
 int
-strcpy(char *s, char *s2) {
+strcpy(char *s, char *s2)
+{
 
   size_t j, i = strlen(s2);
   for (j = 0; j < i; ++j)
@@ -61,7 +74,8 @@ strcpy(char *s, char *s2) {
 }
 
 char *
-strdup(const char *s) {
+strdup(const char *s)
+{
 
   size_t i, len = strlen(s);
   char *ss = kalloc(len + 1); // account null byte
@@ -73,16 +87,6 @@ strdup(const char *s) {
   return ss;
 }
 
-
-
-int memcpy(void *dest, const void *src, size_t n) {
-
-  char *d = dest;
-  const char *s = src;
-  while (n--) {
-    *d++ = *s++;
-  }
-}
 
 void memzero(uint8_t* mem, size_t n) {
     for (int i = 0; i < n; ++i) {

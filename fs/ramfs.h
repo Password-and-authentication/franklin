@@ -39,6 +39,8 @@ struct ramnode {
     } lnk;
 
     struct {
+      void *data;
+      size_t size;
     } reg;
   };
 };

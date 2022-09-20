@@ -27,12 +27,14 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <errno.h>
 
 #include "std/string.h"
 #include "franklin/fs/vfs.h"
 #include "franklin/uio.h"
 #include "ramfs.h"
 
+struct vnode *lookup(struct componentname*);
 
 void *kalloc(int);
 
@@ -47,9 +49,36 @@ void init_rootfs()
 struct vfs *rootfs;
 
 
+struct vnode *
+namei(const char *name)
+{
+
+  struct vnode *vdir;
+  struct componentname cname = {
+				.nm = strdup(name),
+				.len = strlen(name),
+  };
+  vdir = lookup(&cname);
+  return vdir;
+}
+
+
 /*
  find vnode that corresponds to path
  vfslist.lock has to be held
+ 
+ overall outline of lookup:
+ 
+   1. set the vnode to the starting directory of the lookup (root or cwd)
+   2. get the next component out of the full pathname
+      if the component is 0, return the vnode
+   if .. and crossing mountpoints and on mounted fs, find parent
+   3. call the lookup routine of the parent
+      if the returned vnode is a symbolic link, 
+         call the readlink routine of the vnode and goto step 1
+      if the returned vnode is a mountpoint,
+         get the root of the mounted filesystem and goto step 2
+      else goto step 2
 
  return: locked vnode or NULL
 */
@@ -67,7 +96,7 @@ lookup(struct componentname *path)
   char *str = path->nm;
 
  checkabs:
-  if (str[0] == '/') {
+  if (*str == '/') {
     vfs = rootfs;
     while (*str == '/')
       str++;
@@ -90,7 +119,8 @@ lookup(struct componentname *path)
       return parent;
 
     if (parent->type != VDIR)
-      panic("lookup, parent->type");
+      return -ENOTDIR;
+
 
     // if .. and crossing mount points and on mounted fs, find parent
     if (strncmp(path->nm, "..", 2) == 0 && parent->flags & VROOT) {
@@ -128,9 +158,25 @@ lookup(struct componentname *path)
 int
 vfs_readlink(struct vnode *vn, struct uio *uio)
 {
-  vn->ops->readlink(vn, uio);
+  int error = vn->ops->readlink(vn, uio);
+  return error;
 }
+
+int      // todo: dir to be type fd
+vfs_symlink(const char *dir, const char *link, const char *name)
+{
+
+  struct vnode *vdir;
+  vdir = namei(dir);
+  if (vdir == NULL)
+    return 0;
+  if (vdir->type != VDIR)
+    return -ENOTDIR;
   
+  vdir->ops->symlink(vdir, link, name);
+  vfs_close(vdir);
+  return 0;
+}
 
 /*
   Lookup a vnode in a directory
@@ -140,9 +186,9 @@ int
 vfs_lookup(struct vnode *vdir, struct vnode **vpp,
 	   struct componentname *path)
 {
-  int z = vdir->ops->lookup(vdir, vpp, path);
+  int error = vdir->ops->lookup(vdir, vpp, path);
   acquire(&(*vpp)->lock);
-  return z;
+  return error;
 }
 
 /*
@@ -152,8 +198,9 @@ vfs_lookup(struct vnode *vdir, struct vnode **vpp,
 int
 vfs_root(struct vfs *vfs, struct vnode **root)
 {
-  vfs->ops->root(vfs, root);
+  int error = vfs->ops->root(vfs, root);
   acquire(&(*root)->lock);
+  return error;
 }
 
 
@@ -165,6 +212,7 @@ vfs_mount(char *mntpoint, const char *fstype)
   struct vfsops *vfsops;
   struct vfs *vfs;
   struct componentname path;
+  int error;
 
   acquire(&vfslist.lock);
 
@@ -174,7 +222,8 @@ vfs_mount(char *mntpoint, const char *fstype)
   };
 
   if (vfsops == NULL) {
-    panic("vfs_mount: no vfsops");
+    error = 0;
+    goto fail;
   }
 
 
@@ -189,12 +238,13 @@ vfs_mount(char *mntpoint, const char *fstype)
     mntvnode = lookup(&path);
     
     if (mntvnode == NULL) {
-      print(path.nm);
-      panic("\n mount: mnt vnode NULL");      
+      error = 0;
+      goto fail;
     }
-    if (mntvnode->type != VDIR)
-      panic("mount: mountpoint type");
-
+    if (mntvnode->type != VDIR) {
+      error = -ENOTDIR;
+      goto fail;
+    }
 
     mntvnode->flags |= VROOT;
     vfs->mountpoint = mntvnode;
@@ -213,7 +263,19 @@ vfs_mount(char *mntpoint, const char *fstype)
 
   vfs->ops->mount(vfs);
 
+ fail:
   release(&vfslist.lock);
+}
+
+
+#define O_CREATE 0x200
+
+int    //parent should be type fd
+vfs_open(const char *name, struct vnode **vpp,
+	 enum vtype type, int flags)
+{
+  *vpp = namei(name);
+  return 0;
 }
 
 /*
@@ -227,39 +289,34 @@ int
 vfs_create(const char *parent, const char *name, struct vnode **vpp, enum vtype type)
 {
   struct vnode *vdir;
-  struct componentname cname = {
-				  .nm = strdup(parent),
-				  .len = strlen(parent),
-  };
-  
-  vdir = lookup(&cname);
-  if (vdir == NULL) {
-    print("vfs_create: parent not found.. ");
-    panic(parent);
-  }
+  vdir = namei(parent);
+  if (vdir == NULL)
+    return 0;
     
-  if (vdir->type != VDIR) {
-    print("vfs_create: type");
-    return -1;
-  }
+  if (vdir->type != VDIR)
+    return -ENOTDIR;
+
 
   vdir->ops->create(vdir, vpp, name, type);
   
   vfs_close(vdir);
+  return 0;
 }
 
 int
 vfs_mkdir(const char *parent, const char *name, struct vnode **vpp, enum vtype type)
 {
-  vfs_create(parent, name, vpp, type);
+  int error = vfs_create(parent, name, vpp, type);
+  return error;
 }
 
 
 int
 vfs_vget(struct vfs *vfs, struct vnode **vpp, ino_t ino)
 {
-  if (vfs)
-    vfs->ops->vget(vfs, vpp, ino);
+  int error;
+  error =vfs->ops->vget(vfs, vpp, ino);
+  return error;
 }
 
 
@@ -276,7 +333,7 @@ int
 vfs_close(struct vnode *vn)
 {
   if (trylock(&vn->lock) == 0)
-    panic("vfs_close, lock");
+    return -ENOLCK;
 
   vn->ops->close(vn);
   vn->refcount--;

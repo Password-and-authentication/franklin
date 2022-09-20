@@ -55,8 +55,6 @@ void kmain(void) {
   struct limine_memmap_response *memmap = memmap_request.response;
   initbmap(memmap);
 
-
-  
   init_lock(&spinlock);
   init_vmm();
   init_acpi(); // set global variable RSDT
