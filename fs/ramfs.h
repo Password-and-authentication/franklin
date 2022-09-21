@@ -6,6 +6,11 @@
 #include <stddef.h>
 
 
+#define SEQ_DOT 0
+#define SEQ_DOTDOT 1
+#define SEQ_EOF 2
+#define SEQ_START 3
+
 struct ramvfs {
   struct ramnode *root;
   struct ramnode *nodes; // list of all ram nodes
@@ -15,7 +20,9 @@ struct ramvfs {
 struct ramdentry {
   struct ramdentry *next; // list of dentries in the parent dir
   struct ramnode *node;
-  
+
+  // index is used to identify a dentry in a directory
+  uint64_t seq;
   char *name;
 };
 
@@ -32,6 +39,7 @@ struct ramnode {
     struct {
       struct ramdentry *dentry;
       struct ramnode *parent;
+      uint64_t lastseq;
     } dir;
 
     struct {

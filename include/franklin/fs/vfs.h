@@ -22,7 +22,7 @@ struct componentname {
 };
 
 
-enum vtype {VNON, VREG, VDIR, VLNK, VSOCK};
+enum vtype {VNON, VREG, VDIR, VLNK, VSOCK, VBLK, VCHR};
 
 struct vnodeops;
 struct vfsops;
@@ -43,6 +43,9 @@ struct vnode {
 
 struct vnodeops {
   int (*open)();
+  int (*read)();
+  int (*write)();
+  int (*remove)();
   int (*lookup)();
   int (*create)();
   int (*mkdir)();
@@ -50,6 +53,8 @@ struct vnodeops {
   int (*inactive)();
   int (*symlink)();
   int (*readlink)();
+  int (*readdir)();
+  int (*link)();
 };
 
 

@@ -30,6 +30,7 @@
 #include <errno.h>
 
 #include "std/string.h"
+#include "std/fcntl.h"
 #include "franklin/fs/vfs.h"
 #include "franklin/uio.h"
 #include "ramfs.h"
@@ -93,7 +94,8 @@ lookup(struct componentname *path)
 		    .buf = kalloc(100),
   };
   size_t i;
-  char *str = path->nm;
+  char strr[256], *str = strr;
+  strcpy(str, path->nm);
 
  checkabs:
   if (*str == '/') {
@@ -135,8 +137,7 @@ lookup(struct componentname *path)
       return NULL;
 
     if (vn->type == VLNK) {
-      vfs_readlink(vn, &uio);
-      str = strdup(uio.buf);
+      vfs_readlink_locked(vn, str);
       goto checkabs;
       
     } else if (vn->mountedhere) {
@@ -155,13 +156,69 @@ lookup(struct componentname *path)
 };
 
 
-int
-vfs_readlink(struct vnode *vn, struct uio *uio)
+ssize_t
+vfs_readdir(struct vnode *vdir, void *buf, size_t nbytes, off_t *offset)
 {
-  int error = vn->ops->readlink(vn, uio);
+  size_t n = nbytes;
+  acquire(&vdir->lock);
+  if (vdir->type != VDIR)
+    return -EINVAL;
+  
+  vdir->ops->readdir(vdir, buf, &n, offset);
+  vfs_close(vdir);
+  return n;
+}
+
+
+int
+vfs_link(struct vnode *vdir, struct vnode *vn, const char *name)
+{
+  int error = 0;
+  acquire(&vdir->lock);
+  acquire(&vn->lock);
+  if (vdir->type != VDIR || (vdir->vfs != vn->vfs)) {
+    error = -EINVAL;
+    goto fail;
+  }
+  vdir->ops->link(vdir, vn, name);
+ fail:
+  release(&vn->lock);
+  release(&vdir->lock);
   return error;
 }
 
+int
+vfs_readlink_locked(struct vnode *vn, char *linkbuf)
+{
+  int error = 0;
+  if (vn->type != VLNK)
+    return -EINVAL;
+  error = vn->ops->readlink(vn, linkbuf);
+  return error;
+}
+
+/*
+  Read the symbolic link in vnode vn
+*/
+int
+vfs_readlink(struct vnode *vn, char *linkbuf)
+{
+  int error = 0;
+  acquire(&vn->lock);
+    
+  if (vn->type != VLNK) {
+    error = -EINVAL;
+    goto fail;
+  }
+  error = vn->ops->readlink(vn, linkbuf);
+  fail:
+  release(&vn->lock);
+  return error;
+}
+
+/*
+  Create a symbolick link that points at 'link'
+*/
 int      // todo: dir to be type fd
 vfs_symlink(const char *dir, const char *link, const char *name)
 {
@@ -187,7 +244,8 @@ vfs_lookup(struct vnode *vdir, struct vnode **vpp,
 	   struct componentname *path)
 {
   int error = vdir->ops->lookup(vdir, vpp, path);
-  acquire(&(*vpp)->lock);
+  if (error == 0)
+    acquire(&(*vpp)->lock);
   return error;
 }
 
@@ -268,13 +326,42 @@ vfs_mount(char *mntpoint, const char *fstype)
 }
 
 
-#define O_CREATE 0x200
+int
+vfs_remove(struct vnode *vdir, const char *name)
+{
+  struct vnode *vn;
+  acquire(&vdir->lock);
+  vdir->ops->remove(vdir, name);
+
+  release(&vdir->lock);
+}
+
+int
+vfs_read(struct vnode *vn, void *buf, off_t offset, size_t count)
+{
+  acquire(&vn->lock);
+  vn->ops->read(vn, buf, offset, count);
+  release(&vn->lock);
+}
+
+
+int
+vfs_write(struct vnode *vn, void *buf, off_t offset, size_t count)
+{
+  acquire(&vn->lock);
+  vn->ops->write(vn, buf, offset, count);
+  release(&vn->lock);
+}
+
+
 
 int    //parent should be type fd
 vfs_open(const char *name, struct vnode **vpp,
 	 enum vtype type, int flags)
 {
   *vpp = namei(name);
+  if (*vpp)
+    release(&(*vpp)->lock);
   return 0;
 }
 
@@ -295,7 +382,6 @@ vfs_create(const char *parent, const char *name, struct vnode **vpp, enum vtype 
     
   if (vdir->type != VDIR)
     return -ENOTDIR;
-
 
   vdir->ops->create(vdir, vpp, name, type);
   
@@ -333,13 +419,14 @@ int
 vfs_close(struct vnode *vn)
 {
   if (trylock(&vn->lock) == 0)
-    return -ENOLCK;
-
+    acquire(&vn->lock);
+  
   vn->ops->close(vn);
   vn->refcount--;
 
   if (vn->refcount == 0) {
     vn->ops->inactive(vn);
+    vn->data = NULL;
     kfree(vn);
   } else
     release(&vn->lock);

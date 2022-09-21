@@ -50,7 +50,7 @@ void print(void* s) {
 static uint64_t ar[3] = {3, 3, 4};
 
 void kmain(void) {
-  asm("cli");
+  asm("cli");;
 
   struct limine_memmap_response *memmap = memmap_request.response;
   initbmap(memmap);
@@ -99,12 +99,12 @@ void kmain(void) {
 
 
     /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
-  init_apic((uint32_t*)((uintptr_t)madt->lapic + HHDM_OFFSET));
+  /* init_apic((uint32_t*)((uintptr_t)madt->lapic + HHDM_OFFSET)); */
 
   
   /* wrmsr(MSR_GS, 100); */
 
-  init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell)
+  /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
 
 
   ramfs_t();
