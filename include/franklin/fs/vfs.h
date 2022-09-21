@@ -9,8 +9,9 @@
 
 
 
-#define VROOT 1
+#define VROOT 0x1
 
+#define MNT_ROOTFS 0x1
 
 ;struct vnode;
 int vfs_close(struct vnode *);
@@ -49,12 +50,14 @@ struct vnodeops {
   int (*lookup)();
   int (*create)();
   int (*mkdir)();
+  int (*rmdir)();
   int (*close)();
   int (*inactive)();
   int (*symlink)();
   int (*readlink)();
   int (*readdir)();
   int (*link)();
+  
 };
 
 
@@ -62,6 +65,7 @@ struct vfs {
   struct vfs *next;
   struct vnode *mountpoint;
   struct vfsops *ops;
+  int flags;
   void *data;
 };
 

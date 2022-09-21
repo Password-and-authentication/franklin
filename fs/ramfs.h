@@ -21,16 +21,17 @@ struct ramdentry {
   struct ramdentry *next; // list of dentries in the parent dir
   struct ramnode *node;
 
-  // index is used to identify a dentry in a directory
+  // sequence number is used to identify a dentry in a directory
   uint64_t seq;
   char *name;
 };
 
 
 struct ramnode {
+  struct ramnode *prev, *next;
+
   struct vnode *vnode; // may be null
   
-  struct ramnode *nextnode; // list of all ramnodes
   enum vtype type;
   lock ramlock;
   int linkcount;

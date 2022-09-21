@@ -60,6 +60,8 @@ namei(const char *name)
 				.len = strlen(name),
   };
   vdir = lookup(&cname);
+  if (vdir)
+    release(&vdir->lock);
   return vdir;
 }
 
@@ -225,6 +227,7 @@ vfs_symlink(const char *dir, const char *link, const char *name)
 
   struct vnode *vdir;
   vdir = namei(dir);
+  acquire(&vdir->lock);
   if (vdir == NULL)
     return 0;
   if (vdir->type != VDIR)
@@ -280,10 +283,9 @@ vfs_mount(char *mntpoint, const char *fstype)
   };
 
   if (vfsops == NULL) {
-    error = 0;
+    error = -ENOENT;
     goto fail;
   }
-
 
   vfs = kalloc(sizeof *vfs);
   vfs->ops = vfsops;
@@ -296,11 +298,15 @@ vfs_mount(char *mntpoint, const char *fstype)
     mntvnode = lookup(&path);
     
     if (mntvnode == NULL) {
-      error = 0;
+      error = -ENOENT;
       goto fail;
     }
     if (mntvnode->type != VDIR) {
       error = -ENOTDIR;
+      goto fail;
+    }
+    if (mntvnode->mountedhere) {
+      error = -EBUSY;
       goto fail;
     }
 
@@ -311,6 +317,7 @@ vfs_mount(char *mntpoint, const char *fstype)
      // release lock and decrement refcount
     vfs_close(mntvnode);
   } else {
+    vfs->flags |= MNT_ROOTFS;
     rootfs = vfs;
     rootfs->next = NULL;
   }
@@ -323,6 +330,26 @@ vfs_mount(char *mntpoint, const char *fstype)
 
  fail:
   release(&vfslist.lock);
+  return error;
+}
+
+
+int vfs_unmount(struct vfs *vfs)
+{
+  int error;
+
+
+  // can't unmount root filesystem
+  if (vfs->flags & MNT_ROOTFS) {
+    error = -EINVAL;
+    goto fail;
+  }
+  
+  vfs->ops->unmount(vfs);
+
+ fail:
+
+  return error;
 }
 
 
@@ -330,27 +357,48 @@ int
 vfs_remove(struct vnode *vdir, const char *name)
 {
   struct vnode *vn;
+  int error;
+  vn = namei(name);
   acquire(&vdir->lock);
-  vdir->ops->remove(vdir, name);
+  if (vdir->type != VDIR)
+    error = -ENOTDIR;
+  else
+    error = vdir->ops->remove(vdir, vn, name + 1);    
 
-  release(&vdir->lock);
+  vfs_close(vn);
+  vfs_close(vdir);
+  return error;
 }
 
 int
 vfs_read(struct vnode *vn, void *buf, off_t offset, size_t count)
 {
+  int error;
   acquire(&vn->lock);
-  vn->ops->read(vn, buf, offset, count);
+  if (vn->type == VDIR) {
+    error = -EISDIR;
+    goto fail;
+  }
+  error = vn->ops->read(vn, buf, offset, count);
+ fail:
   release(&vn->lock);
+  return error;
 }
 
 
 int
 vfs_write(struct vnode *vn, void *buf, off_t offset, size_t count)
 {
+  int error;
   acquire(&vn->lock);
-  vn->ops->write(vn, buf, offset, count);
+  if (vn->type == VDIR) {
+    error = -EISDIR;
+    goto fail;
+  }
+  error = vn->ops->write(vn, buf, offset, count);
+ fail:
   release(&vn->lock);
+  return error;
 }
 
 
@@ -360,8 +408,8 @@ vfs_open(const char *name, struct vnode **vpp,
 	 enum vtype type, int flags)
 {
   *vpp = namei(name);
-  if (*vpp)
-    release(&(*vpp)->lock);
+  if (*vpp == NULL)
+    return -ENOENT;
   return 0;
 }
 
@@ -373,10 +421,9 @@ vfs_open(const char *name, struct vnode **vpp,
     the parent gets locked and unlocked
 */
 int
-vfs_create(const char *parent, const char *name, struct vnode **vpp, enum vtype type)
+vfs_create(struct vnode *vdir, const char *name, struct vnode **vpp, enum vtype type)
 {
-  struct vnode *vdir;
-  vdir = namei(parent);
+  acquire(&vdir->lock);
   if (vdir == NULL)
     return 0;
     
@@ -384,15 +431,34 @@ vfs_create(const char *parent, const char *name, struct vnode **vpp, enum vtype 
     return -ENOTDIR;
 
   vdir->ops->create(vdir, vpp, name, type);
-  
-  vfs_close(vdir);
+  release(&vdir->lock);
   return 0;
 }
 
 int
-vfs_mkdir(const char *parent, const char *name, struct vnode **vpp, enum vtype type)
+vfs_mkdir(struct vnode *vdir, const char *name, struct vnode **vpp)
 {
-  int error = vfs_create(parent, name, vpp, type);
+  int error = vfs_create(vdir, name, vpp, VDIR);
+  return error;
+}
+
+int
+vfs_rmdir(struct vnode *vdir, const char *name)
+{
+  int error;
+  struct vnode *vn;
+  vn = namei(name);
+  acquire(&vn->lock);
+  acquire(&vdir->lock);
+  if (vn->type != VDIR || vdir->type != VDIR) {
+    error = -ENOTDIR;
+    goto fail;
+  } else {
+    error = vdir->ops->rmdir(vdir, vn, name + 1);
+  }
+ fail:
+  vfs_close(vn);
+  vfs_close(vdir);
   return error;
 }
 
