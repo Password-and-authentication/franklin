@@ -52,7 +52,7 @@ typedef struct {
 void test(void);
 void init_vmm(void);
 
-uint8_t mappage(uint64_t, uint64_t, uint8_t);
+int mappage(uint64_t, uint64_t, uint8_t);
 void remappage(uint64_t, int);
 void unmappage(uint64_t);
 
@@ -61,11 +61,22 @@ uint64_t *newentry(uint64_t*, uint64_t, uint8_t);
 
 
 
+static inline bool
+isfree(uint32_t page)
+{
+    return (((bitmap[page / 64] & (1ULL << (page % 64)))) == 0);
+}
+
+static inline void
+togglepage(uint32_t page)
+{
+  bitmap[page / 64] ^= (1ULL << (page % 64));
+};
+
+
 
 // PMM
 
-bool isfree(uint32_t);
-void togglepage(uint32_t);
 
 void* palloc(uint32_t);
 void* pallocaddr(uint32_t, uint64_t);

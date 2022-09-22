@@ -28,10 +28,13 @@ void init_vmm() {
     test();    
 }   
 
-uint8_t mappage(uint64_t vaddr, uint64_t paddr, uint8_t flags) {
+int
+mappage(uint64_t vaddr, uint64_t paddr, uint8_t flags)
+{
     uint64_t *PDPTE, *PDE, *PTE;
     Table tablearr[4] = {{PML4E, 39}, {PDPTE, 30}, {PDE, 21}, {PTE, 12}};
-    uint16_t index;
+    int index; // index in the page table
+    
     for (int i = 0; i < 3; ++i) {
         index = (vaddr >> (tablearr[i].shift)) & 0x1FF;
         tablearr[i + 1].table = newentry(&tablearr[i].table[index], 0, flags);
@@ -40,7 +43,7 @@ uint8_t mappage(uint64_t vaddr, uint64_t paddr, uint8_t flags) {
     newentry(&tablearr[3].table[index], paddr, flags);
 
 
-    return 1;
+    return 0;
 }
 
 // get PTE and set present flag to 0 and free page from physical memory
@@ -48,7 +51,9 @@ void unmappage(uint64_t vaddr) {
     asm("invlpg %0" : : "m" (*(uint8_t*)vaddr) : "memory");
     pte_t *pte = getpte(vaddr);
     uint64_t paddr = getpaddr(*pte);
-    *pte ^= (1 << PRESENT);
+    if ((*pte & PRESENT) == 0)
+      panic("unmappage: pte not present");
+    *pte &= ~(PRESENT);
     freepg(paddr, 1);
 }
 
@@ -92,6 +97,8 @@ static pte_t *getpte(uint64_t vaddr) {
 // set new entry in the table_entry table
 // returns the new entry
 uint64_t* newentry(uint64_t *table_entry, uint64_t paddr, uint8_t flags) {
+
+  // pagetable might have already been made
     if (*table_entry & PRESENT)
         goto noalloc;    
         
@@ -116,14 +123,14 @@ void test() {
     mappage(0, 0, KFLAGS);
     unmappage(0);
 
-    for (int i = 0; i < 10; ++i)
-        mappage(i * PGSIZE, 0, KFLAGS);
+    /* for (int i = 0; i < 10; ++i) */
+        /* mappage(i * PGSIZE, 0, KFLAGS); */
 
-    for (int i = 10; i < 20; ++i)
-        mappage(i * PGSIZE, 0, KFLAGS);
+    /* for (int i = 10; i < 20; ++i) */
+        /* mappage(i * PGSIZE, 0, KFLAGS); */
 
-    for (int i = 10; i < 20; ++i)
-        unmappage(i * PGSIZE);
+    /* for (int i = 10; i < 20; ++i) */
+        /* unmappage(i * PGSIZE); */
 
 
 

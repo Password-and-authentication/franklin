@@ -40,6 +40,7 @@
 
 #include "d.h"
 #include "franklin/mmu.h"
+#include "franklin/misc.h"
 #include "franklin/spinlock.h"
 #include "franklin/list.h"
 #include <stddef.h>
@@ -52,6 +53,10 @@ static void freeslab(struct slab *);
 uint32_t roundup(uint32_t);
 
 
+
+struct large_alloc_metadata {
+  size_t pagecount;
+};
 
 
 // block of memory
@@ -79,6 +84,9 @@ static struct {
 } slabber;
 
 
+static void *kalloclarge(size_t);
+static void kfreelarge(void*);
+
 // allocate 'size' amount of bytes
 void*
 kalloc(size_t size)
@@ -88,9 +96,10 @@ kalloc(size_t size)
 
 
   if (size > PGSIZE)
-    panic("kalloc, size");
+    return kalloclarge(size);
   if (size < sizeof(void*)) // MIN blocksize is 8
     size = sizeof(void*);
+
 
   size = (uint32_t)roundup((uint32_t)size);
 
@@ -122,6 +131,10 @@ kfree(void *ptr)
   struct block *block = (struct block*)ptr;
   void* startaddr;
 
+  if (((uintptr_t)ptr & 0xfff) == 0) {
+    kfreelarge(ptr);
+    return;
+  }
   acquire(&slabber.lock);
   
   SLIST_FOREACH(slab, &slabber.slabs, slabs) {
@@ -153,6 +166,31 @@ kfree(void *ptr)
 };
 
 
+static void*
+kalloclarge(size_t size)
+{
+  struct large_alloc_metadata *metadata;
+  size_t pagecount = DIV_ROUNDUP(size, PGSIZE);
+
+  if ((metadata = palloc(pagecount + 1)) == NULL)
+    return NULL;
+
+  metadata = P2V((uintptr_t)metadata);
+  metadata->pagecount = pagecount;
+
+  return (char*)metadata + PGSIZE;
+}
+
+static void
+kfreelarge(void *ptr)
+{
+  struct large_alloc_metadata *metadata;
+  metadata = (char*)ptr - PGSIZE;
+
+  freepg(V2P((uintptr_t)metadata), metadata->pagecount);
+}
+
+
 // allocate new slab and add it to the linked list of slabs
 static struct slab*
 newslab(size_t size)
@@ -165,10 +203,9 @@ newslab(size_t size)
 
   // allocate 1 page for the slab
   start = (char*)P2V((uintptr_t)palloc(1));
-  block = (struct block*)start;
+  slab = (struct slab*)start;
   
-  slab = (struct slab*)(((char*)start + PGSIZE) - sizeof(struct slab));
-
+  block = (struct block*)((char*)start + sizeof*slab);
   
   slab->size = size;
   slab->refcount = 0;
@@ -180,7 +217,7 @@ newslab(size_t size)
   // set the blocks in the slab's free blocks list
   // check block + size, otherwise the last block
   // will get allocated to the slab struct address
-  for (; (char*)block + size < ((char*)slab); start += size)
+  for (start = (char*)block + size; (char*)block + size < ((char*)slab + PGSIZE); start += size)
     SLIST_INSERT_AFTER((struct block*)start, block, blocks);
   
   // add the slab to the linked list of slabs
@@ -230,6 +267,11 @@ void
 test_slab(void)
 {
 
+  char *sex = kalloc(10000);
+  kfree(sex);
+
+  char *pussy = kalloc(50000);
+  kfree(pussy);
   kalloc(8);
   kalloc(50);
   char *sss = kalloc(16);

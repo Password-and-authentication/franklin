@@ -8,12 +8,6 @@
 
 
 
-void togglepage(uint32_t page) {
-  bitmap[page / 64] ^= (1ULL << (page % 64));
-};
-bool isfree(uint32_t page) {
-    return (((bitmap[page / 64] & (1ULL << (page % 64)))) == 0);
-}
 
 
 void *palloc(uint32_t size) {
@@ -79,7 +73,9 @@ void freepg(uint64_t addr, uint32_t length) {
     
     acquire(&spinlock);
     do {
-        togglepage(page);
+      if (isfree(page))
+	panic("freepg: page already free");
+      togglepage(page);
     } while(--length && page++);
     release(&spinlock);
 }
