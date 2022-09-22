@@ -131,6 +131,8 @@ kfree(void *ptr)
   struct block *block = (struct block*)ptr;
   void* startaddr;
 
+  if (ptr == NULL)
+    return;
   if (((uintptr_t)ptr & 0xfff) == 0) {
     kfreelarge(ptr);
     return;

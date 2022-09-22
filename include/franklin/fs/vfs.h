@@ -14,7 +14,16 @@
 #define MNT_ROOTFS 0x1
 
 ;struct vnode;
+
 int vfs_close(struct vnode *);
+
+struct nameidata {
+  struct vnode *vdir;
+  struct vnode *vn;
+
+  char *name;
+  size_t len;
+};
 
 
 struct componentname {

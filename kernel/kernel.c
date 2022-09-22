@@ -47,6 +47,14 @@ void print(void* s) {
     release(&spinlock);
 }
 
+void printl(void *s, size_t len) {
+  struct limine_terminal_response *terminal_res = terminal_request.response;
+  struct limine_terminal *terminal = terminal_res->terminals[0];
+  acquire(&spinlock);
+  terminal_res->write(terminal, s, len);
+  release(&spinlock);
+}
+
 static uint64_t ar[3] = {3, 3, 4};
 
 void kmain(void) {

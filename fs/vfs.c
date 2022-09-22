@@ -32,10 +32,11 @@
 #include "std/string.h"
 #include "std/fcntl.h"
 #include "franklin/fs/vfs.h"
+#include "franklin/fs/dirent.h"
 #include "franklin/uio.h"
 #include "ramfs.h"
 
-struct vnode *lookup(struct componentname*);
+int lookup(struct nameidata*);
 
 void *kalloc(int);
 
@@ -49,20 +50,20 @@ void init_rootfs()
 
 struct vfs *rootfs;
 
-
-struct vnode *
-namei(const char *name)
+int
+nameii(struct nameidata *n)
 {
+  
+}
 
-  struct vnode *vdir;
-  struct componentname cname = {
-				.nm = strdup(name),
-				.len = strlen(name),
-  };
-  vdir = lookup(&cname);
-  if (vdir)
-    release(&vdir->lock);
-  return vdir;
+int
+namei(const char *name, struct nameidata *n)
+{
+  n->vdir = NULL;
+  n->vn = NULL;
+  n->name = strdup(name);
+  n->len = strlen(name);
+  int r = lookup(n);
 }
 
 
@@ -85,19 +86,14 @@ namei(const char *name)
 
  return: locked vnode or NULL
 */
-struct vnode*
-lookup(struct componentname *path)
+int
+lookup(struct nameidata *n)
 {
-
   struct vfs *vfs;
   struct vnode *parent, *vn;
-  struct uio uio = {
-		    .offset = 0,
-		    .buf = kalloc(100),
-  };
   size_t i;
   char strr[256], *str = strr;
-  strcpy(str, path->nm);
+  strcpy(str, n->name);
 
  checkabs:
   if (*str == '/') {
@@ -111,35 +107,39 @@ lookup(struct componentname *path)
   // loop until pathname string has ended
   for (;;) {
     parent = vn;
+    n->vdir = parent;
     
-    path->nm = str;
+    n->name = str;
     str = strchr(str, '/');
-    i = str - path->nm;
+    i = str - n->name;
     while (*str == '/')
       *str++;
     
     // end of pathname string
-    if ((path->len = i) == 0)
+    if ((n->len = i) == 0)
       return parent;
 
     if (parent->type != VDIR)
       return -ENOTDIR;
-
-
+    
     // if .. and crossing mount points and on mounted fs, find parent
-    if (strncmp(path->nm, "..", 2) == 0 && parent->flags & VROOT) {
+    if (strncmp(n->name, "..", 2) == 0 && parent->flags & VROOT) {
       parent = parent->vfs->mountpoint;
     }
     
     // return vn locked
-    int z = vfs_lookup(parent, &vn, path);
+    int z = vfs_lookup(parent, &vn, n);
+
     release(&parent->lock);
 
     if (z < 0)
       return NULL;
+    n->vn = vn;
+
 
     if (vn->type == VLNK) {
       vfs_readlink_locked(vn, str);
+      release(&vn->lock);
       goto checkabs;
       
     } else if (vn->mountedhere) {
@@ -222,11 +222,8 @@ vfs_readlink(struct vnode *vn, char *linkbuf)
   Create a symbolick link that points at 'link'
 */
 int      // todo: dir to be type fd
-vfs_symlink(const char *dir, const char *link, const char *name)
+vfs_symlink(struct vnode *vdir, const char *link, const char *name)
 {
-
-  struct vnode *vdir;
-  vdir = namei(dir);
   acquire(&vdir->lock);
   if (vdir == NULL)
     return 0;
@@ -234,7 +231,7 @@ vfs_symlink(const char *dir, const char *link, const char *name)
     return -ENOTDIR;
   
   vdir->ops->symlink(vdir, link, name);
-  vfs_close(vdir);
+  release(&vdir->lock);
   return 0;
 }
 
@@ -286,6 +283,7 @@ vfs_mount(char *mntpoint, const char *fstype)
     error = -ENOENT;
     goto fail;
   }
+  struct nameidata n;
 
   vfs = kalloc(sizeof *vfs);
   vfs->ops = vfsops;
@@ -295,7 +293,8 @@ vfs_mount(char *mntpoint, const char *fstype)
     path.len = strlen(mntpoint);
 
     // return mountpoint vnode locked
-    mntvnode = lookup(&path);
+    int z = namei(mntpoint, &n);
+    mntvnode = n.vdir;
     
     if (mntvnode == NULL) {
       error = -ENOENT;
@@ -303,14 +302,16 @@ vfs_mount(char *mntpoint, const char *fstype)
     }
     if (mntvnode->type != VDIR) {
       error = -ENOTDIR;
+      vfs_close(mntvnode);
       goto fail;
     }
     if (mntvnode->mountedhere) {
       error = -EBUSY;
+      vfs_close(mntvnode);
       goto fail;
     }
 
-    mntvnode->flags |= VROOT;
+
     vfs->mountpoint = mntvnode;
     mntvnode->mountedhere = vfs;
     
@@ -326,7 +327,7 @@ vfs_mount(char *mntpoint, const char *fstype)
   vfs->next = mountedlist;
   mountedlist = vfs;
 
-  vfs->ops->mount(vfs);
+  error = vfs->ops->mount(vfs);
 
  fail:
   release(&vfslist.lock);
@@ -334,21 +335,35 @@ vfs_mount(char *mntpoint, const char *fstype)
 }
 
 
-int vfs_unmount(struct vfs *vfs)
+int vfs_unmount(const char *name)
 {
   int error;
+  struct nameidata n;
+  struct vnode *mntvnode, *vn = namei(name, &n);
+  struct vfs *vfs = vn->vfs;
 
-
+  acquire(&vn->lock);
+  if ((vn->flags & VROOT) == 0) {
+    vfs_close(vn);
+    return -EINVAL;
+  }
   // can't unmount root filesystem
   if (vfs->flags & MNT_ROOTFS) {
-    error = -EINVAL;
-    goto fail;
+    vfs_close(vn);
+    return -EINVAL;
   }
+  vfs_close(vn);
   
-  vfs->ops->unmount(vfs);
+  error = vfs->ops->unmount(vfs);
+  if (error != 0)
+    return error;
 
+  mntvnode = vfs->mountpoint;
+  acquire(&mntvnode->lock);
+  mntvnode->mountedhere = NULL;
+
+  vfs_close(mntvnode);
  fail:
-
   return error;
 }
 
@@ -358,15 +373,8 @@ vfs_remove(struct vnode *vdir, const char *name)
 {
   struct vnode *vn;
   int error;
-  vn = namei(name);
-  acquire(&vdir->lock);
-  if (vdir->type != VDIR)
-    error = -ENOTDIR;
-  else
-    error = vdir->ops->remove(vdir, vn, name + 1);    
-
-  vfs_close(vn);
-  vfs_close(vdir);
+  if ((error = vdir->ops->remove(vdir, &vn, name)) == 0)
+    vfs_close(vn);
   return error;
 }
 
@@ -407,9 +415,14 @@ int    //parent should be type fd
 vfs_open(const char *name, struct vnode **vpp,
 	 enum vtype type, int flags)
 {
-  *vpp = namei(name);
-  if (*vpp == NULL)
-    return -ENOENT;
+  struct nameidata n;
+  namei(name, &n);
+  if (n.name[0] == 0) {
+    *vpp = n.vdir;
+  } else
+    *vpp = n.vn;
+  if (*vpp)
+    release(&(*vpp)->lock);
   return 0;
 }
 
@@ -436,29 +449,27 @@ vfs_create(struct vnode *vdir, const char *name, struct vnode **vpp, enum vtype 
 }
 
 int
-vfs_mkdir(struct vnode *vdir, const char *name, struct vnode **vpp)
+vfs_mkdir(const char *name, struct vnode **vpp)
 {
-  int error = vfs_create(vdir, name, vpp, VDIR);
+  struct nameidata n;
+  struct vnode *vdir;
+  int error = namei(name, &n);;
+  if (error < 0)
+    return error;
+  vdir = n.vdir;
+  error = vfs_create(vdir, n.name, vpp, VDIR);
   return error;
 }
 
 int
 vfs_rmdir(struct vnode *vdir, const char *name)
 {
-  int error;
   struct vnode *vn;
-  vn = namei(name);
-  acquire(&vn->lock);
-  acquire(&vdir->lock);
-  if (vn->type != VDIR || vdir->type != VDIR) {
-    error = -ENOTDIR;
-    goto fail;
-  } else {
-    error = vdir->ops->rmdir(vdir, vn, name + 1);
+  // TODO: GET VNODE
+  int error;
+  if ((error = vdir->ops->rmdir(vdir, &vn, name)) == 0) {
+    vfs_close(vn);    
   }
- fail:
-  vfs_close(vn);
-  vfs_close(vdir);
   return error;
 }
 
@@ -500,6 +511,20 @@ vfs_close(struct vnode *vn)
   return 0;
 }
 
+
+int
+printdir(struct vnode *vdir)
+{
+  char buf[4096];
+  off_t offset = 0;
+  struct dirent *d = buf;
+  ssize_t count = vfs_readdir(vdir, d, 4096, &offset);
+  print("\n");
+  for (ssize_t i = 0; i < count; i += d->reclen, d = (char*)d + d->reclen) {
+    print(d->name);
+    print("\t");
+  }
+}
 
 /* VFS plan
 
