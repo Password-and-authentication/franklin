@@ -51,19 +51,122 @@ void init_rootfs()
 struct vfs *rootfs;
 
 int
-nameii(struct nameidata *n)
+namei(const char *name, struct nameidata *ndp)
 {
+  struct vfs *vfs;
+  struct vnode *vn, *startdir;
+  struct componentnam *cnp = &ndp->cn;
+  struct componentnam sym;
+  char *bufptr;
+  char *savepath;
+  int error;
   
+  cnp->name = strdup(name);
+  cnp->len = strlen(name);
+  ndp->vn = NULL;
+  savepath = cnp->name;
+
+  /* ndp->vdir = current->cwd; */
+
+  for(;;) {
+    startdir = vn;
+    if (*cnp->name == '/') {
+      vfs = rootfs;
+      vfs->ops->root(vfs, &startdir);
+      while (*cnp->name == '/')
+	cnp->name++;
+    }
+    ndp->vdir = startdir;
+    vref(startdir); // copy pointer because not transfering ownership
+    error = lookup(ndp);
+    if ((ndp->flags & ISSYMLINK) == 0) {
+      vput(startdir);
+      return error;
+    }
+    vn = ndp->vn;
+
+    // Concat the symbolic link and the path together
+    sym.name = kalloc(512);
+    vn->ops->readlink(vn, &sym);
+    strcpy(sym.name + sym.len, cnp->name + cnp->len);
+    cnp->name = sym.name;
+
+    kfree(savepath); 
+    savepath = sym.name;
+
+    vput(vn);
+    vn = ndp->vdir;
+  }
+
+  
+  // /lmao/sym/nice/main.c
+
+  // /lmao/sym = /
+
+  // /nice/main.c
+  vput(startdir);
+  return error;
 }
 
-int
-namei(const char *name, struct nameidata *n)
+
+int 
+lookup(struct nameidata *ndp)
 {
-  n->vdir = NULL;
-  n->vn = NULL;
-  n->name = strdup(name);
-  n->len = strlen(name);
-  int r = lookup(n);
+  char *cp;
+  struct vfs *vfs;
+  struct componentnam *cnp = &ndp->cn;
+  struct vnode *vdir = ndp->vdir;
+  int error;
+
+  ndp->flags &= ~ISSYMLINK;
+
+ dirlookup:
+  for (cp = cnp->name; *cp && *cp != '/'; cp++)
+    ;
+  cnp->len = cp - cnp->name;
+  ndp->next = cp; // save ptr to next component
+
+  if (*cnp->name == 0) {
+    ndp->vn = ndp->vdir;
+    return 0;
+  }
+  
+  ndp->vdir = vdir;
+  acquire(&vdir->lock);
+  error = vdir->ops->lookup(vdir, &ndp->vn, cnp);
+  release(&vdir->lock);
+
+  if (error != 0)
+    return error;
+
+  vdir = ndp->vn;
+
+  /* if crossing mountpoints, get the root vnode
+   * of the mounted filesystem
+   */
+  while (vdir->type == VDIR && (vfs = vdir->mountedhere)) {
+    vput(vdir);
+    error = vfs->ops->root(vfs, &vdir);
+    if (error < 0)
+      return error;
+    ndp->vn = vdir; // incase this was the last component
+  }
+
+  // check for symbolic link
+  if (vdir->type == VLNK &&
+      (ndp->flags & FOLLOW || *ndp->next == '/')) {
+    ndp->flags |= ISSYMLINK;
+    return 0;
+  }
+
+  // get next name
+  if (*ndp->next == '/') {
+    cnp->name = ndp->next;
+    while (*cnp->name == '/')
+      cnp->name++;
+    vput(ndp->vdir);
+    goto dirlookup;
+  }
 }
 
 
@@ -86,88 +189,22 @@ namei(const char *name, struct nameidata *n)
 
  return: locked vnode or NULL
 */
-int
-lookup(struct nameidata *n)
-{
-  struct vfs *vfs;
-  struct vnode *parent, *vn;
-  size_t i;
-  char strr[256], *str = strr;
-  strcpy(str, n->name);
-
- checkabs:
-  if (*str == '/') {
-    vfs = rootfs;
-    while (*str == '/')
-      str++;
-  }
-  vfs_root(vfs, &vn);
-
-  // enter loop with parent->lock held
-  // loop until pathname string has ended
-  for (;;) {
-    parent = vn;
-    n->vdir = parent;
-    
-    n->name = str;
-    str = strchr(str, '/');
-    i = str - n->name;
-    while (*str == '/')
-      *str++;
-    
-    // end of pathname string
-    if ((n->len = i) == 0)
-      return parent;
-
-    if (parent->type != VDIR)
-      return -ENOTDIR;
-    
-    // if .. and crossing mount points and on mounted fs, find parent
-    if (strncmp(n->name, "..", 2) == 0 && parent->flags & VROOT) {
-      parent = parent->vfs->mountpoint;
-    }
-    
-    // return vn locked
-    int z = vfs_lookup(parent, &vn, n);
-
-    release(&parent->lock);
-
-    if (z < 0)
-      return NULL;
-    n->vn = vn;
-
-
-    if (vn->type == VLNK) {
-      vfs_readlink_locked(vn, str);
-      release(&vn->lock);
-      goto checkabs;
-      
-    } else if (vn->mountedhere) {
-      // if vnode is a mountpoint, get the root
-      // vnode of the mounted filesystem
-      // and release the lock on the mountpoint vnode
-      
-      vfs = vn->mountedhere;
-      vfs_close(vn);
-      vfs_root(vfs, &vn);
-    }
-
-  }
-  
-  return vn;
-};
 
 
 ssize_t
 vfs_readdir(struct vnode *vdir, void *buf, size_t nbytes, off_t *offset)
 {
   size_t n = nbytes;
+  int error;
   acquire(&vdir->lock);
-  if (vdir->type != VDIR)
-    return -EINVAL;
+  if (vdir->type != VDIR) {
+    error = -EINVAL;
+    goto fail;
+  }
   
   vdir->ops->readdir(vdir, buf, &n, offset);
-  vfs_close(vdir);
+ fail:
+  release(&vdir->lock);
   return n;
 }
 
@@ -222,17 +259,17 @@ vfs_readlink(struct vnode *vn, char *linkbuf)
   Create a symbolick link that points at 'link'
 */
 int      // todo: dir to be type fd
-vfs_symlink(struct vnode *vdir, const char *link, const char *name)
+vfs_symlink(const char *name, const char *target)
 {
-  acquire(&vdir->lock);
-  if (vdir == NULL)
-    return 0;
-  if (vdir->type != VDIR)
-    return -ENOTDIR;
+  int error;
+  struct nameidata nd;
+  struct vnode *vdir;
+  if ((error = namei(name, &nd)) != -ENOENT)
+      return error;
+  vdir = nd.vdir;
+  vdir->ops->symlink(vdir, target, &nd.cn);
   
-  vdir->ops->symlink(vdir, link, name);
-  release(&vdir->lock);
-  return 0;
+  return error;
 }
 
 /*
@@ -289,12 +326,10 @@ vfs_mount(char *mntpoint, const char *fstype)
   vfs->ops = vfsops;
   
   if (mntpoint) {
-    path.nm = strdup(mntpoint);
-    path.len = strlen(mntpoint);
 
     // return mountpoint vnode locked
     int z = namei(mntpoint, &n);
-    mntvnode = n.vdir;
+    mntvnode = n.vn;
     
     if (mntvnode == NULL) {
       error = -ENOENT;
@@ -302,12 +337,12 @@ vfs_mount(char *mntpoint, const char *fstype)
     }
     if (mntvnode->type != VDIR) {
       error = -ENOTDIR;
-      vfs_close(mntvnode);
+      vput(mntvnode);
       goto fail;
     }
     if (mntvnode->mountedhere) {
       error = -EBUSY;
-      vfs_close(mntvnode);
+      vput(mntvnode);
       goto fail;
     }
 
@@ -316,7 +351,7 @@ vfs_mount(char *mntpoint, const char *fstype)
     mntvnode->mountedhere = vfs;
     
      // release lock and decrement refcount
-    vfs_close(mntvnode);
+    vput(mntvnode);
   } else {
     vfs->flags |= MNT_ROOTFS;
     rootfs = vfs;
@@ -339,20 +374,28 @@ int vfs_unmount(const char *name)
 {
   int error;
   struct nameidata n;
-  struct vnode *mntvnode, *vn = namei(name, &n);
-  struct vfs *vfs = vn->vfs;
+  struct vnode *mntvnode, *vn;
+  struct vfs *vfs;
+  error = namei(name, &n);
+  if (error < 0)
+    return error;
+  vn = n.vn;
+  vfs = vn->vfs;
 
   acquire(&vn->lock);
   if ((vn->flags & VROOT) == 0) {
-    vfs_close(vn);
+    release(&vn->lock);
+    vput(vn);
     return -EINVAL;
   }
   // can't unmount root filesystem
   if (vfs->flags & MNT_ROOTFS) {
-    vfs_close(vn);
+    release(&vn->lock);
+    vput(vn);
     return -EINVAL;
   }
-  vfs_close(vn);
+  release(&vn->lock);
+  vput(vn);
   
   error = vfs->ops->unmount(vfs);
   if (error != 0)
@@ -361,20 +404,28 @@ int vfs_unmount(const char *name)
   mntvnode = vfs->mountpoint;
   acquire(&mntvnode->lock);
   mntvnode->mountedhere = NULL;
-
-  vfs_close(mntvnode);
+  release(&mntvnode->lock);
+  vput(mntvnode);
  fail:
   return error;
 }
 
 
 int
-vfs_remove(struct vnode *vdir, const char *name)
+vfs_unlink(const char *name)
 {
-  struct vnode *vn;
+  struct nameidata nd;
+  struct vnode *vn, *vdir;
   int error;
-  if ((error = vdir->ops->remove(vdir, &vn, name)) == 0)
-    vfs_close(vn);
+  if ((error = namei(name, &nd)) != 0)
+      return error;
+  vn = nd.vn;
+  vdir = nd.vdir;
+  acquire(&vn->lock);
+  acquire(&vdir->lock);
+  error = vdir->ops->remove(vdir, vn, &nd.cn);
+  vput(vn);
+  vput(vdir);
   return error;
 }
 
@@ -411,20 +462,33 @@ vfs_write(struct vnode *vn, void *buf, off_t offset, size_t count)
 
 
 
-int    //parent should be type fd
+int    
 vfs_open(const char *name, struct vnode **vpp,
 	 enum vtype type, int flags)
 {
   struct nameidata n;
-  namei(name, &n);
-  if (n.name[0] == 0) {
-    *vpp = n.vdir;
-  } else
+  struct vnode *vn, *vdir;
+  int error;
+  if (flags & O_CREATE) {
+    if ((error = namei(name, &n)) != -ENOENT) {
+      if (n.vdir)
+	vput(n.vdir);
+      return error;
+    }
+    vdir = n.vdir;
+    error = vdir->ops->create(vdir, &n.vn, &n.cn, type);
+    if (error != 0)
+      return error;
     *vpp = n.vn;
-  if (*vpp)
-    release(&(*vpp)->lock);
-  return 0;
+  } else {
+    if ((error = namei(name, &n)) != 0)
+      return error;
+    *vpp = n.vn;
+  }
+  return error;
 }
+
+
 
 /*
   Create a file in parent directory
@@ -434,18 +498,10 @@ vfs_open(const char *name, struct vnode **vpp,
     the parent gets locked and unlocked
 */
 int
-vfs_create(struct vnode *vdir, const char *name, struct vnode **vpp, enum vtype type)
+vfs_create(const char *name, struct vnode **vpp, enum vtype type)
 {
-  acquire(&vdir->lock);
-  if (vdir == NULL)
-    return 0;
-    
-  if (vdir->type != VDIR)
-    return -ENOTDIR;
-
-  vdir->ops->create(vdir, vpp, name, type);
-  release(&vdir->lock);
-  return 0;
+  int error = vfs_open(name, vpp, type, O_CREATE);
+  return error;
 }
 
 int
@@ -453,23 +509,58 @@ vfs_mkdir(const char *name, struct vnode **vpp)
 {
   struct nameidata n;
   struct vnode *vdir;
-  int error = namei(name, &n);;
-  if (error < 0)
-    return error;
+  int error = namei(name, &n);
+  if (error != -ENOENT)
+    return -EEXIST;
   vdir = n.vdir;
-  error = vfs_create(vdir, n.name, vpp, VDIR);
+  acquire(&vdir->lock);
+  if (vdir->type != VDIR) {
+    error = -ENOTDIR;
+    goto fail;
+  }
+  error = vdir->ops->mkdir(vdir, vpp, &n.cn);
+ fail:
+  release(&vdir->lock);
+  vput(vdir);
   return error;
 }
 
 int
-vfs_rmdir(struct vnode *vdir, const char *name)
+vfs_rmdir(const char *name)
 {
-  struct vnode *vn;
-  // TODO: GET VNODE
+  struct nameidata nd;
+  struct vnode *parent, *vdir;
   int error;
-  if ((error = vdir->ops->rmdir(vdir, &vn, name)) == 0) {
-    vfs_close(vn);    
+  if ((error = namei(name, &nd)) != 0) {
+    if (nd.vn)
+      vput(nd.vn);
+    if (nd.vdir)
+      vput(nd.vdir);
+    return error;
   }
+  vdir = nd.vn;
+  parent = nd.vdir;
+  acquire(&vdir->lock);
+  if (vdir->type != VDIR) {
+    error = -ENOTDIR;
+    goto fail;
+  }
+  // "." is not allowed
+  if (vdir == nd.vdir) {
+    error = -EINVAL;
+    goto fail;
+  }
+  // the root of a filesystem cant be deleted
+  if (vdir->flags & VROOT) {
+    error = -EBUSY;
+    goto fail;
+  }
+  error = parent->ops->rmdir(parent, vdir, &nd.cn);
+			     
+ fail:
+  release(&vdir->lock);
+  vput(nd.vn);
+  vput(nd.vdir);
   return error;
 }
 

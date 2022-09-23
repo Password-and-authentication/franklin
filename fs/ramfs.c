@@ -16,27 +16,26 @@ static const struct vnodeops ramfs_vnode_ops;
 void *kalloc(size_t);
 
 
-static int ramfs_create(struct vnode*, struct vnode**, const char*, enum vtype);
-static int ramfs_mkdir(struct vnode*, struct vnode**, const char*, enum vtype);
-static int ramfs_symlink(struct vnode*, const char*, const char*);
-static int ramfs_readlink(struct vnode*, char *);
+static int ramfs_create(struct vnode*, struct vnode**, struct componentnam *, enum vtype);
+static int ramfs_mkdir(struct vnode*, struct vnode**, struct componentnam *);
+static int ramfs_symlink(struct vnode*, const char*, struct componentnam*);
+static int ramfs_readlink(struct vnode*, struct componentnam*);
 static int ramfs_vget(struct vfs*, struct vnode**, ino_t);
 static int ramfs_write(struct vnode *vn, void *buf, off_t offset, size_t count);
 static int ramfs_read(struct vnode *vn, void *buf, off_t offset, size_t count);
-static int ramfs_remove(struct vnode*, struct vnode**, const char*);
+static int ramfs_remove(struct vnode*, struct vnode*, struct componentnam*);
 static struct ramdentry* ramfs_dir_lookup(struct ramnode *dir, const char*);
 static int ramfs_readdir(struct vnode *vdir, void *buf, size_t *count, off_t *offset);
 
 
-
-
 static struct ramnode* ramfs_alloc_node(struct ramvfs*, struct ramnode*, enum vtype, const char*);
-static int ramfs_alloc_file(struct vnode*, struct vnode **, const char *, enum vtype, const char*);
+static int ramfs_alloc_file(struct vnode*, struct vnode **, struct componentnam *cnp,
+			    enum vtype, const char*);
 static int ramfs_dir_attach(struct ramnode*, struct ramdentry*);
 static int ramfs_dir_detach(struct ramnode*, struct ramdentry*);
-static int ramfs_alloc_dentry(struct ramnode*, struct ramdentry **, const char *);
+static int ramfs_alloc_dentry(struct ramnode*, struct ramdentry **, const char*);
 static int ramfs_vget(struct vfs *vfs, struct vnode **vnode, ino_t ino);
-static int ramfs_lookup(struct vnode*, struct vnode**, struct nameidata*);
+static int ramfs_lookup(struct vnode*, struct vnode**, struct componentnam*);
 static int ramfs_free_dentry(struct ramdentry*);
 static int ramfs_free_node(struct ramvfs*, struct ramnode*);
 
@@ -166,21 +165,25 @@ ramfs_open(struct vnode *vn)
 }
 
 
-static int
-ramfs_remove(struct vnode *vdir, struct vnode **vn, const char *name)
-{
-
-  struct ramnode *parent = vdir->data;
-  struct ramdentry *de;
+/*
+  Remove a file from a directory by
   
-  if (vdir->type != VDIR || parent == NULL)
-    return -EINVAL;
+*/
+static int
+ramfs_remove(struct vnode *vdir, struct vnode *vn, struct componentnam *cnp)
+{
+  struct ramnode *parent = vdir->data, *node = vn->data;
+  struct ramdentry *de;
 
-  de = ramfs_dir_lookup(parent, name);
-  if (de == NULL)
-    return -ENOENT;
-  ramfs_vget(vdir->vfs, vn, (ino_t)de->node);
+  de = ramfs_dir_lookup(parent, cnp->name);
+  if (de == NULL || de->node != node)
+    panic("ramfs_remove: parent");
 
+  /* Remove the dentry from the directory
+   * and decrement the link count
+   * Note: the node referred by it will not be
+   * destroyed until the vnode is destroyed
+   */ 
   ramfs_dir_detach(parent, de);
   ramfs_free_dentry(de);
   return 0;
@@ -190,33 +193,33 @@ ramfs_remove(struct vnode *vdir, struct vnode **vn, const char *name)
   Remove a directory  
 */
 static int
-ramfs_rmdir(struct vnode *vdir, struct vnode **vpp, const char *name)
+ramfs_rmdir(struct vnode *vdir, struct vnode *vpp, struct componentnam *cnp)
 {
-  struct ramnode *node, *parent = vdir->data;
+  struct ramnode *node = vpp->data, *parent = vdir->data;
   struct ramdentry *de;
   int error;
   
-  de = ramfs_dir_lookup(parent, name);
-  if (de == NULL)
-    return -ENOENT;
-  node = de->node;
+  if (cnp->len == 2 && cnp->name[0] == '.' && cnp->name[1] == '.')
+    return -ENOTEMPTY;
+
   acquire(&node->ramlock);
-  if (node->type != VDIR) {
-    error = -ENOTDIR;
-    goto fail;
-  } else if (node->dir.dentry) {
+
+  if (node->dir.parent != vdir->data)
+    panic("ramfs_rmdir: parent");
+
+  if (node->dir.dentry) {
     error = -ENOTEMPTY;
     goto fail;
   }
-
   // decrement the linkcount for the virtual '.' entry
   node->linkcount--;
-
   release(&node->ramlock);
-  ramfs_vget(vdir->vfs, vpp, (ino_t)node);
+  
+  de = ramfs_dir_lookup(parent, cnp->name);
+  if (de == NULL || de->node != node)
+    panic("ramfs_rmdir: node");
 
-  // TODO: EBUSY
-
+  
   // remove dentry from the parent directory
   ramfs_dir_detach(parent, de);
 
@@ -274,22 +277,19 @@ ramfs_dir_detach(struct ramnode *parent, struct ramdentry *de)
  with name nm
 */
 static int
-ramfs_create(struct vnode *vdir, struct vnode **vpp, const char *name, enum vtype type)
+ramfs_create(struct vnode *vdir, struct vnode **vpp, struct componentnam *cnp, enum vtype type)
 {
   int error;
-  error = ramfs_alloc_file(vdir, vpp, name, type, NULL);
+  error = ramfs_alloc_file(vdir, vpp, cnp, type, NULL);
   return error;
 };
 
 
 
 static int
-ramfs_mkdir(struct vnode *vdir, struct vnode **vpp, const char *name, enum vtype type)
+ramfs_mkdir(struct vnode *vdir, struct vnode **vpp, struct componentnam *cnp)
 {
-  if (type != VDIR)
-    return -EINVAL;
-
-  return ramfs_alloc_file(vdir, vpp, name, type, NULL);
+  return ramfs_alloc_file(vdir, vpp, cnp, VDIR, NULL);
 }
 
 /*
@@ -297,15 +297,17 @@ ramfs_mkdir(struct vnode *vdir, struct vnode **vpp, const char *name, enum vtype
  and add it to the parent directory dir
 */
 static int
-ramfs_alloc_file(struct vnode *vdir, struct vnode **vpp, const char *name, enum vtype type,
-		 const char *target)
+ramfs_alloc_file(struct vnode *vdir, struct vnode **vpp, struct componentnam *cnp,
+		 enum vtype type, const char *target)
 {
   
   struct ramvfs *ram = vdir->vfs->data;
   struct ramnode *node, *parent = vdir->data;
   struct ramdentry *de;
   struct vnode *vn;
-
+  char *name = strldup(cnp->name, cnp->len);
+  
+  
   if (vdir->type != VDIR || (target && type != VLNK))
     return -EINVAL;
   
@@ -384,7 +386,7 @@ ramfs_readdir(struct vnode *vdir, void *buf, size_t *count, off_t *offset)
     goto done;
   }
 
-  for (; de && (resid -= d.reclen); de = de->next) {
+  do {
     ramfs_make_dirent(de->node, &d, de->name);
     d.type = de->node->type;
     switch (de->node->type) {
@@ -412,9 +414,9 @@ ramfs_readdir(struct vnode *vdir, void *buf, size_t *count, off_t *offset)
 
     memcpy(buf, &d, d.reclen);
     buf = (char*)buf + d.reclen;
-
     *offset = de->seq;
-  }
+
+  } while((resid -= d.reclen) && (de = de->next));
   
   // amount of bytes that were read
  done:
@@ -569,20 +571,21 @@ ramfs_link(struct vnode *vdir, struct vnode *vn, const char *name)
   Create a symbolic link that points at 'path'
 */
 static int
-ramfs_symlink(struct vnode *vdir, const char *target, const char *name)
+ramfs_symlink(struct vnode *vdir, const char *target, struct componentnam *cnp)
 {
   struct vnode *vpp;
-  return ramfs_alloc_file(vdir, &vpp, name, VLNK, target);
+  return ramfs_alloc_file(vdir, &vpp, cnp, VLNK, target);
 }
 
 
 static int
-ramfs_readlink(struct vnode *vn, char *linkbuf)
+ramfs_readlink(struct vnode *vn, struct componentnam *cnp)
 {
   struct ramnode *node = vn->data;
 
   acquire(&node->ramlock);
-  strcpy(linkbuf, node->lnk.link);
+  strcpy(cnp->name, node->lnk.link);
+  cnp->len = strlen(node->lnk.link);
   release(&node->ramlock);
   return 0;
 }
@@ -645,7 +648,7 @@ ramfs_vget(struct vfs *vfs, struct vnode **vnode, ino_t ino)
     to target in the directory vdir
 */
 static int
-ramfs_lookup(struct vnode *vdir, struct vnode **vpp, struct nameidata *n)
+ramfs_lookup(struct vnode *vdir, struct vnode **vpp, struct componentnam *cnp)
 {
 
   struct ramnode *node = vdir->data;
@@ -659,22 +662,23 @@ ramfs_lookup(struct vnode *vdir, struct vnode **vpp, struct nameidata *n)
     goto done;
   }
 
-  if (strncmp(n->name, ".", 1) == 0) {
+  if (strcmp(cnp->name, ".") == 0) {
     ramfs_vget(vdir->vfs, vpp, (ino_t)node);
     goto done;
   }
-  if (strncmp(n->name, "..", 2) == 0) {
+  if (strcmp(cnp->name, "..") == 0) {
     ramfs_vget(vdir->vfs, vpp, (ino_t)node->dir.parent);
     goto done;
   }
   
   for (entry = node->dir.dentry; entry; entry = entry->next) {
-    if (strncmp(entry->name, n->name, n->len) == 0) {
+    if (strncmp(entry->name, cnp->name, cnp->len) == 0) {
       
       vdir->vfs->ops->vget(vdir->vfs, vpp, entry->node);
       goto done;
     }
   };
+  *vpp = NULL;
   error = -ENOENT;
  done:
   release(&node->ramlock);
@@ -761,8 +765,18 @@ void ramfs_t() {
   struct ramdentry *de;
   int r;
 
+  /* vfs_mkdir("", &vn); */
+  vfs_symlink("/777", "/");
+  vfs_mkdir("/777/lmao", &vn);
+  vfs_open("/", &root, 0, 0);
+  vfs_symlink("/fornite", "/777");
+  vfs_mkdir("/fornite/SEX", &vn);
+  /* printdir(root); */
   vfs_mkdir("/lmao", &vn);
   vfs_mkdir("/lmao/nice", &vn);
+  vfs_mkdir("/lmao/nice", &vn);
+  vfs_mkdir("/whale", &vn);
+  /* vfs_mkdir("", &vn); */ 
   
   r = vfs_open("/", &root, 0, 0);
   if (r < 0 || (root->flags & VROOT) == 0)
@@ -780,10 +794,10 @@ void ramfs_t() {
   if (r < 0)
     panic("mtn mount");
   r = vfs_open("/mnt", &v, 0, 0);
-  r = vfs_mkdir(v, "bruno", &vn);
+  r = vfs_mkdir("/mnt/bruno", &v);
   if (v->refcount > 1)
     panic("refcount");
-  r = vfs_mkdir(v, "mars", &vn);
+  r = vfs_mkdir("/mnt/bruno/mars", &vn);
   if (v->refcount > 1)
     panic("refcount");
   r = vfs_unmount("/mnt");
@@ -792,15 +806,30 @@ void ramfs_t() {
     panic("unmount");
   offset = 3;
   r = vfs_readdir(root, d, 1000, &offset);
-  if (r < 0)
+  if (r == 0)
     panic("error5");
   if (strcmp(d->name, "mnt") != 0);
-  r = vfs_create(root, "main.c", &vn, VREG);
+  r = vfs_open("/main.c", &vn, VREG, O_CREATE);
+  vput(vn);
   if (r < 0)
     panic("create");
-  r = vfs_create(vn, "error", &vn, VREG);
+  r = vfs_create("/main.c/error", &vn, VREG);
   if (r != -ENOTDIR)
     panic("create dir");
 
-
+  vfs_open("/", &vn, 0, 0);
+  r = vfs_rmdir("/mnt/bruno");
+  if (r != -ENOENT)
+    panic("enotdir");
+  r = vfs_rmdir("/mnt");
+  if (r != 0)
+    panic("rmdir");
+  r = vfs_rmdir("/whale");
+  if (r != 0)
+    panic("rmdir");
+  r = vfs_rmdir("/lmao");
+  if (r != -ENOTEMPTY)
+    panic("rmdir");
+  r = vfs_unlink("/main.c");
+  printdir(vn);
 }

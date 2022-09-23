@@ -17,13 +17,24 @@
 
 int vfs_close(struct vnode *);
 
+
+#define ISSYMLINK 0x1
+#define FOLLOW 0x2
+
 struct nameidata {
+  
   struct vnode *vdir;
   struct vnode *vn;
+  char *next;
 
-  char *name;
-  size_t len;
+  int flags;
+
+  struct componentnam {
+    char *name;
+    size_t len;
+  } cn;
 };
+
 
 
 struct componentname {
@@ -49,6 +60,26 @@ struct vnode {
   lock lock;
   void *data;
 };
+
+/*
+  Called when copying a vnode pointer
+  (pointers are copied when the pointer needs to
+   outlive where it came from)
+*/
+static inline
+vref(struct vnode *vn)
+{
+  acquire(&vn->lock);
+  vn->refcount++;
+  release(&vn->lock);
+}
+
+static inline
+vput(struct vnode *vn)
+{
+  vfs_close(vn);
+}
+
 
 
 struct vnodeops {

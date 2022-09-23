@@ -87,6 +87,19 @@ strdup(const char *s)
   return ss;
 }
 
+char *
+strldup(const char *s, size_t len)
+{
+  size_t i;
+  char *ss = kalloc(len + 1);
+  for (i = 0; i < len; ++i)
+    ss[i] = s[i];
+  ss[i] = 0;
+
+  return ss;
+}
+  
+
 
 void memzero(uint8_t* mem, size_t n) {
     for (int i = 0; i < n; ++i) {
