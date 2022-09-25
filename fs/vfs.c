@@ -49,12 +49,33 @@ void init_rootfs()
 };
 
 struct vfs *rootfs;
+struct vnode *rootvn;
 
+void
+init_rootvn()
+{
+  if (rootfs)
+    rootfs->ops->root(rootfs, &rootvn);
+}
+
+
+/*
+  Convert name to a vnode
+
+  overall outline of namei:
+  
+  1. get starting directory of lookup (root or cwd)
+  2. call lookup routine
+  3. if result is a symbolic link concat the link
+     with the remaining path and goto step 1
+
+  Note: caller has to vput() ndp->vdir
+*/
 int
 namei(const char *name, struct nameidata *ndp)
 {
   struct vfs *vfs;
-  struct vnode *vn, *startdir;
+  struct vnode *vn;
   struct componentnam *cnp = &ndp->cn;
   struct componentnam sym;
   char *bufptr;
@@ -67,22 +88,23 @@ namei(const char *name, struct nameidata *ndp)
   savepath = cnp->name;
 
   /* ndp->vdir = current->cwd; */
+  int x = 0;
 
   for(;;) {
-    startdir = vn;
     if (*cnp->name == '/') {
+      if (x++)
+	vput(vn);
       vfs = rootfs;
-      vfs->ops->root(vfs, &startdir);
+      vfs->ops->root(vfs, &vn);
       while (*cnp->name == '/')
 	cnp->name++;
     }
-    ndp->vdir = startdir;
-    vref(startdir); // copy pointer because not transfering ownership
-    error = lookup(ndp);
-    if ((ndp->flags & ISSYMLINK) == 0) {
-      vput(startdir);
-      return error;
-    }
+    ndp->vdir = vn;
+    if ((error = lookup(ndp)) != 0)
+      goto fail;
+    if ((ndp->flags & ISSYMLINK) == 0)
+      goto fail;
+
     vn = ndp->vn;
 
     // Concat the symbolic link and the path together
@@ -97,98 +119,117 @@ namei(const char *name, struct nameidata *ndp)
     vput(vn);
     vn = ndp->vdir;
   }
-
-  
-  // /lmao/sym/nice/main.c
-
-  // /lmao/sym = /
-
-  // /nice/main.c
-  vput(startdir);
+ fail:
   return error;
 }
 
 
+/*
+  Lookup a vnode in the file system
+
+  overall outline of lookup:
+
+  1. get the next component of the pathname
+     if the pathname is null, return
+     if .. and vnode is VROOT, get vnode in the other filesystem
+  2. call VOP_LOOKUP()
+       if the resulting vnode is a mountpoint,
+       get root of the mounted fs
+       if the resulting vnode is a symbolic link, return
+  3. goto step1
+
+   (symbolic links are always followed except
+    if it's the last component, then the FOLLOW flags is checked)
+*/
 int 
 lookup(struct nameidata *ndp)
 {
   char *cp;
   struct vfs *vfs;
   struct componentnam *cnp = &ndp->cn;
-  struct vnode *vdir = ndp->vdir;
+  struct vnode *root, *vdir = ndp->vdir;
   int error;
 
   ndp->flags &= ~ISSYMLINK;
 
- dirlookup:
-  for (cp = cnp->name; *cp && *cp != '/'; cp++)
-    ;
-  cnp->len = cp - cnp->name;
-  ndp->next = cp; // save ptr to next component
+  for(;;) {
+    for (cp = cnp->name; *cp && *cp != '/'; cp++)
+      ;
+    cnp->len = cp - cnp->name;
+    ndp->next = cp; // save ptr to next component
+    
+    if (*cnp->name == 0) {
+      ndp->vn = ndp->vdir;
+      vref(ndp->vn);
+      return 0;
+    }
+    // if root, ignore and goto next name
+    // if root of a filesystem, get the mountpoint vnode of the mounted filesystem
+    if (strncmp(cnp->name, "..", 2) == 0) {
+      for (;;) {
+	if (vdir == rootvn) {
+	  ndp->vdir = ndp->vn = rootvn;
+	  vref(vdir);
+	  goto nextname;
+	}
+	if ((vdir->flags & VROOT) == 0)
+	  break;
+	vput(vdir);
+	vdir = vdir->vfs->mountpoint;
+	vref(vdir);
+      }
+    }
 
-  if (*cnp->name == 0) {
-    ndp->vn = ndp->vdir;
-    return 0;
-  }
-  
-  ndp->vdir = vdir;
-  acquire(&vdir->lock);
-  error = vdir->ops->lookup(vdir, &ndp->vn, cnp);
-  release(&vdir->lock);
+    if (vdir->type != VDIR) {
+      return -ENOTDIR;
+    }
 
-  if (error != 0)
-    return error;
+    ndp->vdir = vdir;
+    acquire(&vdir->lock);
+    error = vdir->ops->lookup(vdir, &ndp->vn, cnp);
+    release(&vdir->lock);
 
-  vdir = ndp->vn;
+    if (error != 0) {
+      if (error != 69)
+	goto fail;
+      return 0;
+    }
 
-  /* if crossing mountpoints, get the root vnode
-   * of the mounted filesystem
-   */
-  while (vdir->type == VDIR && (vfs = vdir->mountedhere)) {
-    vput(vdir);
-    error = vfs->ops->root(vfs, &vdir);
-    if (error < 0)
-      return error;
-    ndp->vn = vdir; // incase this was the last component
-  }
+    vdir = ndp->vn;
 
-  // check for symbolic link
-  if (vdir->type == VLNK &&
-      (ndp->flags & FOLLOW || *ndp->next == '/')) {
-    ndp->flags |= ISSYMLINK;
-    return 0;
-  }
+    /* if crossing mountpoints, get the root vnode
+     * of the mounted filesystem
+     */
+    while (vdir->type == VDIR && (vfs = vdir->mountedhere)) {
+      vput(vdir);
+      error = vfs->ops->root(vfs, &vdir);
+      if (error < 0)
+	return error;
+      ndp->vn = vdir; // incase this was the last component
+    }
 
-  // get next name
-  if (*ndp->next == '/') {
+    // check for symbolic link
+    if (vdir->type == VLNK &&
+	(ndp->flags & FOLLOW || *ndp->next == '/')) {
+      ndp->flags |= ISSYMLINK;
+      // dont call vput(ndp->vdir), since it's needed in namei
+      return 0;
+    }
+    // get next name
+  nextname:
+    if (*ndp->next == 0)
+      break;
     cnp->name = ndp->next;
-    while (*cnp->name == '/')
-      cnp->name++;
+    while (*cnp->name == '/') {
+      cnp->name++; 
+    }
     vput(ndp->vdir);
-    goto dirlookup;
   }
+  return 0;
+ fail:
+  /* vput(vdir); */
+  return error;
 }
-
-
-/*
- find vnode that corresponds to path
- vfslist.lock has to be held
- 
- overall outline of lookup:
- 
-   1. set the vnode to the starting directory of the lookup (root or cwd)
-   2. get the next component out of the full pathname
-      if the component is 0, return the vnode
-   if .. and crossing mountpoints and on mounted fs, find parent
-   3. call the lookup routine of the parent
-      if the returned vnode is a symbolic link, 
-         call the readlink routine of the vnode and goto step 1
-      if the returned vnode is a mountpoint,
-         get the root of the mounted filesystem and goto step 2
-      else goto step 2
-
- return: locked vnode or NULL
-*/
 
 
 ssize_t
@@ -264,11 +305,14 @@ vfs_symlink(const char *name, const char *target)
   int error;
   struct nameidata nd;
   struct vnode *vdir;
-  if ((error = namei(name, &nd)) != -ENOENT)
-      return error;
+  if ((error = namei(name, &nd)) != -ENOENT) {
+    vput(nd.vdir);
+    vput(nd.vn);
+    return error;
+  }
   vdir = nd.vdir;
   vdir->ops->symlink(vdir, target, &nd.cn);
-  
+  vput(vdir);
   return error;
 }
 
@@ -330,28 +374,23 @@ vfs_mount(char *mntpoint, const char *fstype)
     // return mountpoint vnode locked
     int z = namei(mntpoint, &n);
     mntvnode = n.vn;
-    
+
     if (mntvnode == NULL) {
       error = -ENOENT;
-      goto fail;
+      goto fail2;
     }
     if (mntvnode->type != VDIR) {
       error = -ENOTDIR;
-      vput(mntvnode);
-      goto fail;
+      goto fail2;
     }
     if (mntvnode->mountedhere) {
       error = -EBUSY;
-      vput(mntvnode);
-      goto fail;
+      goto fail2;
     }
-
-
     vfs->mountpoint = mntvnode;
     mntvnode->mountedhere = vfs;
-    
-     // release lock and decrement refcount
     vput(mntvnode);
+    vput(n.vdir);
   } else {
     vfs->flags |= MNT_ROOTFS;
     rootfs = vfs;
@@ -363,8 +402,12 @@ vfs_mount(char *mntpoint, const char *fstype)
   mountedlist = vfs;
 
   error = vfs->ops->mount(vfs);
-
  fail:
+  release(&vfslist.lock);
+  return error;
+ fail2:
+  vput(mntvnode);
+  vput(n.vdir);
   release(&vfslist.lock);
   return error;
 }
@@ -377,7 +420,7 @@ int vfs_unmount(const char *name)
   struct vnode *mntvnode, *vn;
   struct vfs *vfs;
   error = namei(name, &n);
-  if (error < 0)
+  if (error != 0)
     return error;
   vn = n.vn;
   vfs = vn->vfs;
@@ -405,7 +448,9 @@ int vfs_unmount(const char *name)
   acquire(&mntvnode->lock);
   mntvnode->mountedhere = NULL;
   release(&mntvnode->lock);
+  
   vput(mntvnode);
+  vput(n.vdir);
  fail:
   return error;
 }
@@ -466,24 +511,30 @@ int
 vfs_open(const char *name, struct vnode **vpp,
 	 enum vtype type, int flags)
 {
-  struct nameidata n;
+  struct nameidata nd;
   struct vnode *vn, *vdir;
   int error;
   if (flags & O_CREATE) {
-    if ((error = namei(name, &n)) != -ENOENT) {
-      if (n.vdir)
-	vput(n.vdir);
+    if ((error = namei(name, &nd)) != -ENOENT) {
+      if (nd.vdir)
+	vput(nd.vdir);
+      if (nd.vn)
+	vput(nd.vn);
       return error;
     }
-    vdir = n.vdir;
-    error = vdir->ops->create(vdir, &n.vn, &n.cn, type);
+    vdir = nd.vdir;
+    error = vdir->ops->create(vdir, &nd.vn, &nd.cn, type);
+    vput(vdir);
     if (error != 0)
       return error;
-    *vpp = n.vn;
+    *vpp = nd.vn;
   } else {
-    if ((error = namei(name, &n)) != 0)
+    error = namei(name, &nd);
+    if (nd.vdir)
+      vput(nd.vdir);
+    if (error != 0)
       return error;
-    *vpp = n.vn;
+    *vpp = nd.vn;
   }
   return error;
 }
@@ -509,9 +560,14 @@ vfs_mkdir(const char *name, struct vnode **vpp)
 {
   struct nameidata n;
   struct vnode *vdir;
-  int error = namei(name, &n);
-  if (error != -ENOENT)
-    return -EEXIST;
+  int error;
+  if ((error = namei(name, &n)) != -ENOENT) {
+    if (n.vdir)
+      vput(n.vdir);
+    if (n.vn)
+      vput(n.vn);
+    return error ? error : -EEXIST;
+  }
   vdir = n.vdir;
   acquire(&vdir->lock);
   if (vdir->type != VDIR) {
@@ -572,8 +628,6 @@ vfs_vget(struct vfs *vfs, struct vnode **vpp, ino_t ino)
   error =vfs->ops->vget(vfs, vpp, ino);
   return error;
 }
-
-
 
 /*
   Close a vnode by decrementing it's

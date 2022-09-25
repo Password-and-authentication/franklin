@@ -656,7 +656,6 @@ ramfs_lookup(struct vnode *vdir, struct vnode **vpp, struct componentnam *cnp)
   int error = 0;
 
   acquire(&node->ramlock);
-
   if (vdir->type != VDIR) {
     error = -ENOTDIR;
     goto done;
@@ -764,23 +763,35 @@ void ramfs_t() {
   struct ramnode *node;
   struct ramdentry *de;
   int r;
+  struct nameidata nd;
 
   /* vfs_mkdir("", &vn); */
-  vfs_symlink("/777", "/");
+  vfs_mkdir("/../../../../../../lmao", &vn);
+  vfs_open("/", &root, 0, 0);
+  vfs_close(root);
+  vfs_symlink("/777", "/../../../../../../..");
   vfs_mkdir("/777/lmao", &vn);
   vfs_open("/", &root, 0, 0);
+  if (root->refcount != 2)
+    panic("root");
+  vfs_close(root);
   vfs_symlink("/fornite", "/777");
   vfs_mkdir("/fornite/SEX", &vn);
   /* printdir(root); */
-  vfs_mkdir("/lmao", &vn);
+  r = vfs_mkdir("/lmao", &vn);
+  if (r != -EEXIST)
+    panic("/lmao");
   vfs_mkdir("/lmao/nice", &vn);
-  vfs_mkdir("/lmao/nice", &vn);
+  r = vfs_mkdir("/lmao/nice", &vn);
+  if (r != -EEXIST)
+    panic("mkdir");
   vfs_mkdir("/whale", &vn);
   /* vfs_mkdir("", &vn); */ 
   
   r = vfs_open("/", &root, 0, 0);
   if (r < 0 || (root->flags & VROOT) == 0)
     panic("error1");
+  vfs_close(root);
   r = vfs_mount("/", "ramfs");
   if (r < 0)
     panic("error2");
@@ -818,6 +829,9 @@ void ramfs_t() {
     panic("create dir");
 
   vfs_open("/", &vn, 0, 0);
+  if (vn->refcount != 2)
+    panic("refocunt");
+  vfs_close(vn);
   r = vfs_rmdir("/mnt/bruno");
   if (r != -ENOENT)
     panic("enotdir");
@@ -831,5 +845,20 @@ void ramfs_t() {
   if (r != -ENOTEMPTY)
     panic("rmdir");
   r = vfs_unlink("/main.c");
+  vfs_mkdir("///lmoa", &v);
+  vfs_mkdir("/tmp", &v);
+  vfs_open("/keeper", &v, VREG, O_CREATE);
+  vfs_close(v);
+  r = vfs_rmdir("/keeper");
+  if (r != -ENOTDIR)
+    panic("NOTDIR");
+  vfs_unlink("/keeper");
+  vfs_rmdir("/tmp");
+  vfs_unlink("/777");
+  vfs_unlink("/fornite");
+  vfs_unlink("/lmoa");
+  vfs_unlink("/SEX");
+  vfs_unlink("/lmao");
+  /* vfs_unlink("/."); */
   printdir(vn);
 }

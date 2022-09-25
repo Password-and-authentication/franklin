@@ -83,8 +83,11 @@ void kmain(void) {
   test_slab();
   init_rootfs();
 
+
   
   vfs_mount(0, "ramfs");
+  init_rootvn();
+
 
   
   /* vfs_mount("/lmaooooo/haha/fuck", "ramfs"); */

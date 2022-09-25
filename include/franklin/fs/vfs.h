@@ -25,6 +25,7 @@ struct nameidata {
   
   struct vnode *vdir;
   struct vnode *vn;
+  struct vnode *root;
   char *next;
 
   int flags;
