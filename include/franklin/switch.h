@@ -3,10 +3,8 @@
 
 #include <stdint.h>
 
-
-
-
-typedef struct regs {
+struct regs
+{
   uint64_t r11;
   uint64_t r10;
   uint64_t r9;
@@ -24,9 +22,10 @@ typedef struct regs {
   uint64_t eflags;
   uint64_t rsp;
   uint64_t ss;
-} __attribute__((packed))regs_t;
+} __attribute__((packed));
 
-typedef struct stack {
+struct stack
+{
   uint64_t rbp;
   uint64_t rbx;
   uint64_t r12;
@@ -34,16 +33,14 @@ typedef struct stack {
   uint64_t r14;
   uint64_t r15;
   uint64_t rip;
-} __attribute__((packed))stack;
+} __attribute__((packed));
 
-
-typedef struct {
+typedef struct
+{
   uint64_t rsp;
 } thread;
 
-extern void switc(stack**, stack*);
-
-
-
+extern void
+switc(struct stack**, struct stack*);
 
 #endif

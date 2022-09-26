@@ -14,15 +14,14 @@
 #define LINT0 0x350
 #define LINT1 0x360
 
-
-volatile unsigned int *EOI;
+volatile unsigned int* EOI;
 char NMI_LINT;
 
-
-void walk_madt(MADT*);
-void init_apic(unsigned int*);
-void apic_timer(regs_t*);
-
-
+void
+walk_madt(MADT*);
+void
+init_apic(uint32_t*);
+void
+apic_timer(struct regs*);
 
 #endif

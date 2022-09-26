@@ -1,66 +1,64 @@
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
+#include "asm/x86.h"
 #include "d.h"
-#include "limine.h"
-#include "franklin/defs.h"
-#include "franklin/mmu.h"
-#include "franklin/cpu.h"
-#include "franklin/idt.h"
-#include "franklin/spinlock.h"
-#include "franklin/apic.h"
-#include "franklin/kbd.h"
-#include "franklin/pic.h"
 #include "franklin/acpi.h"
-#include "franklin/interrupt.h"
-#include "franklin/string.h"
+#include "franklin/apic.h"
+#include "franklin/cpu.h"
 #include "franklin/gdt.h"
+#include "franklin/idt.h"
+#include "franklin/interrupt.h"
+#include "franklin/kbd.h"
+#include "franklin/mmu.h"
+#include "franklin/pic.h"
+#include "franklin/proc.h"
+#include "franklin/spinlock.h"
 #include "franklin/switch.h"
 #include "franklin/time.h"
-#include "franklin/proc.h"
-#include "asm/x86.h"
-
+#include "limine.h"
 
 #include "franklin/fs/vfs.h"
-
-
-
-
-
+#include "std/string.h"
 
 static volatile struct limine_terminal_request terminal_request = {
-    .id = LIMINE_TERMINAL_REQUEST,
-    .revision = 0
+  .id = LIMINE_TERMINAL_REQUEST,
+  .revision = 0
 };
 
 static volatile struct limine_memmap_request memmap_request = {
-    .id = LIMINE_MEMMAP_REQUEST,
-    .revision = 0,
+  .id = LIMINE_MEMMAP_REQUEST,
+  .revision = 0,
 };
 
-
-void print(void* s) {
-    struct limine_terminal_response *terminal_res = terminal_request.response;
-    struct limine_terminal *terminal = terminal_res->terminals[0];
-    acquire(&spinlock);
-    terminal_res->write(terminal, s, strlen(s));
-    release(&spinlock);
+void
+print(void* s)
+{
+  struct limine_terminal_response* terminal_res = terminal_request.response;
+  struct limine_terminal* terminal = terminal_res->terminals[0];
+  acquire(&spinlock);
+  terminal_res->write(terminal, s, strlen(s));
+  release(&spinlock);
 }
 
-void printl(void *s, size_t len) {
-  struct limine_terminal_response *terminal_res = terminal_request.response;
-  struct limine_terminal *terminal = terminal_res->terminals[0];
+void
+printl(void* s, size_t len)
+{
+  struct limine_terminal_response* terminal_res = terminal_request.response;
+  struct limine_terminal* terminal = terminal_res->terminals[0];
   acquire(&spinlock);
   terminal_res->write(terminal, s, len);
   release(&spinlock);
 }
 
-static uint64_t ar[3] = {3, 3, 4};
+static uint64_t ar[3] = { 3, 3, 4 };
 
-void kmain(void) {
-  asm("cli");;
+void
+kmain(void)
+{
+  asm("cli");
 
-  struct limine_memmap_response *memmap = memmap_request.response;
+  struct limine_memmap_response* memmap = memmap_request.response;
   initbmap(memmap);
 
   init_lock(&spinlock);
@@ -75,26 +73,18 @@ void kmain(void) {
   allocproc(thread3);
   init_plock();
 
-  int *a[3];
+  int* a[3];
   int x = sizeof(a) / sizeof(a[0]);
 
-
-	  
   test_slab();
   init_rootfs();
 
-
-  
   vfs_mount(0, "ramfs");
   init_rootvn();
 
-
-  
   /* vfs_mount("/lmaooooo/haha/fuck", "ramfs"); */
 
-  
-  
-  MADT *madt = get_acpi_sdt(MADT_C);
+  MADT* madt = get_acpi_sdt(MADT_C);
   walk_madt(madt); // get info about MADT table
   init_gdt();
 
@@ -104,72 +94,59 @@ void kmain(void) {
 
   /* vfs_mount("/", "ramfs"); */
 
-
   init_pit(1000); // 1000 hz, 1000 IRQ0's in a second
   asm("sti");
 
-
-    /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also configure it) */
+  /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also
+   * configure it) */
   /* init_apic((uint32_t*)((uintptr_t)madt->lapic + HHDM_OFFSET)); */
 
-  
   /* wrmsr(MSR_GS, 100); */
 
   /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
 
-
   ramfs_t();
-
- 
 
   void init_proc();
   init_proc(0);
 
-
-    
-  for(;;)
-    asm ("hlt");
+  for (;;)
+    asm("hlt");
 }
 
+void
+thread3()
+{
 
-void thread3() {
   asm("sti");
   r();
   static int h;
 
-
   for (;;) {
-
   }
 }
 
-void thread2() {
+void
+thread2()
+{
   asm("sti");
   r();
   static int x;
 
-  
-
-  for (;;) {
-
-  }
+  for (;;)
+    ;
 }
 
-void thread1() {
-  
-    // interrupts get disabled on trap entry
+void
+thread1()
+{
+
+  // interrupts get disabled on trap entry
   asm("sti");
+
   r();
 
-  for(;;) {
+  for (;;) {
     /* print("1\n"); */
   }
-
-
-
 }
-
-
-
-
-

@@ -1,16 +1,18 @@
-#include <stdint.h>
-#include "franklin/idt.h"
-#include "franklin/pic.h"
 #include "franklin/interrupt.h"
-#include "franklin/kbd.h"
-#include "franklin/switch.h"
-#include "franklin/69.h"
 #include "asm/x86.h"
+#include "franklin/69.h"
+#include "franklin/idt.h"
+#include "franklin/kbd.h"
+#include "franklin/pic.h"
+#include "franklin/switch.h"
+#include <stdint.h>
 
+extern void
+spurious(void);
 
-extern void spurious(void);
-
-void init_interrupt() {
+void
+init_interrupt()
+{
   init_idt();
   pic_remap(0x20);
   new_irq(33, isr_kbd);
@@ -22,12 +24,11 @@ void init_interrupt() {
   init_kbd(); // init ps/2 keyboard
 }
 
-
-
-void timerh() {
+void
+timerh()
+{
   PIT_COUNTER--;
-  
+
   out(0x20, 0x20);
   return;
 }
-

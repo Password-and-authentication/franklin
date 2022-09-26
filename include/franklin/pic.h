@@ -1,6 +1,7 @@
 #ifndef _PIC_
 #define _PIC_
 
+#include <stdint.h>
 
 #define PIC1_COMMAND 0x20
 #define PIC1_DATA 0x21
@@ -12,6 +13,5 @@
 
 void unmask_irq(uint8_t);
 void pic_remap(uint8_t);
-
 
 #endif
