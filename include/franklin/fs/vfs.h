@@ -76,9 +76,24 @@ vref(struct vnode *vn)
 }
 
 static inline
+vref_locked(struct vnode *vn)
+{
+  vn->refcount++;
+}
+
+
+static inline
 vput(struct vnode *vn)
 {
   vfs_close(vn);
+}
+
+static inline
+vrele(struct vnode *vn)
+{
+  release(&vn->lock);
+  vput(vn);
+
 }
 
 

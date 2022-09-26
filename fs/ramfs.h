@@ -17,6 +17,9 @@ struct ramvfs {
 };
 
 
+// /link main.c
+
+
 struct ramdentry {
   struct ramdentry *next; // list of dentries in the parent dir
   struct ramnode *node;
