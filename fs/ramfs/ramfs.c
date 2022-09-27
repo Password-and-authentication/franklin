@@ -501,7 +501,6 @@ ramfs_alloc_node(struct ramvfs* ram,
 static int
 ramfs_free_node(struct ramvfs* ram, struct ramnode* node)
 {
-  acquire(&node->ramlock);
   // remove from the list of all nodes
   if (node->next != NULL)
     node->next->prev = node->prev;
@@ -517,7 +516,6 @@ ramfs_free_node(struct ramvfs* ram, struct ramnode* node)
     default:
       break;
   }
-  release(&node->ramlock);
   kfree(node);
 }
 
@@ -777,9 +775,6 @@ ramfs_t()
   r = vfs_mkdir("/", &v);
   if (r != -EEXIST)
     panic("eexits");
-  /* r = vfs_mkdir("/lmao/nice", &vn); */
-  /* if (r != -ENOENT) */
-  /* panic("enotent"); */
 
   vfs_mkdir("/first", &v);
   vfs_mount("/first", "ramfs");
@@ -806,6 +801,7 @@ ramfs_t()
     panic("minecon");
 
   vfs_mkdir("/hh", &v);
+  printdir(v);
 
   r = vfs_rmdir("/hh");
   if (r != 0)
@@ -849,7 +845,8 @@ ramfs_t()
   vfs_symlink("/fornite", "/777");
   vfs_mkdir("/fornite/SEX", &vn);
   vfs_mkdir("/fornite/SEX/nice", &vn);
-  /* printdir(root); */
+  print("\n");
+  printdir(root);
   r = vfs_mkdir("/lmao", &vn);
   if (r != -EEXIST)
     panic("/lmao");
@@ -871,7 +868,7 @@ ramfs_t()
   if (r != -EBUSY)
     panic("mountpoint busy");
   r = vfs_mkdir("/mnt", &vn);
-  if (r < 0)
+  if (r != -EEXIST)
     panic("error4");
   r = vfs_mount("/mnt", "ramfs");
   if (r < 0)
@@ -900,6 +897,7 @@ ramfs_t()
   r = vfs_create("/main.c/error", &vn, VREG);
   if (r != -ENOTDIR)
     panic("create dir");
+  vfs_mkdir("/pe", &v);
 
   vfs_open("/", &vn, 0, 0);
   if (vn->refcount != 2)
@@ -918,31 +916,34 @@ ramfs_t()
   if (r != -ENOTEMPTY)
     panic("rmdir");
   r = vfs_unlink("/main.c");
-  vfs_mkdir("///lmoa", &v);
-  vfs_mkdir("/tmp", &v);
-  vfs_open("/keeper", &v, VREG, O_CREATE);
-  vfs_close(v);
-  r = vfs_rmdir("/keeper");
-  if (r != -ENOTDIR)
-    panic("NOTDIR");
-  vfs_unlink("/keeper");
-  vfs_rmdir("/tmp");
-  vfs_unlink("/777");
-  vfs_unlink("/fornite");
-  vfs_unlink("/lmoa");
-  vfs_rmdir("/SEX/nice");
+  vfs_mkdir("/lmo", &v);
 
-  r = vfs_rmdir("/SEX");
-  /* if (r != -ENOTEMPT´) */
-  /* panic("ENOTEMPTY"); */
-  r = vfs_unlink("/lmao");
-  if (r != -EISDIR)
-    panic("ESIDIR");
-  r = vfs_rmdir("/lmao");
-  if (r != -ENOTEMPTY)
-    panic("ENOTMEPT)");
-  r = vfs_unlink("/.");
-  if (r != -EBUSY)
-    panic("EPERM");
-  printdir(vn);
+  /* vfs_open("/main.cc", &v, VREG, O_CREATE); */
+  /* vfs_mkdir("/lmoa/tmp", &v); */
+  /* vfs_open("/keeper", &v, VREG, O_CREATE); */
+  /* vfs_close(v); */
+  /* r = vfs_rmdir("/keeper"); */
+  /* if (r != -ENOTDIR) */
+  /* panic("NOTDIR"); */
+  /* vfs_unlink("/keeper"); */
+  /* vfs_rmdir("/tmp"); */
+  /* vfs_unlink("/777"); */
+  /* vfs_unlink("/fornite"); */
+  /* vfs_unlink("/lmoa"); */
+  /* vfs_rmdir("/SEX/nice"); */
+
+  /* r = vfs_rmdir("/SEX"); */
+  /* /\* if (r != -ENOTEMPT´) *\/ */
+  /* /\* panic("ENOTEMPTY"); *\/ */
+  /* r = vfs_unlink("/lmao"); */
+  /* if (r != -EISDIR) */
+  /*   panic("ESIDIR"); */
+  /* r = vfs_rmdir("/lmao"); */
+  /* if (r != -ENOTEMPTY) */
+  /*   panic("ENOTMEPT)"); */
+  /* r = vfs_unlink("/."); */
+  /* if (r != -EBUSY) */
+  /*   panic("EPERM"); */
+  /* vfs_open("/", &vn); */
+  /* /\* printdir(vn); *\/ */
 }
