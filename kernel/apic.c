@@ -2,7 +2,6 @@
 #include "d.h"
 #include "franklin/69.h"
 #include "franklin/acpi.h"
-#include "franklin/defs.h"
 #include "franklin/interrupt.h"
 #include "franklin/io.h"
 #include "franklin/proc.h"
