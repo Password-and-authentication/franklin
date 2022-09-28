@@ -2,6 +2,7 @@
 #define _DIRENT_
 
 #include "std/string.h"
+#include "sys/types.h"
 #include <stdint.h>
 
 #define DT_UNKNOWN 0

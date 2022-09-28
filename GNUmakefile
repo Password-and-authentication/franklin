@@ -53,6 +53,7 @@ ACPI:
 barebones.iso: limine os
 	rm -rf iso_root
 	mkdir -p iso_root
+	cp f.tar iso_root
 	cp kernel/kernel.elf \
 		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-cd-efi.bin iso_root/
 	xorriso -as mkisofs -b limine-cd.bin \

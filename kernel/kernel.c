@@ -113,6 +113,13 @@ kmain(void)
   /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
 
   ramfs_t();
+  initramfs();
+
+  struct vnode* v;
+  vfs_open("/main.c", &v, 0, 0);
+  char buf[1024];
+  vfs_read(v, buf, 0, 100);
+  printl(buf, 100);
 
   void init_proc();
   init_proc(0);
