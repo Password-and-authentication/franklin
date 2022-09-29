@@ -2,7 +2,6 @@
 #include "asm/x86.h"
 #include "d.h"
 #include "franklin/acpi.h"
-#include "franklin/defs.h"
 #include "franklin/interrupt.h"
 #include "franklin/spinlock.h"
 #include "limine.h"

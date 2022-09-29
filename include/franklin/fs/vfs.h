@@ -16,6 +16,13 @@ struct vnode;
 
 int
 vfs_close(struct vnode*);
+;
+struct vnode;
+
+struct vnode* rootvn;
+
+int
+vfs_close(struct vnode*);
 
 #define ISSYMLINK 0x1
 #define FOLLOW 0x2

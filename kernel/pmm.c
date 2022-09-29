@@ -1,5 +1,4 @@
 #include "d.h"
-#include "franklin/defs.h"
 #include "franklin/mmu.h"
 #include "franklin/spinlock.h"
 #include "limine.h"

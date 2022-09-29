@@ -6,7 +6,6 @@
 #include "franklin/fs/vfs.h"
 #include "franklin/spinlock.h"
 #include "ramfs.h"
-
 #include "std/fcntl.h"
 #include "std/string.h"
 
@@ -197,6 +196,12 @@ ramfs_remove(struct vnode* vdir, struct vnode* vn, struct componentnam* cnp)
   if (de == NULL || de->node != node)
     panic("ramfs_remove: parent");
 
+  // remove node from the list of all nodes in the filesystem
+  if (node->prev)
+    node->prev->next = node->next;
+  if (node->next)
+    node->next->prev = node->prev;
+
   /* Remove the dentry from the directory
    * and decrement the link count
    * Note: the node referred by it will not be
@@ -236,6 +241,12 @@ ramfs_rmdir(struct vnode* vdir, struct vnode* vpp, struct componentnam* cnp)
   de = ramfs_dir_lookup(parent, cnp->name);
   if (de == NULL || de->node != node)
     panic("ramfs_rmdir: node");
+
+  // remove node from the list of all nodes in the filesystem
+  if (node->prev)
+    node->prev->next = node->next;
+  if (node->next)
+    node->next->prev = node->prev;
 
   // remove dentry from the parent directory
   ramfs_dir_detach(parent, de);
@@ -326,6 +337,7 @@ ramfs_alloc_file(struct vnode* vdir,
   struct ramnode *node, *parent = vdir->data;
   struct ramdentry* de;
   struct vnode* vn;
+  char* name = strldup(cnp->name, cnp->len);
 
   if (vdir->type != VDIR || (target && type != VLNK))
     return -EINVAL;
@@ -333,7 +345,7 @@ ramfs_alloc_file(struct vnode* vdir,
   node = ramfs_alloc_node(ram, parent, type, target);
 
   // alloc a dentry for the ramnode
-  ramfs_alloc_dentry(node, &de, cnp->name);
+  ramfs_alloc_dentry(node, &de, name);
 
   // add dentry to the parent's list
   // of dentries
@@ -467,7 +479,6 @@ ramfs_alloc_node(struct ramvfs* ram,
     ram->nodes->prev = node;
   node->next = ram->nodes;
   ram->nodes = node;
-  node->prev = NULL;
 
   node->type = type;
   node->vnode = NULL;
@@ -686,6 +697,7 @@ ramfs_lookup(struct vnode* vdir, struct vnode** vpp, struct componentnam* cnp)
 
   for (entry = node->dir.dentry; entry; entry = entry->next) {
     if (strncmp(entry->name, cnp->name, cnp->len) == 0) {
+
       vdir->vfs->ops->vget(vdir->vfs, vpp, (ino_t)entry->node);
       goto done;
     }
@@ -724,6 +736,7 @@ ramfs_close(struct vnode* vn)
 static int
 ramfs_inactive(struct vnode* vn)
 {
+
   struct ramnode* node = vn->data;
   acquire(&node->ramlock);
   node->vnode = NULL;
@@ -762,6 +775,7 @@ const struct vfsops ram_ops = {
 void
 ramfs_t()
 {
+
   off_t offset = 0;
   char buf[4096];
   struct dirent* d = buf;
@@ -918,32 +932,40 @@ ramfs_t()
   r = vfs_unlink("/main.c");
   vfs_mkdir("/lmo", &v);
 
-  /* vfs_open("/main.cc", &v, VREG, O_CREATE); */
-  /* vfs_mkdir("/lmoa/tmp", &v); */
-  /* vfs_open("/keeper", &v, VREG, O_CREATE); */
-  /* vfs_close(v); */
-  /* r = vfs_rmdir("/keeper"); */
-  /* if (r != -ENOTDIR) */
-  /* panic("NOTDIR"); */
-  /* vfs_unlink("/keeper"); */
-  /* vfs_rmdir("/tmp"); */
-  /* vfs_unlink("/777"); */
-  /* vfs_unlink("/fornite"); */
-  /* vfs_unlink("/lmoa"); */
-  /* vfs_rmdir("/SEX/nice"); */
+  r = vfs_rmdir("/SEX");
+  /* if (r != -ENOTEMPT´) */
+  /* panic("ENOTEMPTY"); */
+  r = vfs_unlink("/lmao");
+  if (r != -EISDIR)
+    panic("ESIDIR");
+  r = vfs_rmdir("/lmao");
+  if (r != -ENOTEMPTY)
+    panic("ENOTMEPT)");
+  r = vfs_unlink("/.");
+  if (r != -EBUSY)
+    panic("EPERM");
+  printdir(vn);
+  r = vfs_rmdir("/SEX");
+  /* if (r != -ENOTEMPT´) */
+  /* panic("ENOTEMPTY"); */
+  r = vfs_unlink("/lmao");
+  if (r != -EISDIR)
+    panic("ESIDIR");
+  r = vfs_rmdir("/lmao");
+  if (r != -ENOTEMPTY)
+    panic("ENOTMEPT)");
+  r = vfs_unlink("/.");
+  if (r != -EBUSY)
+    panic("EPERM");
+  print("SDHIT");
 
-  /* r = vfs_rmdir("/SEX"); */
-  /* /\* if (r != -ENOTEMPT´) *\/ */
-  /* /\* panic("ENOTEMPTY"); *\/ */
-  /* r = vfs_unlink("/lmao"); */
-  /* if (r != -EISDIR) */
-  /*   panic("ESIDIR"); */
-  /* r = vfs_rmdir("/lmao"); */
-  /* if (r != -ENOTEMPTY) */
-  /*   panic("ENOTMEPT)"); */
-  /* r = vfs_unlink("/."); */
-  /* if (r != -EBUSY) */
-  /*   panic("EPERM"); */
-  /* vfs_open("/", &vn); */
-  /* /\* printdir(vn); *\/ */
+  printdir(root);
+  print("LMAO");
+  print("\n");
+  printdir(vn);
+  vfs_mkdir("/newdir", &vn);
+  vfs_mkdir("/newdir/nicer", &vn);
+  vfs_mkdir("/newdir/juicerr", &vn);
+  vfs_open("/newdir", &vn, 0, 0);
+  printdir(vn);
 }

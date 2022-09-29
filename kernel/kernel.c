@@ -4,8 +4,12 @@
 #include "asm/x86.h"
 #include "d.h"
 #include "franklin/acpi.h"
+#include "franklin/interrupt.h"
+#include "std/string.h"
+
 #include "franklin/apic.h"
 #include "franklin/cpu.h"
+
 #include "franklin/gdt.h"
 #include "franklin/idt.h"
 #include "franklin/interrupt.h"
@@ -14,12 +18,12 @@
 #include "franklin/pic.h"
 #include "franklin/proc.h"
 #include "franklin/spinlock.h"
+
 #include "franklin/switch.h"
 #include "franklin/time.h"
 #include "limine.h"
 
 #include "franklin/fs/vfs.h"
-#include "std/string.h"
 
 static volatile struct limine_terminal_request terminal_request = {
   .id = LIMINE_TERMINAL_REQUEST,
@@ -57,6 +61,7 @@ void
 kmain(void)
 {
   asm("cli");
+  ;
 
   struct limine_memmap_response* memmap = memmap_request.response;
   initbmap(memmap);
@@ -102,12 +107,24 @@ kmain(void)
   /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also
    * configure it) */
   /* init_apic((uint32_t*)((uintptr_t)madt->lapic + HHDM_OFFSET)); */
+#define _shit_(x) x
+#define __shit_(...)
+
+  _shit_(("lol", "lol"));
+  __shit_("lol", "lol");
 
   /* wrmsr(MSR_GS, 100); */
 
   /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
 
   ramfs_t();
+  initramfs();
+
+  struct vnode* v;
+  vfs_open("/main.c", &v, 0, 0);
+  char buf[1024];
+  vfs_read(v, buf, 0, 100);
+  printl(buf, 100);
 
   void init_proc();
   init_proc(0);
@@ -119,7 +136,6 @@ kmain(void)
 void
 thread3()
 {
-
   asm("sti");
   r();
   static int h;
@@ -135,8 +151,8 @@ thread2()
   r();
   static int x;
 
-  for (;;)
-    ;
+  for (;;) {
+  }
 }
 
 void

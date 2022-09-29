@@ -4,7 +4,6 @@
 #include "franklin/acpi.h"
 #include "franklin/apic.h"
 #include "franklin/cpu.h"
-#include "franklin/defs.h"
 #include "franklin/fs/vfs.h"
 #include "franklin/idt.h"
 #include "franklin/mmu.h"

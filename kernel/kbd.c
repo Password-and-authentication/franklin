@@ -3,7 +3,6 @@
 #include "d.h"
 #include "franklin/69.h"
 #include "franklin/acpi.h"
-#include "franklin/defs.h"
 #include <stdint.h>
 
 static uint8_t kbd_us[127] = {

@@ -30,6 +30,8 @@
 #include <stdint.h>
 
 #include "franklin/fs/dirent.h"
+#include "ramfs/ramfs.h"
+
 #include "franklin/fs/vfs.h"
 #include "std/fcntl.h"
 #include "std/string.h"
@@ -57,116 +59,6 @@ init_rootvn()
 {
   if (rootfs)
     rootfs->ops->root(rootfs, &rootvn);
-}
-
-int
-vfs_mount(char* mntpoint, const char* fstype)
-{
-
-  struct vnode* mntvnode; // vnode corresponding to mntpoint string
-  struct vfsops* vfsops;
-  struct vfs* vfs;
-  struct nameidata n;
-  int error;
-
-  acquire(&vfslist.lock);
-
-  for (vfsops = &vfslist.first; vfsops; vfsops = vfsops->next) {
-    if (strcmp(vfsops->name, fstype) == 0)
-      break;
-  };
-  if (vfsops == NULL) {
-    error = -ENOENT;
-    goto fail;
-  }
-
-  vfs = kalloc(sizeof *vfs);
-  vfs->ops = vfsops;
-
-  if (mntpoint) {
-
-    if ((error = namei(mntpoint, &n)) != 0)
-      goto fail2;
-    mntvnode = n.vn;
-    acquire(&mntvnode->lock);
-
-    if (mntvnode->type != VDIR) {
-      error = -ENOTDIR;
-      goto fail2;
-    }
-    if (mntvnode->mountedhere) {
-      error = -EBUSY;
-      goto fail2;
-    }
-    vfs->mountpoint = mntvnode;
-    mntvnode->mountedhere = vfs;
-
-    vrele(mntvnode);
-    vput(n.vdir);
-  } else {
-    vfs->flags |= MNT_ROOTFS;
-    rootfs = vfs;
-    rootfs->next = NULL;
-  }
-
-  error = vfs->ops->mount(vfs);
-
-fail:
-  release(&vfslist.lock);
-  return error;
-fail2:
-  if (n.vn)
-    vput(n.vn);
-  if (n.vdir)
-    vput(n.vdir);
-  release(&vfslist.lock);
-  return error;
-}
-
-int
-vfs_unmount(const char* name)
-{
-  int error;
-  struct nameidata n;
-  struct vnode *mntvnode, *vn;
-  struct vfs* vfs;
-  if ((error = namei(name, &n)) != 0)
-    goto fail;
-  vn = n.vn;
-  vfs = vn->vfs;
-
-  acquire(&vn->lock);
-  if ((vn->flags & VROOT) == 0) {
-    release(&vn->lock);
-    error = -EINVAL;
-    goto fail;
-  }
-  // can't unmount root filesystem
-  if (vfs->flags & MNT_ROOTFS) {
-    release(&vn->lock);
-    error = -EINVAL;
-    goto fail;
-  }
-  vrele(vn);
-
-  error = vfs->ops->unmount(vfs);
-  if (error != 0)
-    return error;
-
-  mntvnode = vfs->mountpoint;
-  acquire(&mntvnode->lock);
-  mntvnode->mountedhere = NULL;
-  release(&mntvnode->lock);
-
-  vput(n.vdir);
-  kfree(vfs);
-  return 0;
-fail:
-  if (n.vn)
-    vput(n.vn);
-  if (n.vdir)
-    vput(n.vdir);
-  return error;
 }
 
 /*
@@ -455,6 +347,116 @@ vfs_root(struct vfs* vfs, struct vnode** root)
 }
 
 int
+vfs_mount(char* mntpoint, const char* fstype)
+{
+
+  struct vnode* mntvnode; // vnode corresponding to mntpoint string
+  struct vfsops* vfsops;
+  struct vfs* vfs;
+  struct nameidata n;
+  int error;
+
+  acquire(&vfslist.lock);
+
+  for (vfsops = &vfslist.first; vfsops; vfsops = vfsops->next) {
+    if (strcmp(vfsops->name, fstype) == 0)
+      break;
+  };
+  if (vfsops == NULL) {
+    error = -ENOENT;
+    goto fail;
+  }
+
+  vfs = kalloc(sizeof *vfs);
+  vfs->ops = vfsops;
+
+  if (mntpoint) {
+
+    if ((error = namei(mntpoint, &n)) != 0)
+      goto fail2;
+    mntvnode = n.vn;
+    acquire(&mntvnode->lock);
+
+    if (mntvnode->type != VDIR) {
+      error = -ENOTDIR;
+      goto fail2;
+    }
+    if (mntvnode->mountedhere) {
+      error = -EBUSY;
+      goto fail2;
+    }
+    vfs->mountpoint = mntvnode;
+    mntvnode->mountedhere = vfs;
+
+    vrele(mntvnode);
+    vput(n.vdir);
+  } else {
+    vfs->flags |= MNT_ROOTFS;
+    rootfs = vfs;
+    rootfs->next = NULL;
+  }
+
+  // add vfs to the vfs list
+  vfs->next = mountedlist;
+  mountedlist = vfs;
+
+  error = vfs->ops->mount(vfs);
+fail:
+  release(&vfslist.lock);
+  return error;
+fail2:
+  if (n.vn)
+    vput(n.vn);
+  if (n.vdir)
+    vput(n.vdir);
+  release(&vfslist.lock);
+  return error;
+}
+
+int
+vfs_unmount(const char* name)
+{
+  int error;
+  struct nameidata n;
+  struct vnode *mntvnode, *vn;
+  struct vfs* vfs;
+  if ((error = namei(name, &n)) != 0)
+    goto fail;
+  vn = n.vn;
+  vfs = vn->vfs;
+
+  acquire(&vn->lock);
+  if ((vn->flags & VROOT) == 0) {
+    vrele(vn);
+    return -EINVAL;
+  }
+  // can't unmount root filesystem
+  if (vfs->flags & MNT_ROOTFS) {
+    vrele(vn);
+    return -EINVAL;
+  }
+  vrele(vn);
+
+  error = vfs->ops->unmount(vfs);
+  if (error != 0)
+    return error;
+
+  mntvnode = vfs->mountpoint;
+  acquire(&mntvnode->lock);
+  mntvnode->mountedhere = NULL;
+  release(&mntvnode->lock);
+
+  vput(n.vdir);
+  return 0;
+fail:
+  if (n.vn)
+    vput(n.vn);
+  if (n.vdir)
+    vput(n.vdir);
+  return error;
+}
+
+int
 vfs_unlink(const char* name)
 {
   struct nameidata nd;
@@ -566,6 +568,7 @@ vfs_create(const char* name, struct vnode** vpp, enum vtype type)
   Bug: if you do /shit/fuck, and neither of them exist,
        it still tries to create a file
 */
+
 int
 vfs_mkdir(const char* name, struct vnode** vpp)
 {

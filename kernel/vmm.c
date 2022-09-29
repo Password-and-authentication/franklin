@@ -1,9 +1,8 @@
 #include "d.h"
 #include "franklin/69.h"
-#include "franklin/defs.h"
 #include "franklin/mmu.h"
-#include "franklin/string.h"
 #include "limine.h"
+#include "std/string.h"
 
 uint64_t
 V2P(uint64_t V)
