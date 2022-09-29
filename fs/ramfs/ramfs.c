@@ -696,6 +696,10 @@ ramfs_lookup(struct vnode* vdir, struct vnode** vpp, struct componentnam* cnp)
   }
 
   for (entry = node->dir.dentry; entry; entry = entry->next) {
+    /* bug:
+       main.ccc
+       main.c // will pass the strncmp()
+    */
     if (strncmp(entry->name, cnp->name, cnp->len) == 0) {
 
       vdir->vfs->ops->vget(vdir->vfs, vpp, (ino_t)entry->node);
@@ -786,6 +790,8 @@ ramfs_t()
   struct nameidata nd;
 
   vfs_mkdir("/mnt", &v);
+  vfs_mount("/mnt", "ramfs");
+
   r = vfs_mkdir("/", &v);
   if (r != -EEXIST)
     panic("eexits");
@@ -795,16 +801,27 @@ ramfs_t()
   vfs_mkdir("/first/a", &v);
   vfs_mkdir("/first/b", &v);
   vfs_mkdir("/first/c", &v);
-  vfs_unmount("/first");
+  /* vfs_unmount("/first"); */
+  vfs_open("/first", &v, 0, 0);
+  printdir(v);
+  if (rootvn->refcount != 1)
+    panic("refcount");
 
   r = vfs_unmount("/");
   if (r != -EINVAL)
     panic("einval");
   r = vfs_unmount("/mnt");
+  if (r != 0)
+    panic("einval");
 
-  /* vfs_mkdir("", &vn); */
+  r = vfs_mkdir("", &vn);
+  if (r != -EINVAL)
+    panic("einval");
+
   vfs_mkdir("/mine", &v);
-  vfs_rmdir("/.");
+  r = vfs_rmdir("/.");
+  if (r != -EINVAL)
+    panic("eperm");
   vfs_mount("/mine", "ramfs");
   vfs_mkdir("/mine/con", &v);
   node = v->data;
@@ -823,11 +840,11 @@ ramfs_t()
   r = vfs_rmdir("/sex");
   if (r != -ENOENT)
     panic("enoent");
-  vfs_open("/main.c", &v, VREG, O_CREATE);
-  r = vfs_rmdir("/main.c");
+  vfs_open("/mainn.c", &v, VREG, O_CREATE);
+  r = vfs_rmdir("/mainn.c");
   if (r != -ENOTDIR)
     panic("enotdri");
-  r = vfs_open("/main.c", &v, VREG, 0);
+  r = vfs_open("/mainn.c", &v, 0, 0);
   if (r != 0)
     panic("oepen");
   r = vfs_open("/pussy", &v, VREG, 0);
@@ -853,13 +870,12 @@ ramfs_t()
   vfs_symlink("/777", "/../../../../../../..");
   vfs_mkdir("/777/lmao", &vn);
   vfs_open("/", &root, 0, 0);
-  if (root->refcount != 2)
-    panic("root");
   vfs_close(root);
   vfs_symlink("/fornite", "/777");
   vfs_mkdir("/fornite/SEX", &vn);
   vfs_mkdir("/fornite/SEX/nice", &vn);
   print("\n");
+  r = vfs_unlink("/777");
   printdir(root);
   r = vfs_mkdir("/lmao", &vn);
   if (r != -EEXIST)
@@ -869,7 +885,7 @@ ramfs_t()
   if (r != -EEXIST)
     panic("mkdir");
   vfs_mkdir("/whale", &vn);
-  /* vfs_mkdir("", &vn); */
+  vfs_mkdir("", &vn);
 
   r = vfs_open("/", &root, 0, 0);
   if (r < 0 || (root->flags & VROOT) == 0)
@@ -904,18 +920,16 @@ ramfs_t()
     panic("error5");
   if (strcmp(d->name, "mnt") != 0)
     ;
-  r = vfs_open("/main.c", &vn, VREG, O_CREATE);
+  r = vfs_open("/maiin.c", &vn, VREG, O_CREATE);
   vput(vn);
   if (r < 0)
     panic("create");
-  r = vfs_create("/main.c/error", &vn, VREG);
+  r = vfs_create("/maiin.c/error", &vn, VREG);
   if (r != -ENOTDIR)
     panic("create dir");
   vfs_mkdir("/pe", &v);
 
   vfs_open("/", &vn, 0, 0);
-  if (vn->refcount != 2)
-    panic("refocunt");
   vfs_close(vn);
   r = vfs_rmdir("/mnt/bruno");
   if (r != -ENOENT)
@@ -930,11 +944,16 @@ ramfs_t()
   if (r != -ENOTEMPTY)
     panic("rmdir");
   r = vfs_unlink("/main.c");
+  if (r != -ENOENT)
+    panic("ENOENTaminc.");
+  r = vfs_unlink("/maiin.c");
+  if (r != 0)
+    panic("maiin.cERRO");
   vfs_mkdir("/lmo", &v);
 
   r = vfs_rmdir("/SEX");
-  /* if (r != -ENOTEMPT´) */
-  /* panic("ENOTEMPTY"); */
+  if (r != -ENOTEMPTY)
+    panic("ENOTEMPTY");
   r = vfs_unlink("/lmao");
   if (r != -EISDIR)
     panic("ESIDIR");
@@ -944,10 +963,9 @@ ramfs_t()
   r = vfs_unlink("/.");
   if (r != -EBUSY)
     panic("EPERM");
-  printdir(vn);
   r = vfs_rmdir("/SEX");
-  /* if (r != -ENOTEMPT´) */
-  /* panic("ENOTEMPTY"); */
+  if (r != -ENOTEMPTY)
+    panic("ENOTEMPTY");
   r = vfs_unlink("/lmao");
   if (r != -EISDIR)
     panic("ESIDIR");
@@ -962,6 +980,8 @@ ramfs_t()
   printdir(root);
   print("LMAO");
   print("\n");
+  /* vfs_rmdir("/maiin.c"); */
+  vfs_unlink("/mainn.c");
   printdir(vn);
   vfs_mkdir("/newdir", &vn);
   vfs_mkdir("/newdir/nicer", &vn);

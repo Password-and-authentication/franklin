@@ -575,6 +575,8 @@ vfs_mkdir(const char* name, struct vnode** vpp)
   struct nameidata n;
   struct vnode* vdir;
   int error;
+  if (*name == 0)
+    return -EINVAL;
   if ((error = namei(name, &n)) != -ENOENT) {
     if (n.vdir)
       vput(n.vdir);

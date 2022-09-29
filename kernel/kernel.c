@@ -125,6 +125,9 @@ kmain(void)
   char buf[1024];
   vfs_read(v, buf, 0, 100);
   printl(buf, 100);
+  vfs_close(v);
+
+  exec("/exe");
 
   void init_proc();
   init_proc(0);

@@ -4,6 +4,7 @@
 #include "franklin/apic.h"
 #include "franklin/mmu.h"
 #include "franklin/switch.h"
+#include <elf.h>
 #include <stdint.h>
 
 static struct proc* curproc;
@@ -50,6 +51,21 @@ struct proc*
 get_current_proc(void)
 {
   return rdmsr(MSR_GS);
+}
+
+struct elf
+{
+  int magic;
+};
+
+void
+exec(const char* name)
+{
+  struct elf elf;
+  struct vnode* vn;
+  size_t count;
+  vfs_open(name, &vn, 0, 0);
+  count = vfs_read(vn, &elf, 0, 4);
 }
 
 void

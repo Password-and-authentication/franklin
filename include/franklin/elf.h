@@ -1,0 +1,7 @@
+
+
+struct elf
+{};
+
+struct progheader
+{};
