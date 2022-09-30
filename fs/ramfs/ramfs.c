@@ -167,10 +167,11 @@ ramfs_read(struct vnode* vn, void* buf, off_t offset, size_t count)
     goto fail;
   }
 
-  memcpy(buf, node->reg.data, count);
+  memcpy(buf, node->reg.data + offset, count);
+  error = count;
 fail:
   release(&node->ramlock);
-  return 0;
+  return error;
 }
 
 static int

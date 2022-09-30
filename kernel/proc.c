@@ -61,11 +61,30 @@ struct elf
 void
 exec(const char* name)
 {
-  struct elf elf;
+  Elf64_Ehdr elf;
+  Elf64_Phdr* phdr;
   struct vnode* vn;
+  struct proc* p;
+  struct mm* mm;
+  struct vm_area* vmarea;
   size_t count;
+
   vfs_open(name, &vn, 0, 0);
-  count = vfs_read(vn, &elf, 0, 4);
+  count = vfs_read(vn, &elf, 0, sizeof elf);
+
+  count = elf.e_phentsize * elf.e_phnum;
+  phdr = kalloc(count);
+  count = vfs_read(vn, phdr, elf.e_phoff, count);
+  phdr++;
+
+  p = kalloc(sizeof *p);
+  mm = kalloc(sizeof *mm);
+
+  p->mm = mm;
+
+  vmarea = kalloc(sizeof *vmarea);
+
+  vmarea->vmstart = phdr->vaddr;
 }
 
 void

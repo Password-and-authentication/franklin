@@ -55,8 +55,6 @@ printl(void* s, size_t len)
   release(&spinlock);
 }
 
-static uint64_t ar[3] = { 3, 3, 4 };
-
 void
 kmain(void)
 {
@@ -121,11 +119,11 @@ kmain(void)
   initramfs();
 
   struct vnode* v;
-  vfs_open("/main.c", &v, 0, 0);
-  char buf[1024];
-  vfs_read(v, buf, 0, 100);
-  printl(buf, 100);
-  vfs_close(v);
+  /* vfs_open("/main.c", &v, 0, 0); */
+  /* char buf[1024]; */
+  /* vfs_read(v, buf, 0, 100); */
+  /* printl(buf, 100); */
+  /* vfs_close(v); */
 
   exec("/exe");
 

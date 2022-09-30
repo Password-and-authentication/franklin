@@ -88,4 +88,32 @@ getmemsz(struct limine_memmap_response*);
 struct limine_memmap_entry*
 getentry(struct limine_memmap_response*, uint64_t);
 
+struct vm_area;
+
+struct mm
+{
+  // list of memory regions
+  struct vm_area* mmap;
+
+  uintptr_t codestart;
+  size_t codesize;
+
+  uintptr_t datastart;
+  size_t datasize;
+
+  uintptr_t brkstart;
+  size_t brksize;
+
+  uintptr_t stackstart;
+};
+
+struct vm_area
+{
+  struct mm* mm;
+  struct vm_area* next;
+
+  uintptr_t vmstart;
+  size_t vmsize;
+};
+
 #endif

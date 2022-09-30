@@ -1,6 +1,7 @@
 #ifndef _PROC_
 #define _PROC_
 
+#include "mmu.h"
 #include "switch.h"
 #include <stdint.h>
 
@@ -33,11 +34,13 @@ enum procstate
 
 struct proc
 {
+  struct mm* mm;
   struct regs* regs;
   struct stack* stack;
   enum procstate state;
   uint32_t pid;
-  uint64_t* pml4;
+
+  uint64_t* pagetables;
 };
 
 #endif
