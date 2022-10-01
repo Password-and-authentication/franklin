@@ -4,6 +4,7 @@
 #include "franklin/apic.h"
 #include "franklin/mmu.h"
 #include "franklin/switch.h"
+#include "vm/vm.h"
 #include <elf.h>
 #include <stdint.h>
 
@@ -63,28 +64,37 @@ exec(const char* name)
 {
   Elf64_Ehdr elf;
   Elf64_Phdr* phdr;
-  struct vnode* vn;
   struct proc* p;
-  struct mm* mm;
-  struct vm_area* vmarea;
-  size_t count;
+  struct vm_map* vmap;
+  struct vm_map_entry *map_entry, *map_entry_prev;
+  struct vnode* vn;
+  int error, count;
 
   vfs_open(name, &vn, 0, 0);
-  count = vfs_read(vn, &elf, 0, sizeof elf);
+
+  vfs_read(vn, &elf, 0, sizeof elf);
+
+  p = kalloc(sizeof *p);
+  vmap = kalloc(sizeof *vmap);
+  vmap->entries = NULL;
+
+  p->vmap = vmap;
+
+  p->pagetables = P2V((uint64_t)palloc(1));
+
+  memset(p->pagetables, 0, PGSIZE);
 
   count = elf.e_phentsize * elf.e_phnum;
   phdr = kalloc(count);
-  count = vfs_read(vn, phdr, elf.e_phoff, count);
-  phdr++;
+  vfs_read(vn, phdr, elf.e_phoff, count);
 
-  p = kalloc(sizeof *p);
-  mm = kalloc(sizeof *mm);
+  vm_alloc(vmap, phdr->p_vaddr, phdr->p_memsz);
 
-  p->mm = mm;
+  for (int i = 1; i < elf.e_phnum; ++i) {
+    vm_alloc(vmap, phdr[i].p_vaddr, phdr[i].p_memsz);
 
-  vmarea = kalloc(sizeof *vmarea);
-
-  vmarea->vmstart = phdr->vaddr;
+    char* buf = mappage2(p->pagetables, phdr[i].p_vaddr, 0, 0);
+  }
 }
 
 void

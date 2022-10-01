@@ -30,7 +30,24 @@ init_vmm()
   test();
 }
 
-int
+void*
+mappage2(uint64_t* pml4e, uint64_t vaddr, uint64_t paddr, uint8_t flags)
+{
+  uint64_t *PDPTE, *PDE, *PTE;
+  Table tablearr[4] = {
+    { pml4e, 39 }, { PDPTE, 30 }, { PDE, 21 }, { PTE, 12 }
+  };
+  int index; // index in the page table
+
+  for (int i = 0; i < 3; ++i) {
+    index = (vaddr >> (tablearr[i].shift)) & 0x1FF;
+    tablearr[i + 1].table = newentry(&tablearr[i].table[index], 0, flags);
+  }
+  index = (vaddr >> (tablearr[3].shift)) & 0x1FF;
+  return newentry(&tablearr[3].table[index], paddr, flags);
+}
+
+void*
 mappage(uint64_t vaddr, uint64_t paddr, uint8_t flags)
 {
   uint64_t *PDPTE, *PDE, *PTE;
@@ -44,9 +61,7 @@ mappage(uint64_t vaddr, uint64_t paddr, uint8_t flags)
     tablearr[i + 1].table = newentry(&tablearr[i].table[index], 0, flags);
   }
   index = (vaddr >> (tablearr[3].shift)) & 0x1FF;
-  newentry(&tablearr[3].table[index], paddr, flags);
-
-  return 0;
+  return newentry(&tablearr[3].table[index], paddr, flags);
 }
 
 // get PTE and set present flag to 0 and free page from physical memory
