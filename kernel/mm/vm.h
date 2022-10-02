@@ -5,6 +5,11 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#define PTE_PRESENT (1ull << 0ull)
+#define PTE_RW (1ull << 1ull)
+#define PTE_USER (1ull << 2ull)
+#define PTE_NX (1ull << 63ull)
+
 struct vmspace
 {};
 

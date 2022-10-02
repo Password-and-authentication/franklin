@@ -5,6 +5,11 @@
 #include <stdbool.h>
 #include <strings.h>
 
+volatile struct limine_memmap_request memmap_request = {
+  .id = LIMINE_MEMMAP_REQUEST,
+  .revision = 0,
+};
+
 void*
 palloc(uint32_t size)
 {
@@ -79,8 +84,9 @@ freepg(uint64_t addr, uint32_t length)
 }
 
 void
-initbmap(struct limine_memmap_response* memmap)
+initbmap()
 {
+  struct limine_memmap_response* memmap = memmap_request.response;
   uint64_t bitmapsz = getmemsz(memmap);
   struct limine_memmap_entry* entry = getentry(memmap, bitmapsz);
 

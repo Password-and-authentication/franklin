@@ -30,11 +30,6 @@ static volatile struct limine_terminal_request terminal_request = {
   .revision = 0
 };
 
-static volatile struct limine_memmap_request memmap_request = {
-  .id = LIMINE_MEMMAP_REQUEST,
-  .revision = 0,
-};
-
 void
 print(void* s)
 {
@@ -59,10 +54,8 @@ void
 kmain(void)
 {
   asm("cli");
-  ;
 
-  struct limine_memmap_response* memmap = memmap_request.response;
-  initbmap(memmap);
+  initbmap();
 
   printl("hello", 5);
 
@@ -125,10 +118,86 @@ kmain(void)
   /* printl(buf, 100); */
   /* vfs_close(v); */
 
-  exec("/exe");
+  uint64_t *pagetables, *new, *lol, *lol2, *lol3, *toplevel;
+  extern struct vm_map* kernel_vm_map;
+  static int l = 69;
 
-  void init_proc();
-  init_proc(0);
+  uint64_t* va2pte();
+
+  asm volatile("mov %%cr3, %0" : "=r"(toplevel));
+  toplevel = P2V(toplevel);
+  const char* lmao = "HAHA";
+
+  lol2 = va2pte(toplevel, lmao, 0);
+
+  init_vm();
+  new = kernel_vm_map->top_level;
+
+  lol3 = va2pte(new, lmao, 0);
+
+  /* asm("mov %0, %%cr3" ::"r"(V2P(kernel_vm_map->top_level))); */
+
+  lol2 = va2pte(new, lmao, 0);
+
+  asm volatile("mov %0, %%cr3" ::"r"(V2P(kernel_vm_map->top_level)));
+
+  /* lol2 = va2pte(kernel_vm_map->top_level, lol, 0); */
+
+  /* asm("mov %rax, -0x20(%rbp)"); */
+  asm("nop");
+  asm("nop" ::"m"(lmao));
+
+  /* int xp = lmao[0]; */
+  l = 0;
+
+  asm("nop");
+  asm("nop");
+
+  /* uint64_t* pte = va2pte(kernel_vm_map->top_level, &lol, 0); */
+
+  /* int* xxx = &new; */
+
+  /* new = P2V(palloc(1)); */
+  /* memset(new, 0, PGSIZE); */
+
+  /* mappage2(new, 0, 0, true); */
+
+  /* asm volatile("mov %%cr3, %0" : "=r"(pagetables)); */
+
+  /* uint64_t* get_next_level(uint64_t*, size_t, int, bool); */
+
+  /* pagetables = (uint64_t)pagetables & ~0xfff; */
+  /* pagetables = P2V(pagetables); */
+  /* uint64_t *pml4 = pagetables, *pml3, *pml2, *pml1; */
+  /* uint64_t kernelbase = 0xffffffff80000000; */
+  /* uint64_t s = HHDM_OFFSET; */
+
+  /* pml3 = get_next_level(pml4, (HHDM_OFFSET >> 39) & 0x1ff, 0, false); */
+  /* uint64_t vaddr = HHDM_OFFSET; */
+
+  /* pml2 = get_next_level(pml3, (HHDM_OFFSET >> 30) & 0x1ff, 0, false); */
+
+  /* pml1 = get_next_level(pml2, (HHDM_OFFSET >> 21) & 0x1ff, 0, false); */
+
+  /* int idx = (HHDM_OFFSET >> 12) & 0x1ff; */
+
+  /* for (int i = 0; i < 512; ++i, vaddr += PGSIZE) { */
+  /* if (pml3[i] & PRESENT) { */
+  /* pml2 = get_next_level(pml3, i, 0, false); */
+  /* for (int i = 0; i < 512; ++i, vaddr += PGSIZE) { */
+  /* if (pml2[i] & PRESENT) { */
+  /* pml1 = get_next_level(pml2, i, 0, false); */
+  /* } */
+  /* } */
+  /* } */
+  /* } */
+
+  /* pagetables = P2V((uint64_t)pagetables & ~0xfff); */
+
+  /* exec("/exe"); */
+
+  /* void init_proc(); */
+  /* init_proc(0); */
 
   for (;;)
     asm("hlt");

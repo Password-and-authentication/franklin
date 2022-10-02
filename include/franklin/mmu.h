@@ -49,7 +49,7 @@ test(void);
 void
 init_vmm(void);
 
-void*
+int
 mappage2(uint64_t*, uint64_t, uint64_t, uint8_t);
 void* mappage(uint64_t, uint64_t, uint8_t);
 void
@@ -81,8 +81,10 @@ void freepg(uint64_t, uint32_t);
 struct limine_memmap_response;
 struct limine_memmap_entry;
 
+extern volatile struct limine_memmap_request memmap_request;
+
 void
-initbmap(struct limine_memmap_response*);
+initbmap(void);
 void
 setentry(struct limine_memmap_entry*);
 uint64_t
