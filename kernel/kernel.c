@@ -43,10 +43,11 @@ print(void* s)
 void
 printl(void* s, size_t len)
 {
-  struct limine_terminal_response* terminal_res = terminal_request.response;
-  struct limine_terminal* terminal = terminal_res->terminals[0];
+  /* struct limine_terminal_response* terminal_res = terminal_request.response;
+   */
+  /* struct limine_terminal* terminal = terminal_res->terminals[0]; */
   acquire(&spinlock);
-  terminal_res->write(terminal, s, len);
+  /* terminal_res->write(terminal, s, len); */
   release(&spinlock);
 }
 
@@ -86,8 +87,8 @@ kmain(void)
   walk_madt(madt); // get info about MADT table
   init_gdt();
 
-  print("\nwhat we gon' do tomorrow?\n");
-  print("i got an idea.. , lets FUCK!\n\n");
+  /* print("\nwhat we gon' do tomorrow?\n"); */
+  /* print("i got an idea.. , lets FUCK!\n\n"); */
   init_interrupt();
 
   /* vfs_mount("/", "ramfs"); */
@@ -112,11 +113,13 @@ kmain(void)
   initramfs();
 
   struct vnode* v;
-  /* vfs_open("/main.c", &v, 0, 0); */
-  /* char buf[1024]; */
-  /* vfs_read(v, buf, 0, 100); */
-  /* printl(buf, 100); */
-  /* vfs_close(v); */
+  vfs_open("/main.c", &v, 0, 0);
+  char buf[1024];
+  if (v) {
+    vfs_read(v, buf, 0, 100);
+    printl(buf, 100);
+    vfs_close(v);
+  }
 
   uint64_t *pagetables, *new, *lol, *lol2, *lol3, *toplevel;
   extern struct vm_map* kernel_vm_map;
@@ -124,75 +127,23 @@ kmain(void)
 
   uint64_t* va2pte();
 
+  // 0xfd000000
+  // 0x300000
   asm volatile("mov %%cr3, %0" : "=r"(toplevel));
-  toplevel = P2V(toplevel);
-  const char* lmao = "HAHA";
 
-  lol2 = va2pte(toplevel, lmao, 0);
+  toplevel = P2V(toplevel);
+  lol = va2pte(toplevel, 0xfd000000, 0);
 
   init_vm();
-  new = kernel_vm_map->top_level;
 
-  lol3 = va2pte(new, lmao, 0);
+  /* new = kernel_vm_map->top_level; */
 
-  /* asm("mov %0, %%cr3" ::"r"(V2P(kernel_vm_map->top_level))); */
+  /* lol2 = va2pte(new, &lol, 0); */
 
-  lol2 = va2pte(new, lmao, 0);
+  /* asm("mov %0, %%cr3" ::"r"(V2P(new))); */
 
-  asm volatile("mov %0, %%cr3" ::"r"(V2P(kernel_vm_map->top_level)));
-
-  /* lol2 = va2pte(kernel_vm_map->top_level, lol, 0); */
-
-  /* asm("mov %rax, -0x20(%rbp)"); */
-  asm("nop");
-  asm("nop" ::"m"(lmao));
-
-  /* int xp = lmao[0]; */
-  l = 0;
-
-  asm("nop");
-  asm("nop");
-
-  /* uint64_t* pte = va2pte(kernel_vm_map->top_level, &lol, 0); */
-
-  /* int* xxx = &new; */
-
-  /* new = P2V(palloc(1)); */
-  /* memset(new, 0, PGSIZE); */
-
-  /* mappage2(new, 0, 0, true); */
-
-  /* asm volatile("mov %%cr3, %0" : "=r"(pagetables)); */
-
-  /* uint64_t* get_next_level(uint64_t*, size_t, int, bool); */
-
-  /* pagetables = (uint64_t)pagetables & ~0xfff; */
-  /* pagetables = P2V(pagetables); */
-  /* uint64_t *pml4 = pagetables, *pml3, *pml2, *pml1; */
-  /* uint64_t kernelbase = 0xffffffff80000000; */
-  /* uint64_t s = HHDM_OFFSET; */
-
-  /* pml3 = get_next_level(pml4, (HHDM_OFFSET >> 39) & 0x1ff, 0, false); */
-  /* uint64_t vaddr = HHDM_OFFSET; */
-
-  /* pml2 = get_next_level(pml3, (HHDM_OFFSET >> 30) & 0x1ff, 0, false); */
-
-  /* pml1 = get_next_level(pml2, (HHDM_OFFSET >> 21) & 0x1ff, 0, false); */
-
-  /* int idx = (HHDM_OFFSET >> 12) & 0x1ff; */
-
-  /* for (int i = 0; i < 512; ++i, vaddr += PGSIZE) { */
-  /* if (pml3[i] & PRESENT) { */
-  /* pml2 = get_next_level(pml3, i, 0, false); */
-  /* for (int i = 0; i < 512; ++i, vaddr += PGSIZE) { */
-  /* if (pml2[i] & PRESENT) { */
-  /* pml1 = get_next_level(pml2, i, 0, false); */
-  /* } */
-  /* } */
-  /* } */
-  /* } */
-
-  /* pagetables = P2V((uint64_t)pagetables & ~0xfff); */
+  /* l = 0; */
+  /* lol = 0; */
 
   /* exec("/exe"); */
 

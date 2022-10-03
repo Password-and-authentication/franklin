@@ -40,6 +40,9 @@ typedef char symbol[];
 extern symbol text_start_addr, text_end_addr, rodata_start_addr,
   rodata_end_addr, data_start_addr, data_end_addr;
 
+// 0xfd000000
+// 0x300000
+
 uint64_t*
 get_next_level(uint64_t* top_level, size_t idx, bool alloc)
 {
@@ -53,7 +56,7 @@ get_next_level(uint64_t* top_level, size_t idx, bool alloc)
 
   uint64_t* entry = palloc(1);
   memset(P2V(entry), 0, PGSIZE);
-  top_level[idx] |= (uint64_t)entry | PTE_PRESENT | PTE_RW | PTE_USER;
+  top_level[idx] = (uint64_t)entry | PTE_PRESENT | PTE_RW | PTE_USER;
   return P2V(entry);
 }
 
@@ -88,52 +91,52 @@ init_vm(uint64_t lol)
   /* } */
 
   /* map the text segment of the kernel */
-  for (vaddr = textstart; vaddr < textend; vaddr += PGSIZE) {
-    paddr = vaddr - kaddr->virtual_base + kaddr->physical_base;
-    mappage2(top_level, vaddr, paddr, PTE_PRESENT);
-  }
+  /* for (vaddr = textstart; vaddr < textend; vaddr += PGSIZE) { */
+  /* paddr = vaddr - kaddr->virtual_base + kaddr->physical_base; */
+  /* mappage2(top_level, vaddr, paddr, PTE_PRESENT); */
+  /* } */
 
   /* map the rodata segment of the kernel */
-  for (vaddr = rodatastart; vaddr < rodataend; vaddr += PGSIZE) {
-    paddr = vaddr - kaddr->virtual_base + kaddr->physical_base;
-    mappage2(top_level, vaddr, paddr, PTE_PRESENT | PTE_NX);
-  }
+  /* for (vaddr = rodatastart; vaddr < rodataend; vaddr += PGSIZE) { */
+  /* paddr = vaddr - kaddr->virtual_base + kaddr->physical_base; */
+  /* mappage2(top_level, vaddr, paddr, PTE_PRESENT | PTE_NX); */
+  /* } */
 
   /* map the data segment of the kernel */
-  for (vaddr = datastart; vaddr < dataend; vaddr += PGSIZE) {
-    paddr = vaddr - kaddr->virtual_base + kaddr->physical_base;
-    mappage2(top_level, vaddr, paddr, PTE_PRESENT | PTE_NX | PTE_RW);
-  }
+  /* for (vaddr = datastart; vaddr < dataend; vaddr += PGSIZE) { */
+  /* paddr = vaddr - kaddr->virtual_base + kaddr->physical_base; */
+  /* mappage2(top_level, vaddr, paddr, PTE_PRESENT | PTE_NX | PTE_RW); */
+  /* } */
 
   /* map lower half */
   /* int G = 10; */
-  /* for (vaddr = 0x1000; vaddr < 0x100000000; vaddr += PGSIZE) { */
-  /* mappage2(top_level, vaddr, vaddr, PTE_PRESENT | PTE_RW); */
+  for (vaddr = 0x1000; vaddr < 0x10000000; vaddr += PGSIZE) {
+    mappage2(top_level, vaddr, vaddr, PTE_PRESENT | PTE_RW);
 
-  /* mappage2( */
-  /* top_level, vaddr + HHDM_OFFSET, vaddr, PTE_PRESENT | PTE_NX | PTE_RW); */
+    /* mappage2( */
+    /* top_level, vaddr + HHDM_OFFSET, vaddr, PTE_PRESENT | PTE_NX | PTE_RW); */
+  }
+
+  /* struct limine_memmap_response* memmap = memmap_request.response; */
+  /* struct limine_memmap_entry* entry; */
+  /* uintptr_t base, top; */
+
+  /* for (int i = 0; i < memmap->entry_count; ++i) { */
+  /* entry = memmap->entries[i]; */
+
+  /* base = ALIGN_DOWN(entry->base, PGSIZE); */
+  /* top = ALIGN_UP(entry->base + entry->length, PGSIZE); */
+  /* if (top <= 0x100000000) { */
+  /* continue; */
   /* } */
 
-  struct limine_memmap_response* memmap = memmap_request.response;
-  struct limine_memmap_entry* entry;
-  uintptr_t base, top;
-
-  for (int i = 0; i < memmap->entry_count; ++i) {
-    entry = memmap->entries[i];
-
-    base = ALIGN_DOWN(entry->base, PGSIZE);
-    top = ALIGN_UP(entry->base + entry->length, PGSIZE);
-    if (top <= 0x100000000) {
-      continue;
-    }
-
-    for (int j = base; j < top; j += PGSIZE) {
-      if (j < 0x100000000) {
-        continue;
-      }
-      mappage2(top_level, j, j, PTE_PRESENT | PTE_RW);
-    }
-  }
+  /* for (int j = base; j < top; j += PGSIZE) { */
+  /* if (j < 0x100000000) { */
+  /* continue; */
+  /* } */
+  /* mappage2(top_level, j, j, PTE_PRESENT | PTE_RW); */
+  /* } */
+  /* } */
 }
 
 uint64_t*
@@ -142,7 +145,7 @@ va2pte(uint64_t*, uint64_t, bool);
 int
 mappage2(uint64_t* top_level, uint64_t vaddr, uint64_t paddr, uint8_t flags)
 {
-  uint64_t* pte = va2pte(top_level, vaddr, 1);
+  uint64_t* pte = va2pte(top_level, vaddr, true);
 
   // If page is already mapped
   if (*pte & PTE_PRESENT) {

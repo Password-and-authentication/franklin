@@ -50,6 +50,10 @@ palloc(uint32_t size)
   };
 releaselock:
   release(&spinlock);
+  if ((page * PGSIZE >= 0xfd000000) &&
+      (page * PGSIZE < 0xfd000000 + 0x300000)) {
+    panic("frambefufer");
+  };
   return ((uint64_t)(page * PGSIZE));
 }
 
@@ -83,6 +87,9 @@ freepg(uint64_t addr, uint32_t length)
   release(&spinlock);
 }
 
+// 0xfd000000
+// 0x300000
+
 void
 initbmap()
 {
@@ -108,6 +115,9 @@ setentry(struct limine_memmap_entry* entry)
   uint32_t page = entry->base / PGSIZE;
   acquire(&spinlock);
   for (uint32_t i = 0; i < (entry->length / PGSIZE); i++, page++) {
+    if (isfree(page) == 0) {
+      panic("setentry: page should be free");
+    }
     togglepage(page);
   }
   release(&spinlock);
