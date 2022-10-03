@@ -4,9 +4,12 @@
 #include "franklin/apic.h"
 #include "franklin/mmu.h"
 #include "franklin/switch.h"
-#include "vm/vm.h"
+#include "mm/vm.h"
 #include <elf.h>
 #include <stdint.h>
+
+struct vm_map*
+newvm_map(void);
 
 static struct proc* curproc;
 
@@ -59,6 +62,8 @@ struct elf
   int magic;
 };
 
+extern struct vm_map* kernel_vm_map;
+
 void
 exec(const char* name)
 {
@@ -74,27 +79,34 @@ exec(const char* name)
 
   vfs_read(vn, &elf, 0, sizeof elf);
 
-  p = kalloc(sizeof *p);
-  vmap = kalloc(sizeof *vmap);
-  vmap->entries = NULL;
-
-  p->vmap = vmap;
-
-  p->pagetables = P2V((uint64_t)palloc(1));
-
-  memset(p->pagetables, 0, PGSIZE);
+  vmap = newvm_map();
 
   count = elf.e_phentsize * elf.e_phnum;
   phdr = kalloc(count);
   vfs_read(vn, phdr, elf.e_phoff, count);
 
-  vm_alloc(vmap, phdr->p_vaddr, phdr->p_memsz);
+  map_entry = kalloc(sizeof *map_entry);
+  phdr++;
 
-  for (int i = 1; i < elf.e_phnum; ++i) {
-    vm_alloc(vmap, phdr[i].p_vaddr, phdr[i].p_memsz);
+  // map the text segment
+  uintptr_t* paddr = palloc(1);
+  map_entry->start = phdr->p_vaddr;
+  map_entry->end = phdr->p_vaddr + phdr->p_memsz;
+  map_entry->offset = phdr->p_offset;
 
-    char* buf = mappage2(p->pagetables, phdr[i].p_vaddr, 0, 0);
-  }
+  mappage2(
+    vmap->top_level, phdr->p_vaddr, paddr, PTE_PRESENT | PTE_RW | PTE_USER);
+  // 4, 5, 4, 4, 4
+
+  vfs_read(vn, P2V(paddr), phdr->p_offset, phdr->p_filesz);
+
+  p = allocproc(elf.e_entry);
+
+  p->vmap = vmap;
+
+  switchvm(p->vmap);
+
+  startproc(p);
 }
 
 void
@@ -111,7 +123,7 @@ startproc(struct proc* p)
   switc(&discard, p->stack);
 }
 
-void
+struct proc*
 allocproc(void (*entry)())
 {
   uint8_t *stack, index = 0;
@@ -127,7 +139,6 @@ allocproc(void (*entry)())
 
   p->pid = ++nextpid;
 
-  // palloc(1) allocates 1 page in phys memory and returns a physical addr
   uint64_t a;
   stack = (uint8_t*)P2V((uintptr_t)palloc(1));
   stack += PGSIZE;
@@ -146,13 +157,7 @@ allocproc(void (*entry)())
 
   p->stack->rip = (uintptr_t)ret;
 
-  p->regs->rsp = stack;
-  /* p->regs->ss = 0x500; */
-
-  /* p->stack->rip = (uintptr_t)entry; */
-
-  // this should be removed later
-  p->state = RUNNABLE;
+  return p;
 }
 
 void

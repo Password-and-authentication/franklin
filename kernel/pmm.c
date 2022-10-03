@@ -1,4 +1,5 @@
 #include "d.h"
+#include "franklin/bitmap.h"
 #include "franklin/mmu.h"
 #include "franklin/spinlock.h"
 #include "limine.h"
@@ -9,53 +10,6 @@ volatile struct limine_memmap_request memmap_request = {
   .id = LIMINE_MEMMAP_REQUEST,
   .revision = 0,
 };
-
-void*
-palloc(uint32_t size)
-{
-  if (size >= MAXPG)
-    panic("panic: palloc, size too big");
-  acquire(&spinlock);
-  uint32_t page = 0, p = 0;
-
-  while (1) {
-    if (page >= MAXPG)
-      panic("panic: out of pages\n");
-    // if true all pages are inuse
-    if (bitmap[page / 64] == INT64_MAX) {
-      page++;
-      continue;
-    }
-    if (isfree(page)) {
-
-      // if value is zero all 64 pages are free
-      if (bitmap[page / 64] == 0)
-        goto setpages;
-
-      // check that there are 'size' amount of pages free
-      for (p = page; p < (size + page); ++p) {
-        if (!isfree(p))
-          break;
-      }
-
-      // mark the pages as used
-      if (p == size + page) {
-      setpages:
-        for (p = page; p < (size + page); ++p)
-          togglepage(p);
-        goto releaselock;
-      }
-    };
-    page++;
-  };
-releaselock:
-  release(&spinlock);
-  if ((page * PGSIZE >= 0xfd000000) &&
-      (page * PGSIZE < 0xfd000000 + 0x300000)) {
-    panic("frambefufer");
-  };
-  return ((uint64_t)(page * PGSIZE));
-}
 
 void*
 pallocaddr(uint32_t size, uint64_t paddr)
@@ -90,60 +44,77 @@ freepg(uint64_t addr, uint32_t length)
 // 0xfd000000
 // 0x300000
 
+void*
+palloc(size_t pages)
+{
+  size_t p = 0, i;
+  /* acquire(&spinlock); */
+
+  for (;;) {
+    for (i = p; i < p + pages; ++i)
+      if (bitmap_test(bitmap, i))
+        break;
+
+    if (i == p + pages) {
+      for (i = p; i < p + pages; ++i) {
+        bitmap_set(bitmap, i);
+      }
+      break;
+    }
+    p++;
+  }
+  /* release(&spinlock); */
+  return p * PGSIZE;
+}
+
+/*
+  Initialize bitmap by iterating over it 3 times
+
+  Iterations:
+  1. get the highest usable memory address
+  2. find a memory area where to allocate the bitmap
+  3. free all usable memory areas on bitmap
+*/
 void
 initbmap()
 {
   struct limine_memmap_response* memmap = memmap_request.response;
-  uint64_t bitmapsz = getmemsz(memmap);
-  struct limine_memmap_entry* entry = getentry(memmap, bitmapsz);
+  struct limine_memmap_entry* entry;
+  size_t i, j, bitmap_size;
+  uintptr_t highest_addr = 0;
 
-  bitmap = (uint64_t*)P2V(entry->base);
-  for (uint32_t i = 0; i < bitmapsz; ++i)
-    togglepage(entry->base / PGSIZE + i);
+  for (i = 0; i < memmap->entry_count; i++) {
+    entry = memmap->entries[i];
 
-  entry->base += bitmapsz;
-  entry->length -= bitmapsz;
-  for (uint32_t i = 0; i < memmap->entry_count; ++i) {
-    if (memmap->entries[i]->type != 0)
-      setentry(memmap->entries[i]);
+    if (entry->type != 0)
+      continue;
+    if (highest_addr < entry->base + entry->length)
+      highest_addr = entry->base + entry->length;
   }
-}
+  bitmap_size = (highest_addr / PGSIZE) / 8;
 
-void
-setentry(struct limine_memmap_entry* entry)
-{
-  uint32_t page = entry->base / PGSIZE;
-  acquire(&spinlock);
-  for (uint32_t i = 0; i < (entry->length / PGSIZE); i++, page++) {
-    if (isfree(page) == 0) {
-      panic("setentry: page should be free");
+  for (i = 0; i < memmap->entry_count; ++i) {
+    entry = memmap->entries[i];
+    if (entry->type != 0)
+      continue;
+    if (entry->length >= bitmap_size) {
+      bitmap = (char*)P2V(entry->base);
+
+      // init bitmap by setting every page non free
+      memset(bitmap, 0xff, bitmap_size);
+
+      entry->length -= bitmap_size;
+      entry->base += bitmap_size;
+      break;
     }
-    togglepage(page);
   }
-  release(&spinlock);
-}
 
-uint64_t
-getmemsz(struct limine_memmap_response* memmap)
-{
-  uint64_t size = memmap->entries[14]->base + memmap->entries[14]->length;
-
-  MAXPG = size / PGSIZE;
-  size /= PGSIZE;
-  size /= 8;
-  size /= PGSIZE;
-  return size;
-}
-
-struct limine_memmap_entry*
-getentry(struct limine_memmap_response* memmap, uint64_t mapsize)
-{
-
-  uint32_t i = 0;
-  while (1) {
-    if (memmap->entries[i]->type == 0 && memmap->entries[i]->length > mapsize)
-      return memmap->entries[i];
-    i++;
+  for (i = 0; i < memmap->entry_count; ++i) {
+    entry = memmap->entries[i];
+    if (entry->type != 0)
+      continue;
+    for (j = 0; j < entry->length; j += PGSIZE) {
+      bitmap_reset(bitmap, (entry->base + j) / PGSIZE);
+    }
   }
-  return 0;
 }

@@ -74,7 +74,7 @@ togglepage(uint32_t page)
 
 // PMM
 
-void* palloc(uint32_t);
+void* palloc(size_t);
 void* pallocaddr(uint32_t, uint64_t);
 void freepg(uint64_t, uint32_t);
 

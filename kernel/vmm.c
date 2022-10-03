@@ -86,35 +86,34 @@ init_vm(uint64_t lol)
             rodataend = ALIGN_UP((uintptr_t)rodata_end_addr, PGSIZE);
 
   /* map higher half */
-  /* for (int i = 256; i < 512; ++i) { */
-  /* get_next_level(top_level, i, true); */
-  /* } */
+  for (int i = 256; i < 512; ++i) {
+    get_next_level(top_level, i, true);
+  }
 
   /* map the text segment of the kernel */
-  /* for (vaddr = textstart; vaddr < textend; vaddr += PGSIZE) { */
-  /* paddr = vaddr - kaddr->virtual_base + kaddr->physical_base; */
-  /* mappage2(top_level, vaddr, paddr, PTE_PRESENT); */
-  /* } */
+  for (vaddr = textstart; vaddr < textend; vaddr += PGSIZE) {
+    paddr = vaddr - kaddr->virtual_base + kaddr->physical_base;
+    mappage2(top_level, vaddr, paddr, PTE_PRESENT);
+  }
 
   /* map the rodata segment of the kernel */
-  /* for (vaddr = rodatastart; vaddr < rodataend; vaddr += PGSIZE) { */
-  /* paddr = vaddr - kaddr->virtual_base + kaddr->physical_base; */
-  /* mappage2(top_level, vaddr, paddr, PTE_PRESENT | PTE_NX); */
-  /* } */
+  for (vaddr = rodatastart; vaddr < rodataend; vaddr += PGSIZE) {
+    paddr = vaddr - kaddr->virtual_base + kaddr->physical_base;
+    mappage2(top_level, vaddr, paddr, PTE_PRESENT | PTE_NX);
+  }
 
   /* map the data segment of the kernel */
-  /* for (vaddr = datastart; vaddr < dataend; vaddr += PGSIZE) { */
-  /* paddr = vaddr - kaddr->virtual_base + kaddr->physical_base; */
-  /* mappage2(top_level, vaddr, paddr, PTE_PRESENT | PTE_NX | PTE_RW); */
-  /* } */
+  for (vaddr = datastart; vaddr < dataend; vaddr += PGSIZE) {
+    paddr = vaddr - kaddr->virtual_base + kaddr->physical_base;
+    mappage2(top_level, vaddr, paddr, PTE_PRESENT | PTE_NX | PTE_RW);
+  }
 
   /* map lower half */
-  /* int G = 10; */
-  for (vaddr = 0x1000; vaddr < 0x10000000; vaddr += PGSIZE) {
+  for (vaddr = 0x1000; vaddr < 0x100000000 / 2; vaddr += PGSIZE) {
     mappage2(top_level, vaddr, vaddr, PTE_PRESENT | PTE_RW);
 
-    /* mappage2( */
-    /* top_level, vaddr + HHDM_OFFSET, vaddr, PTE_PRESENT | PTE_NX | PTE_RW); */
+    mappage2(
+      top_level, vaddr + HHDM_OFFSET, vaddr, PTE_PRESENT | PTE_NX | PTE_RW);
   }
 
   /* struct limine_memmap_response* memmap = memmap_request.response; */
@@ -126,12 +125,12 @@ init_vm(uint64_t lol)
 
   /* base = ALIGN_DOWN(entry->base, PGSIZE); */
   /* top = ALIGN_UP(entry->base + entry->length, PGSIZE); */
-  /* if (top <= 0x100000000) { */
+  /* if (top <= 0x100000000 / 2) { */
   /* continue; */
   /* } */
 
   /* for (int j = base; j < top; j += PGSIZE) { */
-  /* if (j < 0x100000000) { */
+  /* if (j < 0x100000000 / 2) { */
   /* continue; */
   /* } */
   /* mappage2(top_level, j, j, PTE_PRESENT | PTE_RW); */
@@ -153,6 +152,26 @@ mappage2(uint64_t* top_level, uint64_t vaddr, uint64_t paddr, uint8_t flags)
   }
   *pte = paddr | flags;
   return 0;
+}
+
+void
+switchvm(struct vm_map* vmap)
+{
+  asm("mov %0, %%cr3" ::"r"(V2P(vmap->top_level)));
+}
+
+struct vm_map*
+newvm_map(void)
+{
+  struct vm_map* vmap = kalloc(sizeof *vmap);
+
+  vmap->top_level = P2V(palloc(1));
+
+  // copy kernel mappings
+  for (int i = 256; i < 512; ++i) {
+    vmap->top_level[i] = kernel_vm_map->top_level[i];
+  }
+  return vmap;
 }
 
 uint64_t*

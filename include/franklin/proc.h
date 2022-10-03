@@ -1,7 +1,6 @@
 #ifndef _PROC_
 #define _PROC_
 
-#include "../../kernel/vm/vm.h"
 #include "mmu.h"
 #include "switch.h"
 #include <stddef.h>
@@ -22,7 +21,7 @@ static struct proc*
 getproc(enum procstate, uint8_t*);
 void
 startproc(struct proc*);
-void
+struct proc*
 allocproc(void (*)());
 void
 scheduler(void);
@@ -42,7 +41,6 @@ struct proc
   uint32_t pid;
 
   struct vm_map* vmap;
-  uint64_t* pagetables;
 };
 
 #endif

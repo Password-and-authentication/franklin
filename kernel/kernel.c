@@ -23,6 +23,8 @@
 #include "franklin/time.h"
 #include "limine.h"
 
+#include "mm/vm.h"
+
 #include "franklin/fs/vfs.h"
 
 static volatile struct limine_terminal_request terminal_request = {
@@ -57,11 +59,12 @@ kmain(void)
   asm("cli");
 
   initbmap();
+  palloc(1);
 
-  printl("hello", 5);
-
+  print("E");
   init_lock(&spinlock);
   init_vmm();
+
   init_acpi(); // set global variable RSDT
 
   void thread1();
@@ -75,7 +78,10 @@ kmain(void)
   int* a[3];
   int x = sizeof(a) / sizeof(a[0]);
 
+  print("U");
   test_slab();
+  print("B");
+
   init_rootfs();
 
   vfs_mount(0, "ramfs");
@@ -136,19 +142,21 @@ kmain(void)
 
   init_vm();
 
-  /* new = kernel_vm_map->top_level; */
+  new = kernel_vm_map->top_level;
 
   /* lol2 = va2pte(new, &lol, 0); */
 
   /* asm("mov %0, %%cr3" ::"r"(V2P(new))); */
 
-  /* l = 0; */
-  /* lol = 0; */
+  l = 0;
 
-  /* exec("/exe"); */
+  lol = 0;
 
-  /* void init_proc(); */
-  /* init_proc(0); */
+  exec("/exe");
+
+  void init_proc();
+  init_proc(0);
+  /* asm("cli; hlt"); */
 
   for (;;)
     asm("hlt");
