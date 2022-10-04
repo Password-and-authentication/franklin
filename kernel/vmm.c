@@ -141,8 +141,27 @@ init_vm(uint64_t lol)
 uint64_t*
 va2pte(uint64_t*, uint64_t, bool);
 
+/*
+  Map size / PGSIZE amount of pages starting from vaddr at the physical address
+  paddr
+*/
 int
-mappage2(uint64_t* top_level, uint64_t vaddr, uint64_t paddr, uint8_t flags)
+mappages(uint64_t* top_level,
+         uint64_t vaddr,
+         uint64_t paddr,
+         size_t size,
+         uintptr_t flags)
+{
+  size_t i, pagecount = size / PGSIZE;
+
+  for (i = 0; i < pagecount; ++i) {
+    mappage2(top_level, vaddr + (i * PGSIZE), paddr + (i * PGSIZE), flags);
+  }
+  return 0;
+}
+
+int
+mappage2(uint64_t* top_level, uint64_t vaddr, uint64_t paddr, uint64_t flags)
 {
   uint64_t* pte = va2pte(top_level, vaddr, true);
 
@@ -152,6 +171,37 @@ mappage2(uint64_t* top_level, uint64_t vaddr, uint64_t paddr, uint8_t flags)
   }
   *pte = paddr | flags;
   return 0;
+}
+
+void
+destroy_vmap(struct vm_map* vmap)
+{
+  uint64_t *pml4, *pml3, *pml2, *pml1;
+  pml4 = vmap->top_level;
+  for (int i = 0; i < 512; ++i) {
+    if (pml4[i]) {
+      pml3 = get_next_level(pml4, i, false);
+      for (int i = 0; i < 512; ++i) {
+        if (pml3[i]) {
+          pml2 = get_next_level(pml3, i, false);
+          for (int i = 0; i < 512; ++i) {
+            if (pml2[i]) {
+              pml1 = get_next_level(pml2, i, false);
+              for (int i = 0; i < 512; ++i) {
+                if (pml1[i]) {
+                  freepg(pml1[i] & ~0xfff, 1);
+                }
+              }
+              /* freepg(V2P(pml1), 1); */
+            }
+          }
+          /* freepg(V2P(pml2), 1); */
+        }
+      }
+      /* freepg(V2P(pml3), 1); */
+    }
+  }
+  /* freepg(V2P(pml4), 1); */
 }
 
 void

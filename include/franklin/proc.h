@@ -36,7 +36,7 @@ enum procstate
 struct proc
 {
   struct regs* regs;
-  struct stack* stack;
+  struct stack* stack; // kernel stack
   enum procstate state;
   uint32_t pid;
 

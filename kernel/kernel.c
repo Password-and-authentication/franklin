@@ -152,8 +152,6 @@ kmain(void)
 
   lol = 0;
 
-  exec("/exe");
-
   void init_proc();
   init_proc(0);
   /* asm("cli; hlt"); */
@@ -168,6 +166,9 @@ thread3()
   asm("sti");
   r();
   static int h;
+
+  const char* s[] = { "sex", "lmao" };
+  exec("/exe", s);
 
   for (;;) {
   }
@@ -190,6 +191,7 @@ thread1()
 
   // interrupts get disabled on trap entry
   asm("sti");
+  exec("/exe");
 
   r();
 

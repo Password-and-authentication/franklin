@@ -27,18 +27,20 @@ pallocaddr(uint32_t size, uint64_t paddr)
   return paddr;
 }
 
+int g = 10;
+
 void
 freepg(uint64_t addr, uint32_t length)
 {
   uint32_t page = addr / PGSIZE;
 
-  acquire(&spinlock);
+  /* acquire(&spinlock); */
   do {
-    if (isfree(page))
-      panic("freepg: page already free");
-    togglepage(page);
+    if (bitmap_test(bitmap, page) == 0)
+      g = 69;
+    bitmap_reset(bitmap, page);
   } while (--length && page++);
-  release(&spinlock);
+  /* release(&spinlock); */
 }
 
 // 0xfd000000

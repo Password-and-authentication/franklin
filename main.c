@@ -1,9 +1,14 @@
 
 
+#define asm __asm__
+
 int
-main()
+main(int argc, char** argv)
 {
-  int x = 10;
-  volatile int y = x + 69;
+  asm("nop");
+  asm("nop");
+  asm("nop");
+  int x = argc;
+  int c = *argv[0];
   return 0;
 }

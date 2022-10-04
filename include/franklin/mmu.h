@@ -50,7 +50,7 @@ void
 init_vmm(void);
 
 int
-mappage2(uint64_t*, uint64_t, uint64_t, uint8_t);
+mappage2(uint64_t*, uint64_t, uint64_t, uint64_t);
 void* mappage(uint64_t, uint64_t, uint8_t);
 void
 remappage(uint64_t, int);
