@@ -8,6 +8,9 @@
 #include <errno.h>
 #include <stddef.h>
 
+#define PTE_ADDR_MASK 0x000ffffffffff000
+#define PTE_GET_ADDR(value) (value & PTE_ADDR_MASK)
+
 uint64_t
 V2P(uint64_t V)
 {
@@ -18,12 +21,6 @@ uint64_t
 P2V(uint64_t P)
 {
   return P + HHDM_OFFSET;
-}
-
-uint64_t
-getpaddr(uint64_t entry)
-{
-  return (entry & ~0xfff);
 }
 
 void
@@ -47,7 +44,7 @@ uint64_t*
 get_next_level(uint64_t* top_level, size_t idx, bool alloc)
 {
   if (top_level[idx] & PTE_PRESENT) {
-    return P2V((uint64_t)top_level[idx] & ~0xfff);
+    return P2V((uint64_t)PTE_GET_ADDR(top_level[idx]));
   }
 
   if (!alloc) {
@@ -93,27 +90,29 @@ init_vm(uint64_t lol)
   /* map the text segment of the kernel */
   for (vaddr = textstart; vaddr < textend; vaddr += PGSIZE) {
     paddr = vaddr - kaddr->virtual_base + kaddr->physical_base;
-    mappage2(top_level, vaddr, paddr, PTE_PRESENT);
+    mappage2(top_level, vaddr, paddr, PTE_PRESENT | PTE_USER);
   }
 
   /* map the rodata segment of the kernel */
   for (vaddr = rodatastart; vaddr < rodataend; vaddr += PGSIZE) {
     paddr = vaddr - kaddr->virtual_base + kaddr->physical_base;
-    mappage2(top_level, vaddr, paddr, PTE_PRESENT | PTE_NX);
+    mappage2(top_level, vaddr, paddr, PTE_PRESENT | PTE_NX | PTE_USER);
   }
 
   /* map the data segment of the kernel */
   for (vaddr = datastart; vaddr < dataend; vaddr += PGSIZE) {
     paddr = vaddr - kaddr->virtual_base + kaddr->physical_base;
-    mappage2(top_level, vaddr, paddr, PTE_PRESENT | PTE_NX | PTE_RW);
+    mappage2(top_level, vaddr, paddr, PTE_PRESENT | PTE_NX | PTE_RW | PTE_USER);
   }
 
   /* map lower half */
   for (vaddr = 0x1000; vaddr < 0x100000000 / 2; vaddr += PGSIZE) {
-    mappage2(top_level, vaddr, vaddr, PTE_PRESENT | PTE_RW);
+    mappage2(top_level, vaddr, vaddr, PTE_PRESENT | PTE_RW | PTE_USER);
 
-    mappage2(
-      top_level, vaddr + HHDM_OFFSET, vaddr, PTE_PRESENT | PTE_NX | PTE_RW);
+    mappage2(top_level,
+             vaddr + HHDM_OFFSET,
+             vaddr,
+             PTE_PRESENT | PTE_NX | PTE_RW | PTE_USER);
   }
 
   /* struct limine_memmap_response* memmap = memmap_request.response; */
@@ -160,6 +159,8 @@ mappages(uint64_t* top_level,
   return 0;
 }
 
+extern int g;
+
 int
 mappage2(uint64_t* top_level, uint64_t vaddr, uint64_t paddr, uint64_t flags)
 {
@@ -174,34 +175,29 @@ mappage2(uint64_t* top_level, uint64_t vaddr, uint64_t paddr, uint64_t flags)
 }
 
 void
-destroy_vmap(struct vm_map* vmap)
+destroy_level(uint64_t* pml, int start, int end, int level)
 {
-  uint64_t *pml4, *pml3, *pml2, *pml1;
-  pml4 = vmap->top_level;
-  for (int i = 0; i < 512; ++i) {
-    if (pml4[i]) {
-      pml3 = get_next_level(pml4, i, false);
-      for (int i = 0; i < 512; ++i) {
-        if (pml3[i]) {
-          pml2 = get_next_level(pml3, i, false);
-          for (int i = 0; i < 512; ++i) {
-            if (pml2[i]) {
-              pml1 = get_next_level(pml2, i, false);
-              for (int i = 0; i < 512; ++i) {
-                if (pml1[i]) {
-                  freepg(pml1[i] & ~0xfff, 1);
-                }
-              }
-              /* freepg(V2P(pml1), 1); */
-            }
-          }
-          /* freepg(V2P(pml2), 1); */
-        }
-      }
-      /* freepg(V2P(pml3), 1); */
-    }
+  // TODO: mapped pages should be free with munmap()
+  if (level == 0) {
+    freepg(V2P(pml), 1);
+    return;
   }
-  /* freepg(V2P(pml4), 1); */
+
+  for (int i = start; i < end; ++i) {
+    uint64_t* nextlevel = get_next_level(pml, i, false);
+    if (nextlevel == NULL) {
+      continue;
+    }
+    destroy_level(nextlevel, 0, 512, level - 1);
+  }
+  freepg(V2P(pml), 1);
+}
+
+void
+destroyvm(struct vm_map* vmap)
+{
+  // end at 256 to not destroy kernel mappings
+  destroy_level(vmap->top_level, 0, 256, 4);
 }
 
 void

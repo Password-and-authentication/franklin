@@ -10,6 +10,9 @@
 extern void
 spurious(void);
 
+extern void
+isr_syscall(void);
+
 void
 init_interrupt()
 {
@@ -19,6 +22,8 @@ init_interrupt()
   new_irq(34, isr_apic_timer);
   new_irq(32, isr_timer);
   new_irq(255, spurious);
+  new_irq(69, isr_syscall);
+  set_idt_entry(69, isr_syscall, 0xEE);
   unmask_irq(1);
   unmask_irq(0);
   init_kbd(); // init ps/2 keyboard

@@ -70,6 +70,10 @@ trap(struct regs* regs)
   }
 
   switch (regs->code) {
+    case 69: {
+      syscall(regs);
+      break;
+    }
     case 32:
       timerh(10);
       break;

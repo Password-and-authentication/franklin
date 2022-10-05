@@ -32,14 +32,14 @@ int g = 10;
 void
 freepg(uint64_t addr, uint32_t length)
 {
-  uint32_t page = addr / PGSIZE;
+  size_t i, page = addr / PGSIZE;
 
   /* acquire(&spinlock); */
-  do {
-    if (bitmap_test(bitmap, page) == 0)
+  for (i = page; i < page + length; ++i) {
+    if (bitmap_test(bitmap, i) == 0)
       g = 69;
-    bitmap_reset(bitmap, page);
-  } while (--length && page++);
+    bitmap_reset(bitmap, i);
+  }
   /* release(&spinlock); */
 }
 
@@ -52,19 +52,22 @@ palloc(size_t pages)
   size_t p = 0, i;
   /* acquire(&spinlock); */
 
-  for (;;) {
-    for (i = p; i < p + pages; ++i)
-      if (bitmap_test(bitmap, i))
-        break;
-
-    if (i == p + pages) {
-      for (i = p; i < p + pages; ++i) {
-        bitmap_set(bitmap, i);
-      }
-      break;
+  // scan the bitmap for pages amount of free pages
+scanbitmap:
+  for (i = p; i < p + pages; ++i) {
+    if (bitmap_test(bitmap, i)) {
+      p++;
+      goto scanbitmap;
     }
-    p++;
   }
+  if (p * PGSIZE == 0x2ca000)
+    g = 10;
+  for (i = p; i < p + pages; ++i) {
+    bitmap_set(bitmap, i);
+  }
+  if (p * PGSIZE == 0x2d4000)
+    g = 10;
+
   /* release(&spinlock); */
   return p * PGSIZE;
 }

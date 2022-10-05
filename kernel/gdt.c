@@ -5,7 +5,7 @@
 #include "std/string.h"
 #include <stdint.h>
 
-__attribute__((aligned(0x8))) static struct gdtdesc* gdt;
+__attribute__((aligned(0x8))) struct gdtdesc* gdt;
 
 static uint8_t gdt_index;
 static uint16_t tr; // task register
@@ -25,8 +25,11 @@ void
 init_gdt()
 {
   struct gdtdesc userdata, usercode;
+  memset(&usercode, 0, sizeof usercode);
+  memset(&userdata, 0, sizeof userdata);
 
-  gdt = (struct gdtdesc*)P2V((uint64_t)palloc(1));
+  gdt = (struct gdtdesc*)P2V(palloc(1));
+  memset(gdt, 0, PGSIZE);
   asm volatile("sgdt %0" : "=m"(gdtr));
 
   memcpy(gdt, (const void*)gdtr.addr, gdtr.size);
@@ -89,4 +92,24 @@ alloc_tss()
   };
 
   return tss_desc;
+}
+
+void
+load_tss(struct tss* tss)
+{
+  uintptr_t addr = (uintptr_t)tss;
+
+  struct tssdesc* tssdesc = &gdt[9];
+
+  tssdesc->desc.segment_limit = 0x67;
+  tssdesc->desc.segment_limit2 = 0;
+  tssdesc->desc.base_addr[0] = (uint8_t)addr;
+  tssdesc->desc.base_addr[1] = (uint8_t)(addr >> 8);
+  tssdesc->desc.base_addr[2] = (uint8_t)(addr >> 16);
+  tssdesc->desc.attributes_1 = 9 | 1 << 7; // 9 = TSS
+  tssdesc->desc.attributes_2 = 0;
+  tssdesc->base_high = (uint32_t)(addr >> 32);
+  ;
+
+  asm volatile("ltr %0" ::"rm"((uint16_t)(9 << 3)));
 }

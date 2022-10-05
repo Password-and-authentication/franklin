@@ -8,17 +8,18 @@ Common symbol       size              file
 
 x                   0x4               ../kernel/spinlock.o
 PML4E               0x8               ../kernel/gdt.o
-vfslist             0x38              ../kernel/cpu.o
+vfslist             0x38              ../kernel/proc.o
 rootfs              0x8               ../fs/vfs.o
 bitmap              0x8               ../kernel/gdt.o
-head                0x8               ../kernel/cpu.o
+gdt                 0x8               ../kernel/gdt.o
+head                0x8               ../kernel/proc.o
 PIT_COUNTER         0x4               ../kernel/time.o
 lapicc              0x8               ../kernel/acpi.o
 MAXPG               0x8               ../kernel/gdt.o
 rsdt                0x8               ../kernel/acpi.o
-rootvn              0x8               ../kernel/cpu.o
+rootvn              0x8               ../kernel/proc.o
 spinlock            0x4               ../kernel/spinlock.o
-mountedlist         0x8               ../kernel/cpu.o
+mountedlist         0x8               ../kernel/proc.o
 kernel_vm_map       0x8               ../kernel/vmm.o
 EOI                 0x8               ../kernel/time.o
 NMI_LINT            0x1               ../kernel/time.o
@@ -29,6 +30,14 @@ Discarded input sections
                 0x0000000000000000        0x0 ../kernel/acpi.o
  .note.gnu.property
                 0x0000000000000000       0x20 ../kernel/acpi.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 ../kernel/syscall.o
+ .note.gnu.property
+                0x0000000000000000       0x20 ../kernel/syscall.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 ../kernel/sysproc.o
+ .note.gnu.property
+                0x0000000000000000       0x20 ../kernel/sysproc.o
  .note.GNU-stack
                 0x0000000000000000        0x0 ../kernel/spinlock.o
  .note.gnu.property
@@ -130,6 +139,8 @@ Name             Origin             Length             Attributes
 Linker script and memory map
 
 LOAD ../kernel/acpi.o
+LOAD ../kernel/syscall.o
+LOAD ../kernel/sysproc.o
 LOAD ../kernel/spinlock.o
 LOAD ../kernel/panic.o
 LOAD ../kernel/time.o
@@ -158,185 +169,196 @@ LOAD ./isr.o
                 0xffffffff80000000                . = 0xffffffff80000000
                 0xffffffff80000000                text_start_addr = .
 
-.text           0xffffffff80000000     0x7782
+.text           0xffffffff80000000     0x7756
  *(.text .text.*)
  .text          0xffffffff80000000      0x113 ../kernel/acpi.o
                 0xffffffff80000000                init_acpi
                 0xffffffff80000096                get_acpi_sdt
- .text          0xffffffff80000113       0xc0 ../kernel/spinlock.o
-                0xffffffff80000113                acquire
-                0xffffffff8000014a                release
-                0xffffffff8000016d                trylock
-                0xffffffff8000018b                init_lock
-                0xffffffff800001a8                init_and_acquire
- .text          0xffffffff800001d3       0x21 ../kernel/panic.o
-                0xffffffff800001d3                panic
- .text          0xffffffff800001f4      0x1cb ../kernel/time.o
-                0xffffffff800002ba                sleep
-                0xffffffff800002f8                configure_timer
-                0xffffffff8000036b                init_pit
- .text          0xffffffff800003bf      0x221 ../kernel/apic.o
-                0xffffffff800003bf                walk_madt
-                0xffffffff8000045f                init_apic
-                0xffffffff8000058e                apic_timer
- .text          0xffffffff800005e0      0x465 ../kernel/string.o
-                0xffffffff800005e0                memcpy
-                0xffffffff80000642                memset
-                0xffffffff8000068e                strlen
-                0xffffffff800006ca                strcmp
-                0xffffffff8000074e                strncmp
-                0xffffffff800007ad                strchr
-                0xffffffff800007f2                strcpy
-                0xffffffff8000085b                strdup
-                0xffffffff800008d7                strldup
-                0xffffffff80000947                memzero
-                0xffffffff80000987                itoa
- .text          0xffffffff80000a45      0x33d ../kernel/gdt.o
-                0xffffffff80000b0b                load_gdt
-                0xffffffff80000b1d                init_gdt
-                0xffffffff80000c3e                init_tss
- .text          0xffffffff80000d82      0x166 ../kernel/interrupt.o
-                0xffffffff80000e48                init_interrupt
-                0xffffffff80000ebf                timerh
- .text          0xffffffff80000ee8      0x474 ../kernel/kbd.o
-                0xffffffff80000fae                kbd_press
-                0xffffffff80001069                print_char
-                0xffffffff800010b8                init_kbd
-                0xffffffff8000113e                setconfb
-                0xffffffff8000117e                getconfb
-                0xffffffff800011b2                getscancode
-                0xffffffff80001202                gettype
-                0xffffffff80001252                testps2port
-                0xffffffff800012bd                testps2control
-                0xffffffff8000130c                disdev
-                0xffffffff80001335                check_ps2
- .text          0xffffffff8000135c       0x4a ../kernel/io.o
-                0xffffffff8000135c                write32
-                0xffffffff80001387                read32
- .text          0xffffffff800013a6      0x50b ../kernel/pmm.o
-                0xffffffff8000151a                pallocaddr
-                0xffffffff8000159b                freepg
-                0xffffffff8000160e                palloc
-                0xffffffff800016c0                initbmap
- .text          0xffffffff800018b1      0x29f ../kernel/idt.o
-                0xffffffff80001977                load_idt
-                0xffffffff80001989                init_idt
-                0xffffffff800019ee                new_irq
-                0xffffffff80001a1d                set_idt_entry
-                0xffffffff80001aa8                trap
- .text          0xffffffff80001b50      0x7a3 ../kernel/vmm.o
-                0xffffffff80001b50                V2P
-                0xffffffff80001b73                P2V
-                0xffffffff80001b96                getpaddr
-                0xffffffff80001bb2                init_vmm
-                0xffffffff80001bbd                get_next_level
-                0xffffffff80001c89                init_vm
-                0xffffffff80001f05                mappages
-                0xffffffff80001f8d                mappage2
-                0xffffffff80001ff4                destroy_vmap
-                0xffffffff8000217c                switchvm
-                0xffffffff800021a1                newvm_map
-                0xffffffff80002225                va2pte
- .text          0xffffffff800022f3       0x63 ../kernel/vm/vm.o
-                0xffffffff800022f3                vm_alloc
- .text          0xffffffff80002356      0xa87 ../kernel/proc.o
-                0xffffffff8000241c                init_plock
-                0xffffffff80002431                init_proc
-                0xffffffff80002479                acq
-                0xffffffff80002495                r
-                0xffffffff800024b1                set_current_proc
-                0xffffffff800024d8                get_current_proc
-                0xffffffff800024ec                exec
-                0xffffffff8000285b                copyargs
-                0xffffffff80002ae0                startproc
-                0xffffffff80002b2f                replace_proc
-                0xffffffff80002bcb                allocproc
-                0xffffffff80002ce6                scheduler
- .text          0xffffffff80002ddd      0x1d9 ../kernel/pic.o
-                0xffffffff80002ea3                unmask_irq
-                0xffffffff80002eee                pic_remap
- .text          0xffffffff80002fb6      0x18b ../kernel/cpu.o
-                0xffffffff8000307c                init_cpu
-                0xffffffff800030ad                cpu
- .text          0xffffffff80003141      0x3c7 ../kernel/kernel.o
-                0xffffffff80003207                print
-                0xffffffff80003279                printl
-                0xffffffff800032a8                kmain
-                0xffffffff8000348c                thread3
-                0xffffffff800034cd                thread2
-                0xffffffff800034e2                thread1
- .text          0xffffffff80003508      0x6e3 ../kernel/slab.o
-                0xffffffff80003508                kalloc
-                0xffffffff800035dd                kfree
-                0xffffffff8000395b                roundup
-                0xffffffff800039a3                test_slab
- .text          0xffffffff80003beb       0x33 ../main.o
-                0xffffffff80003beb                main
- .text          0xffffffff80003c1e      0x13c ../fs/ramfs/ramfs_subr.o
- .text          0xffffffff80003d5a     0x2276 ../fs/ramfs/ramfs.o
-                0xffffffff800051dd                ramfs_t
- .text          0xffffffff80005fd0      0x1ce ../fs/ramfs/initramfs.o
-                0xffffffff80006036                initramfs
- .text          0xffffffff8000619e     0x13d2 ../fs/vfs.o
-                0xffffffff80006214                init_rootfs
-                0xffffffff8000627f                init_rootvn
-                0xffffffff800062bd                namei
-                0xffffffff80006479                lookup
-                0xffffffff800067c6                vfs_readdir
-                0xffffffff8000684d                vfs_link
-                0xffffffff8000695d                vfs_readlink_locked
-                0xffffffff800069b4                vfs_readlink
-                0xffffffff80006a2d                vfs_symlink
-                0xffffffff80006adf                vfs_root
-                0xffffffff80006b2f                vfs_mount
-                0xffffffff80006d0b                vfs_unmount
-                0xffffffff80006e5d                vfs_unlink
-                0xffffffff80006f72                vfs_read
-                0xffffffff80006ff2                vfs_write
-                0xffffffff80007072                vfs_open
-                0xffffffff8000719d                vfs_create
-                0xffffffff800071d4                vfs_mkdir
-                0xffffffff800072c0                vfs_rmdir
-                0xffffffff800073f3                vfs_close
-                0xffffffff800074ad                printdir
- .text          0xffffffff80007570       0x1b ./switch.o
-                0xffffffff80007570                switc
- *fill*         0xffffffff8000758b        0x5 
- .text          0xffffffff80007590      0x1f2 ./isr.o
-                0xffffffff80007590                isr_timer
-                0xffffffff80007594                isr_kbd
-                0xffffffff80007598                isr_apic_timer
-                0xffffffff8000759c                spurious
-                0xffffffff800075c4                ret
-                0xffffffff80007682                isr_table
-                0xffffffff80007782                text_end_addr = .
+ .text          0xffffffff80000113       0x40 ../kernel/syscall.o
+                0xffffffff80000113                syscall
+ .text          0xffffffff80000153        0xb ../kernel/sysproc.o
+                0xffffffff80000153                sys_exec
+ .text          0xffffffff8000015e       0xc0 ../kernel/spinlock.o
+                0xffffffff8000015e                acquire
+                0xffffffff80000195                release
+                0xffffffff800001b8                trylock
+                0xffffffff800001d6                init_lock
+                0xffffffff800001f3                init_and_acquire
+ .text          0xffffffff8000021e       0x21 ../kernel/panic.o
+                0xffffffff8000021e                panic
+ .text          0xffffffff8000023f      0x1cb ../kernel/time.o
+                0xffffffff80000305                sleep
+                0xffffffff80000343                configure_timer
+                0xffffffff800003b6                init_pit
+ .text          0xffffffff8000040a      0x221 ../kernel/apic.o
+                0xffffffff8000040a                walk_madt
+                0xffffffff800004aa                init_apic
+                0xffffffff800005d9                apic_timer
+ .text          0xffffffff8000062b      0x465 ../kernel/string.o
+                0xffffffff8000062b                memcpy
+                0xffffffff8000068d                memset
+                0xffffffff800006d9                strlen
+                0xffffffff80000715                strcmp
+                0xffffffff80000799                strncmp
+                0xffffffff800007f8                strchr
+                0xffffffff8000083d                strcpy
+                0xffffffff800008a6                strdup
+                0xffffffff80000922                strldup
+                0xffffffff80000992                memzero
+                0xffffffff800009d2                itoa
+ .text          0xffffffff80000a90      0x430 ../kernel/gdt.o
+                0xffffffff80000b56                load_gdt
+                0xffffffff80000b68                init_gdt
+                0xffffffff80000cdd                init_tss
+                0xffffffff80000e21                load_tss
+ .text          0xffffffff80000ec0      0x18d ../kernel/interrupt.o
+                0xffffffff80000f86                init_interrupt
+                0xffffffff80001024                timerh
+ .text          0xffffffff8000104d      0x474 ../kernel/kbd.o
+                0xffffffff80001113                kbd_press
+                0xffffffff800011ce                print_char
+                0xffffffff8000121d                init_kbd
+                0xffffffff800012a3                setconfb
+                0xffffffff800012e3                getconfb
+                0xffffffff80001317                getscancode
+                0xffffffff80001367                gettype
+                0xffffffff800013b7                testps2port
+                0xffffffff80001422                testps2control
+                0xffffffff80001471                disdev
+                0xffffffff8000149a                check_ps2
+ .text          0xffffffff800014c1       0x4a ../kernel/io.o
+                0xffffffff800014c1                write32
+                0xffffffff800014ec                read32
+ .text          0xffffffff8000150b      0x532 ../kernel/pmm.o
+                0xffffffff8000167f                pallocaddr
+                0xffffffff80001700                freepg
+                0xffffffff8000177f                palloc
+                0xffffffff8000184c                initbmap
+ .text          0xffffffff80001a3d      0x2be ../kernel/idt.o
+                0xffffffff80001b03                load_idt
+                0xffffffff80001b15                init_idt
+                0xffffffff80001b7a                new_irq
+                0xffffffff80001ba9                set_idt_entry
+                0xffffffff80001c34                trap
+ .text          0xffffffff80001cfb      0x6e6 ../kernel/vmm.o
+                0xffffffff80001cfb                V2P
+                0xffffffff80001d1e                P2V
+                0xffffffff80001d41                init_vmm
+                0xffffffff80001d4c                get_next_level
+                0xffffffff80001e1f                init_vm
+                0xffffffff8000209b                mappages
+                0xffffffff80002123                mappage2
+                0xffffffff8000218a                destroy_level
+                0xffffffff80002239                destroyvm
+                0xffffffff8000226a                switchvm
+                0xffffffff8000228f                newvm_map
+                0xffffffff80002313                va2pte
+ .text          0xffffffff800023e1       0x63 ../kernel/vm/vm.o
+                0xffffffff800023e1                vm_alloc
+ .text          0xffffffff80002444      0x9e5 ../kernel/proc.o
+                0xffffffff8000250a                init_plock
+                0xffffffff8000251f                init_proc
+                0xffffffff80002567                acq
+                0xffffffff8000257e                r
+                0xffffffff80002595                set_current_proc
+                0xffffffff800025bc                get_current_proc
+                0xffffffff800025d0                loadelf
+                0xffffffff800027ba                exec
+                0xffffffff8000295f                copyargs
+                0xffffffff80002bd2                startproc
+                0xffffffff80002c21                allocproc
+                0xffffffff80002d32                scheduler
+ .text          0xffffffff80002e29      0x1d9 ../kernel/pic.o
+                0xffffffff80002eef                unmask_irq
+                0xffffffff80002f3a                pic_remap
+ .text          0xffffffff80003002      0x18b ../kernel/cpu.o
+                0xffffffff800030c8                init_cpu
+                0xffffffff800030f9                cpu
+ .text          0xffffffff8000318d      0x367 ../kernel/kernel.o
+                0xffffffff80003253                print
+                0xffffffff800032c5                printl
+                0xffffffff800032f4                kmain
+                0xffffffff80003478                thread3
+                0xffffffff800034b9                thread2
+                0xffffffff800034ce                thread1
+ .text          0xffffffff800034f4      0x6e3 ../kernel/slab.o
+                0xffffffff800034f4                kalloc
+                0xffffffff800035c9                kfree
+                0xffffffff80003947                roundup
+                0xffffffff8000398f                test_slab
+ .text          0xffffffff80003bd7       0x4f ../main.o
+                0xffffffff80003bd7                main
+ .text          0xffffffff80003c26      0x13c ../fs/ramfs/ramfs_subr.o
+ .text          0xffffffff80003d62     0x223a ../fs/ramfs/ramfs.o
+                0xffffffff800051e5                ramfs_t
+ .text          0xffffffff80005f9c      0x1ce ../fs/ramfs/initramfs.o
+                0xffffffff80006002                initramfs
+ .text          0xffffffff8000616a     0x13d2 ../fs/vfs.o
+                0xffffffff800061e0                init_rootfs
+                0xffffffff8000624b                init_rootvn
+                0xffffffff80006289                namei
+                0xffffffff80006445                lookup
+                0xffffffff80006792                vfs_readdir
+                0xffffffff80006819                vfs_link
+                0xffffffff80006929                vfs_readlink_locked
+                0xffffffff80006980                vfs_readlink
+                0xffffffff800069f9                vfs_symlink
+                0xffffffff80006aab                vfs_root
+                0xffffffff80006afb                vfs_mount
+                0xffffffff80006cd7                vfs_unmount
+                0xffffffff80006e29                vfs_unlink
+                0xffffffff80006f3e                vfs_read
+                0xffffffff80006fbe                vfs_write
+                0xffffffff8000703e                vfs_open
+                0xffffffff80007169                vfs_create
+                0xffffffff800071a0                vfs_mkdir
+                0xffffffff8000728c                vfs_rmdir
+                0xffffffff800073bf                vfs_close
+                0xffffffff80007479                printdir
+ *fill*         0xffffffff8000753c        0x4 
+ .text          0xffffffff80007540       0x1b ./switch.o
+                0xffffffff80007540                switc
+ *fill*         0xffffffff8000755b        0x5 
+ .text          0xffffffff80007560      0x1f6 ./isr.o
+                0xffffffff80007560                isr_timer
+                0xffffffff80007564                isr_kbd
+                0xffffffff80007568                isr_apic_timer
+                0xffffffff8000756c                isr_syscall
+                0xffffffff80007570                spurious
+                0xffffffff80007598                ret
+                0xffffffff80007656                isr_table
+                0xffffffff80007756                text_end_addr = .
 
-.iplt           0xffffffff80007782        0x0
- .iplt          0xffffffff80007782        0x0 ../kernel/acpi.o
-                0xffffffff80008782                . = (. + CONSTANT (MAXPAGESIZE))
-                0xffffffff80008782                rodata_start_addr = .
+.iplt           0xffffffff80007756        0x0
+ .iplt          0xffffffff80007756        0x0 ../kernel/acpi.o
+                0xffffffff80008756                . = (. + CONSTANT (MAXPAGESIZE))
+                0xffffffff80008756                rodata_start_addr = .
 
-.rodata         0xffffffff800087a0      0x535
+.rodata         0xffffffff80008760      0x535
  *(.rodata .rodata.*)
- .rodata        0xffffffff800087a0       0x13 ../kernel/apic.o
- .rodata        0xffffffff800087b3       0x29 ../kernel/kbd.o
- *fill*         0xffffffff800087dc        0x4 
- .rodata        0xffffffff800087e0       0x25 ../kernel/pmm.o
- .rodata        0xffffffff80008805        0xd ../kernel/idt.o
- .rodata        0xffffffff80008812        0x6 ../kernel/proc.o
- .rodata        0xffffffff80008818       0x22 ../kernel/kernel.o
- .rodata        0xffffffff8000883a       0x25 ../kernel/slab.o
- *fill*         0xffffffff8000885f        0x1 
- .rodata        0xffffffff80008860       0x22 ../fs/ramfs/ramfs_subr.o
- *fill*         0xffffffff80008882       0x1e 
- .rodata        0xffffffff800088a0      0x3ff ../fs/ramfs/ramfs.o
-                0xffffffff800089e0                ram_ops
- .rodata        0xffffffff80008c9f       0x2f ../fs/ramfs/initramfs.o
- .rodata        0xffffffff80008cce        0x7 ../fs/vfs.o
-                0xffffffff80008cd5                rodata_end_addr = .
+ .rodata        0xffffffff80008760       0x13 ../kernel/apic.o
+ .rodata        0xffffffff80008773       0x29 ../kernel/kbd.o
+ *fill*         0xffffffff8000879c        0x4 
+ .rodata        0xffffffff800087a0       0x25 ../kernel/pmm.o
+ .rodata        0xffffffff800087c5        0xd ../kernel/idt.o
+ .rodata        0xffffffff800087d2       0x22 ../kernel/kernel.o
+ .rodata        0xffffffff800087f4       0x25 ../kernel/slab.o
+ .rodata        0xffffffff80008819        0x6 ../main.o
+ *fill*         0xffffffff8000881f        0x1 
+ .rodata        0xffffffff80008820       0x22 ../fs/ramfs/ramfs_subr.o
+ *fill*         0xffffffff80008842       0x1e 
+ .rodata        0xffffffff80008860      0x3ff ../fs/ramfs/ramfs.o
+                0xffffffff800089a0                ram_ops
+ .rodata        0xffffffff80008c5f       0x2f ../fs/ramfs/initramfs.o
+ .rodata        0xffffffff80008c8e        0x7 ../fs/vfs.o
+                0xffffffff80008c95                rodata_end_addr = .
 
-.eh_frame       0xffffffff80008cd8     0x1b78
- .eh_frame      0xffffffff80008cd8       0x58 ../kernel/acpi.o
+.eh_frame       0xffffffff80008c98     0x1bd8
+ .eh_frame      0xffffffff80008c98       0x58 ../kernel/acpi.o
+ .eh_frame      0xffffffff80008cf0       0x20 ../kernel/syscall.o
+                                         0x38 (size before relaxing)
+ .eh_frame      0xffffffff80008d10       0x20 ../kernel/sysproc.o
+                                         0x38 (size before relaxing)
  .eh_frame      0xffffffff80008d30       0xa0 ../kernel/spinlock.o
                                          0xb8 (size before relaxing)
  .eh_frame      0xffffffff80008dd0       0x20 ../kernel/panic.o
@@ -347,346 +369,367 @@ LOAD ./isr.o
                                          0x98 (size before relaxing)
  .eh_frame      0xffffffff80008f90      0x160 ../kernel/string.o
                                         0x178 (size before relaxing)
- .eh_frame      0xffffffff800090f0      0x148 ../kernel/gdt.o
-                                        0x160 (size before relaxing)
- .eh_frame      0xffffffff80009238      0x100 ../kernel/interrupt.o
+ .eh_frame      0xffffffff800090f0      0x168 ../kernel/gdt.o
+                                        0x180 (size before relaxing)
+ .eh_frame      0xffffffff80009258      0x100 ../kernel/interrupt.o
                                         0x118 (size before relaxing)
- .eh_frame      0xffffffff80009338      0x220 ../kernel/kbd.o
+ .eh_frame      0xffffffff80009358      0x220 ../kernel/kbd.o
                                         0x238 (size before relaxing)
- .eh_frame      0xffffffff80009558       0x40 ../kernel/io.o
+ .eh_frame      0xffffffff80009578       0x40 ../kernel/io.o
                                          0x58 (size before relaxing)
- .eh_frame      0xffffffff80009598      0x120 ../kernel/pmm.o
+ .eh_frame      0xffffffff800095b8      0x120 ../kernel/pmm.o
                                         0x138 (size before relaxing)
- .eh_frame      0xffffffff800096b8      0x160 ../kernel/idt.o
+ .eh_frame      0xffffffff800096d8      0x160 ../kernel/idt.o
                                         0x178 (size before relaxing)
- .eh_frame      0xffffffff80009818      0x180 ../kernel/vmm.o
+ .eh_frame      0xffffffff80009838      0x180 ../kernel/vmm.o
                                         0x198 (size before relaxing)
- .eh_frame      0xffffffff80009998       0x20 ../kernel/vm/vm.o
+ .eh_frame      0xffffffff800099b8       0x20 ../kernel/vm/vm.o
                                          0x38 (size before relaxing)
- .eh_frame      0xffffffff800099b8      0x270 ../kernel/proc.o
+ .eh_frame      0xffffffff800099d8      0x270 ../kernel/proc.o
                                         0x288 (size before relaxing)
- .eh_frame      0xffffffff80009c28      0x100 ../kernel/pic.o
+ .eh_frame      0xffffffff80009c48      0x100 ../kernel/pic.o
                                         0x118 (size before relaxing)
- .eh_frame      0xffffffff80009d28      0x100 ../kernel/cpu.o
+ .eh_frame      0xffffffff80009d48      0x100 ../kernel/cpu.o
                                         0x118 (size before relaxing)
- .eh_frame      0xffffffff80009e28      0x178 ../kernel/kernel.o
+ .eh_frame      0xffffffff80009e48      0x178 ../kernel/kernel.o
                                         0x190 (size before relaxing)
- .eh_frame      0xffffffff80009fa0      0x128 ../kernel/slab.o
+ .eh_frame      0xffffffff80009fc0      0x128 ../kernel/slab.o
                                         0x140 (size before relaxing)
- .eh_frame      0xffffffff8000a0c8       0x20 ../main.o
+ .eh_frame      0xffffffff8000a0e8       0x20 ../main.o
                                          0x38 (size before relaxing)
- .eh_frame      0xffffffff8000a0e8       0x40 ../fs/ramfs/ramfs_subr.o
+ .eh_frame      0xffffffff8000a108       0x40 ../fs/ramfs/ramfs_subr.o
                                          0x58 (size before relaxing)
- .eh_frame      0xffffffff8000a128      0x3e8 ../fs/ramfs/ramfs.o
+ .eh_frame      0xffffffff8000a148      0x3e8 ../fs/ramfs/ramfs.o
                                         0x400 (size before relaxing)
- .eh_frame      0xffffffff8000a510       0x40 ../fs/ramfs/initramfs.o
+ .eh_frame      0xffffffff8000a530       0x40 ../fs/ramfs/initramfs.o
                                          0x58 (size before relaxing)
- .eh_frame      0xffffffff8000a550      0x300 ../fs/vfs.o
+ .eh_frame      0xffffffff8000a570      0x300 ../fs/vfs.o
                                         0x318 (size before relaxing)
 
-.rela.dyn       0xffffffff8000a850        0x0
- .rela.got      0xffffffff8000a850        0x0 ../kernel/acpi.o
- .rela.iplt     0xffffffff8000a850        0x0 ../kernel/acpi.o
- .rela.text     0xffffffff8000a850        0x0 ../kernel/acpi.o
-                0xffffffff8000b850                . = (. + CONSTANT (MAXPAGESIZE))
-                0xffffffff8000b850                data_start_addr = .
+.rela.dyn       0xffffffff8000a870        0x0
+ .rela.got      0xffffffff8000a870        0x0 ../kernel/acpi.o
+ .rela.iplt     0xffffffff8000a870        0x0 ../kernel/acpi.o
+ .rela.text     0xffffffff8000a870        0x0 ../kernel/acpi.o
+                0xffffffff8000b870                . = (. + CONSTANT (MAXPAGESIZE))
+                0xffffffff8000b870                data_start_addr = .
 
-.data           0xffffffff8000b860      0x1f0
+.data           0xffffffff8000b880      0x1f0
  *(.data .data.*)
- .data          0xffffffff8000b860       0x30 ../kernel/acpi.o
- .data          0xffffffff8000b890        0x0 ../kernel/spinlock.o
- .data          0xffffffff8000b890        0x0 ../kernel/panic.o
- .data          0xffffffff8000b890        0x0 ../kernel/time.o
- .data          0xffffffff8000b890        0x0 ../kernel/apic.o
- .data          0xffffffff8000b890        0x0 ../kernel/string.o
- .data          0xffffffff8000b890        0x0 ../kernel/gdt.o
- .data          0xffffffff8000b890        0x0 ../kernel/interrupt.o
- *fill*         0xffffffff8000b890       0x10 
- .data          0xffffffff8000b8a0       0x7f ../kernel/kbd.o
- .data          0xffffffff8000b91f        0x0 ../kernel/io.o
- *fill*         0xffffffff8000b91f        0x1 
- .data          0xffffffff8000b920       0x34 ../kernel/pmm.o
-                0xffffffff8000b920                memmap_request
-                0xffffffff8000b950                g
- .data          0xffffffff8000b954        0x0 ../kernel/idt.o
- *fill*         0xffffffff8000b954        0xc 
- .data          0xffffffff8000b960       0x30 ../kernel/vmm.o
- .data          0xffffffff8000b990        0x0 ../kernel/vm/vm.o
- .data          0xffffffff8000b990        0x1 ../kernel/proc.o
- .data          0xffffffff8000b991        0x0 ../kernel/pic.o
- *fill*         0xffffffff8000b991        0xf 
- .data          0xffffffff8000b9a0       0x38 ../kernel/cpu.o
- *fill*         0xffffffff8000b9d8        0x8 
- .data          0xffffffff8000b9e0       0x3c ../kernel/kernel.o
- .data          0xffffffff8000ba1c        0x0 ../kernel/slab.o
- .data          0xffffffff8000ba1c        0x0 ../main.o
- .data          0xffffffff8000ba1c        0x0 ../fs/ramfs/ramfs_subr.o
- .data          0xffffffff8000ba1c        0x0 ../fs/ramfs/ramfs.o
- *fill*         0xffffffff8000ba1c        0x4 
- .data          0xffffffff8000ba20       0x30 ../fs/ramfs/initramfs.o
- .data          0xffffffff8000ba50        0x0 ../fs/vfs.o
+ .data          0xffffffff8000b880       0x30 ../kernel/acpi.o
+ .data          0xffffffff8000b8b0        0x8 ../kernel/syscall.o
+ .data          0xffffffff8000b8b8        0x0 ../kernel/sysproc.o
+ .data          0xffffffff8000b8b8        0x0 ../kernel/spinlock.o
+ .data          0xffffffff8000b8b8        0x0 ../kernel/panic.o
+ .data          0xffffffff8000b8b8        0x0 ../kernel/time.o
+ .data          0xffffffff8000b8b8        0x0 ../kernel/apic.o
+ .data          0xffffffff8000b8b8        0x0 ../kernel/string.o
+ .data          0xffffffff8000b8b8        0x0 ../kernel/gdt.o
+ .data          0xffffffff8000b8b8        0x0 ../kernel/interrupt.o
+ *fill*         0xffffffff8000b8b8        0x8 
+ .data          0xffffffff8000b8c0       0x7f ../kernel/kbd.o
+ .data          0xffffffff8000b93f        0x0 ../kernel/io.o
+ *fill*         0xffffffff8000b93f        0x1 
+ .data          0xffffffff8000b940       0x34 ../kernel/pmm.o
+                0xffffffff8000b940                memmap_request
+                0xffffffff8000b970                g
+ .data          0xffffffff8000b974        0x0 ../kernel/idt.o
+ *fill*         0xffffffff8000b974        0xc 
+ .data          0xffffffff8000b980       0x30 ../kernel/vmm.o
+ .data          0xffffffff8000b9b0        0x0 ../kernel/vm/vm.o
+ .data          0xffffffff8000b9b0        0x1 ../kernel/proc.o
+ .data          0xffffffff8000b9b1        0x0 ../kernel/pic.o
+ *fill*         0xffffffff8000b9b1        0xf 
+ .data          0xffffffff8000b9c0       0x38 ../kernel/cpu.o
+ *fill*         0xffffffff8000b9f8        0x8 
+ .data          0xffffffff8000ba00       0x38 ../kernel/kernel.o
+ .data          0xffffffff8000ba38        0x0 ../kernel/slab.o
+ .data          0xffffffff8000ba38        0x0 ../main.o
+ .data          0xffffffff8000ba38        0x0 ../fs/ramfs/ramfs_subr.o
+ .data          0xffffffff8000ba38        0x0 ../fs/ramfs/ramfs.o
+ *fill*         0xffffffff8000ba38        0x8 
+ .data          0xffffffff8000ba40       0x30 ../fs/ramfs/initramfs.o
+ .data          0xffffffff8000ba70        0x0 ../fs/vfs.o
 
-.got            0xffffffff8000ba50        0x0
- .got           0xffffffff8000ba50        0x0 ../kernel/acpi.o
+.got            0xffffffff8000ba70        0x0
+ .got           0xffffffff8000ba70        0x0 ../kernel/acpi.o
 
-.got.plt        0xffffffff8000ba50        0x0
- .got.plt       0xffffffff8000ba50        0x0 ../kernel/acpi.o
+.got.plt        0xffffffff8000ba70        0x0
+ .got.plt       0xffffffff8000ba70        0x0 ../kernel/acpi.o
 
-.igot.plt       0xffffffff8000ba50        0x0
- .igot.plt      0xffffffff8000ba50        0x0 ../kernel/acpi.o
+.igot.plt       0xffffffff8000ba70        0x0
+ .igot.plt      0xffffffff8000ba70        0x0 ../kernel/acpi.o
 
-.bss            0xffffffff8000ba60     0x3134
+.bss            0xffffffff8000ba80     0x3134
  *(COMMON)
- COMMON         0xffffffff8000ba60       0x10 ../kernel/acpi.o
-                0xffffffff8000ba60                lapicc
-                0xffffffff8000ba68                rsdt
- COMMON         0xffffffff8000ba70        0x8 ../kernel/spinlock.o
-                0xffffffff8000ba70                x
-                0xffffffff8000ba74                spinlock
- COMMON         0xffffffff8000ba78       0x11 ../kernel/time.o
-                0xffffffff8000ba78                PIT_COUNTER
-                0xffffffff8000ba80                EOI
-                0xffffffff8000ba88                NMI_LINT
- *fill*         0xffffffff8000ba89        0x7 
- COMMON         0xffffffff8000ba90       0x18 ../kernel/gdt.o
-                0xffffffff8000ba90                PML4E
-                0xffffffff8000ba98                bitmap
-                0xffffffff8000baa0                MAXPG
- COMMON         0xffffffff8000baa8        0x8 ../kernel/vmm.o
-                0xffffffff8000baa8                kernel_vm_map
- *fill*         0xffffffff8000bab0       0x10 
- COMMON         0xffffffff8000bac0       0x50 ../kernel/cpu.o
-                0xffffffff8000bac0                vfslist
-                0xffffffff8000baf8                head
-                0xffffffff8000bb00                rootvn
-                0xffffffff8000bb08                mountedlist
- COMMON         0xffffffff8000bb10        0x8 ../fs/vfs.o
-                0xffffffff8000bb10                rootfs
+ COMMON         0xffffffff8000ba80       0x10 ../kernel/acpi.o
+                0xffffffff8000ba80                lapicc
+                0xffffffff8000ba88                rsdt
+ COMMON         0xffffffff8000ba90        0x8 ../kernel/spinlock.o
+                0xffffffff8000ba90                x
+                0xffffffff8000ba94                spinlock
+ COMMON         0xffffffff8000ba98       0x11 ../kernel/time.o
+                0xffffffff8000ba98                PIT_COUNTER
+                0xffffffff8000baa0                EOI
+                0xffffffff8000baa8                NMI_LINT
+ *fill*         0xffffffff8000baa9        0x7 
+ COMMON         0xffffffff8000bab0       0x20 ../kernel/gdt.o
+                0xffffffff8000bab0                PML4E
+                0xffffffff8000bab8                bitmap
+                0xffffffff8000bac0                gdt
+                0xffffffff8000bac8                MAXPG
+ COMMON         0xffffffff8000bad0        0x8 ../kernel/vmm.o
+                0xffffffff8000bad0                kernel_vm_map
+ *fill*         0xffffffff8000bad8        0x8 
+ COMMON         0xffffffff8000bae0       0x50 ../kernel/proc.o
+                0xffffffff8000bae0                vfslist
+                0xffffffff8000bb18                head
+                0xffffffff8000bb20                rootvn
+                0xffffffff8000bb28                mountedlist
+ COMMON         0xffffffff8000bb30        0x8 ../fs/vfs.o
+                0xffffffff8000bb30                rootfs
  *(.bss .bss.*)
- .bss           0xffffffff8000bb18        0x0 ../kernel/acpi.o
- .bss           0xffffffff8000bb18        0x0 ../kernel/spinlock.o
- .bss           0xffffffff8000bb18        0x0 ../kernel/panic.o
- .bss           0xffffffff8000bb18        0x0 ../kernel/time.o
- .bss           0xffffffff8000bb18        0x8 ../kernel/apic.o
- .bss           0xffffffff8000bb20        0x0 ../kernel/string.o
- .bss           0xffffffff8000bb20       0x1a ../kernel/gdt.o
- .bss           0xffffffff8000bb3a        0x0 ../kernel/interrupt.o
- .bss           0xffffffff8000bb3a        0x2 ../kernel/kbd.o
- .bss           0xffffffff8000bb3c        0x0 ../kernel/io.o
- .bss           0xffffffff8000bb3c        0x0 ../kernel/pmm.o
- *fill*         0xffffffff8000bb3c        0x4 
- .bss           0xffffffff8000bb40     0x100a ../kernel/idt.o
- .bss           0xffffffff8000cb4a        0x0 ../kernel/vmm.o
- .bss           0xffffffff8000cb4a        0x0 ../kernel/vm/vm.o
- *fill*         0xffffffff8000cb4a       0x16 
- .bss           0xffffffff8000cb60     0x200c ../kernel/proc.o
- .bss           0xffffffff8000eb6c        0x0 ../kernel/pic.o
- .bss           0xffffffff8000eb6c        0x0 ../kernel/cpu.o
- .bss           0xffffffff8000eb6c        0x8 ../kernel/kernel.o
- *fill*         0xffffffff8000eb74        0xc 
- .bss           0xffffffff8000eb80       0x14 ../kernel/slab.o
- .bss           0xffffffff8000eb94        0x0 ../main.o
- .bss           0xffffffff8000eb94        0x0 ../fs/ramfs/ramfs_subr.o
- .bss           0xffffffff8000eb94        0x0 ../fs/ramfs/ramfs.o
- .bss           0xffffffff8000eb94        0x0 ../fs/ramfs/initramfs.o
- .bss           0xffffffff8000eb94        0x0 ../fs/vfs.o
-                0xffffffff8000eb94                data_end_addr = .
+ .bss           0xffffffff8000bb38        0x0 ../kernel/acpi.o
+ .bss           0xffffffff8000bb38        0x0 ../kernel/syscall.o
+ .bss           0xffffffff8000bb38        0x0 ../kernel/sysproc.o
+ .bss           0xffffffff8000bb38        0x0 ../kernel/spinlock.o
+ .bss           0xffffffff8000bb38        0x0 ../kernel/panic.o
+ .bss           0xffffffff8000bb38        0x0 ../kernel/time.o
+ .bss           0xffffffff8000bb38        0x8 ../kernel/apic.o
+ .bss           0xffffffff8000bb40        0x0 ../kernel/string.o
+ .bss           0xffffffff8000bb40       0x12 ../kernel/gdt.o
+ .bss           0xffffffff8000bb52        0x0 ../kernel/interrupt.o
+ .bss           0xffffffff8000bb52        0x2 ../kernel/kbd.o
+ .bss           0xffffffff8000bb54        0x0 ../kernel/io.o
+ .bss           0xffffffff8000bb54        0x0 ../kernel/pmm.o
+ *fill*         0xffffffff8000bb54        0xc 
+ .bss           0xffffffff8000bb60     0x100a ../kernel/idt.o
+ .bss           0xffffffff8000cb6a        0x0 ../kernel/vmm.o
+ .bss           0xffffffff8000cb6a        0x0 ../kernel/vm/vm.o
+ *fill*         0xffffffff8000cb6a       0x16 
+ .bss           0xffffffff8000cb80     0x200c ../kernel/proc.o
+ .bss           0xffffffff8000eb8c        0x0 ../kernel/pic.o
+ .bss           0xffffffff8000eb8c        0x0 ../kernel/cpu.o
+ .bss           0xffffffff8000eb8c        0x8 ../kernel/kernel.o
+ *fill*         0xffffffff8000eb94        0xc 
+ .bss           0xffffffff8000eba0       0x14 ../kernel/slab.o
+ .bss           0xffffffff8000ebb4        0x0 ../main.o
+ .bss           0xffffffff8000ebb4        0x0 ../fs/ramfs/ramfs_subr.o
+ .bss           0xffffffff8000ebb4        0x0 ../fs/ramfs/ramfs.o
+ .bss           0xffffffff8000ebb4        0x0 ../fs/ramfs/initramfs.o
+ .bss           0xffffffff8000ebb4        0x0 ../fs/vfs.o
+                0xffffffff8000ebb4                data_end_addr = .
 
 /DISCARD/
  *(.note .note.*)
 OUTPUT(kernel.elf elf64-x86-64)
 
-.debug_info     0x0000000000000000     0xa54b
+.debug_info     0x0000000000000000     0xa9aa
  .debug_info    0x0000000000000000      0x38c ../kernel/acpi.o
- .debug_info    0x000000000000038c      0x20b ../kernel/spinlock.o
- .debug_info    0x0000000000000597       0xd5 ../kernel/panic.o
- .debug_info    0x000000000000066c      0x40d ../kernel/time.o
- .debug_info    0x0000000000000a79      0x5d3 ../kernel/apic.o
- .debug_info    0x000000000000104c      0x4b6 ../kernel/string.o
- .debug_info    0x0000000000001502      0x47a ../kernel/gdt.o
- .debug_info    0x000000000000197c      0x25b ../kernel/interrupt.o
- .debug_info    0x0000000000001bd7      0x7fa ../kernel/kbd.o
- .debug_info    0x00000000000023d1      0x109 ../kernel/io.o
- .debug_info    0x00000000000024da      0x535 ../kernel/pmm.o
- .debug_info    0x0000000000002a0f      0x6b1 ../kernel/idt.o
- .debug_info    0x00000000000030c0      0x896 ../kernel/vmm.o
- .debug_info    0x0000000000003956      0x19d ../kernel/vm/vm.o
- .debug_info    0x0000000000003af3      0xe86 ../kernel/proc.o
- .debug_info    0x0000000000004979      0x27c ../kernel/pic.o
- .debug_info    0x0000000000004bf5      0x9bf ../kernel/cpu.o
- .debug_info    0x00000000000055b4      0xe60 ../kernel/kernel.o
- .debug_info    0x0000000000006414      0x6b8 ../kernel/slab.o
- .debug_info    0x0000000000006acc       0xa3 ../main.o
- .debug_info    0x0000000000006b6f      0x5b9 ../fs/ramfs/ramfs_subr.o
- .debug_info    0x0000000000007128     0x1b4b ../fs/ramfs/ramfs.o
- .debug_info    0x0000000000008c73      0x85e ../fs/ramfs/initramfs.o
- .debug_info    0x00000000000094d1      0xfe5 ../fs/vfs.o
- .debug_info    0x000000000000a4b6       0x4c ./switch.o
- .debug_info    0x000000000000a502       0x49 ./isr.o
+ .debug_info    0x000000000000038c      0x1f5 ../kernel/syscall.o
+ .debug_info    0x0000000000000581       0x53 ../kernel/sysproc.o
+ .debug_info    0x00000000000005d4      0x20b ../kernel/spinlock.o
+ .debug_info    0x00000000000007df       0xd5 ../kernel/panic.o
+ .debug_info    0x00000000000008b4      0x40d ../kernel/time.o
+ .debug_info    0x0000000000000cc1      0x5d3 ../kernel/apic.o
+ .debug_info    0x0000000000001294      0x4b6 ../kernel/string.o
+ .debug_info    0x000000000000174a      0x52b ../kernel/gdt.o
+ .debug_info    0x0000000000001c75      0x25b ../kernel/interrupt.o
+ .debug_info    0x0000000000001ed0      0x7fa ../kernel/kbd.o
+ .debug_info    0x00000000000026ca      0x109 ../kernel/io.o
+ .debug_info    0x00000000000027d3      0x552 ../kernel/pmm.o
+ .debug_info    0x0000000000002d25      0x6d5 ../kernel/idt.o
+ .debug_info    0x00000000000033fa      0x850 ../kernel/vmm.o
+ .debug_info    0x0000000000003c4a      0x19d ../kernel/vm/vm.o
+ .debug_info    0x0000000000003de7     0x10e8 ../kernel/proc.o
+ .debug_info    0x0000000000004ecf      0x27c ../kernel/pic.o
+ .debug_info    0x000000000000514b      0x9bf ../kernel/cpu.o
+ .debug_info    0x0000000000005b0a      0xd82 ../kernel/kernel.o
+ .debug_info    0x000000000000688c      0x6b8 ../kernel/slab.o
+ .debug_info    0x0000000000006f44       0xb1 ../main.o
+ .debug_info    0x0000000000006ff5      0x5b9 ../fs/ramfs/ramfs_subr.o
+ .debug_info    0x00000000000075ae     0x1b30 ../fs/ramfs/ramfs.o
+ .debug_info    0x00000000000090de      0x85e ../fs/ramfs/initramfs.o
+ .debug_info    0x000000000000993c      0xfd9 ../fs/vfs.o
+ .debug_info    0x000000000000a915       0x4c ./switch.o
+ .debug_info    0x000000000000a961       0x49 ./isr.o
 
-.debug_abbrev   0x0000000000000000     0x2c67
+.debug_abbrev   0x0000000000000000     0x2ea2
  .debug_abbrev  0x0000000000000000      0x156 ../kernel/acpi.o
- .debug_abbrev  0x0000000000000156      0x114 ../kernel/spinlock.o
- .debug_abbrev  0x000000000000026a       0x95 ../kernel/panic.o
- .debug_abbrev  0x00000000000002ff      0x1d1 ../kernel/time.o
- .debug_abbrev  0x00000000000004d0      0x1df ../kernel/apic.o
- .debug_abbrev  0x00000000000006af      0x10e ../kernel/string.o
- .debug_abbrev  0x00000000000007bd      0x222 ../kernel/gdt.o
- .debug_abbrev  0x00000000000009df      0x19e ../kernel/interrupt.o
- .debug_abbrev  0x0000000000000b7d      0x239 ../kernel/kbd.o
- .debug_abbrev  0x0000000000000db6       0xa0 ../kernel/io.o
- .debug_abbrev  0x0000000000000e56      0x1cc ../kernel/pmm.o
- .debug_abbrev  0x0000000000001022      0x284 ../kernel/idt.o
- .debug_abbrev  0x00000000000012a6      0x22c ../kernel/vmm.o
- .debug_abbrev  0x00000000000014d2       0xcb ../kernel/vm/vm.o
- .debug_abbrev  0x000000000000159d      0x378 ../kernel/proc.o
- .debug_abbrev  0x0000000000001915      0x146 ../kernel/pic.o
- .debug_abbrev  0x0000000000001a5b      0x266 ../kernel/cpu.o
- .debug_abbrev  0x0000000000001cc1      0x2d5 ../kernel/kernel.o
- .debug_abbrev  0x0000000000001f96      0x26d ../kernel/slab.o
- .debug_abbrev  0x0000000000002203       0x73 ../main.o
- .debug_abbrev  0x0000000000002276      0x1c7 ../fs/ramfs/ramfs_subr.o
- .debug_abbrev  0x000000000000243d      0x336 ../fs/ramfs/ramfs.o
- .debug_abbrev  0x0000000000002773      0x208 ../fs/ramfs/initramfs.o
- .debug_abbrev  0x000000000000297b      0x2b6 ../fs/vfs.o
- .debug_abbrev  0x0000000000002c31       0x1b ./switch.o
- .debug_abbrev  0x0000000000002c4c       0x1b ./isr.o
+ .debug_abbrev  0x0000000000000156      0x100 ../kernel/syscall.o
+ .debug_abbrev  0x0000000000000256       0x3b ../kernel/sysproc.o
+ .debug_abbrev  0x0000000000000291      0x114 ../kernel/spinlock.o
+ .debug_abbrev  0x00000000000003a5       0x95 ../kernel/panic.o
+ .debug_abbrev  0x000000000000043a      0x1d1 ../kernel/time.o
+ .debug_abbrev  0x000000000000060b      0x1df ../kernel/apic.o
+ .debug_abbrev  0x00000000000007ea      0x10e ../kernel/string.o
+ .debug_abbrev  0x00000000000008f8      0x298 ../kernel/gdt.o
+ .debug_abbrev  0x0000000000000b90      0x19e ../kernel/interrupt.o
+ .debug_abbrev  0x0000000000000d2e      0x239 ../kernel/kbd.o
+ .debug_abbrev  0x0000000000000f67       0xa0 ../kernel/io.o
+ .debug_abbrev  0x0000000000001007      0x1db ../kernel/pmm.o
+ .debug_abbrev  0x00000000000011e2      0x28f ../kernel/idt.o
+ .debug_abbrev  0x0000000000001471      0x221 ../kernel/vmm.o
+ .debug_abbrev  0x0000000000001692       0xcb ../kernel/vm/vm.o
+ .debug_abbrev  0x000000000000175d      0x3a0 ../kernel/proc.o
+ .debug_abbrev  0x0000000000001afd      0x146 ../kernel/pic.o
+ .debug_abbrev  0x0000000000001c43      0x266 ../kernel/cpu.o
+ .debug_abbrev  0x0000000000001ea9      0x2f8 ../kernel/kernel.o
+ .debug_abbrev  0x00000000000021a1      0x26d ../kernel/slab.o
+ .debug_abbrev  0x000000000000240e       0x73 ../main.o
+ .debug_abbrev  0x0000000000002481      0x1c7 ../fs/ramfs/ramfs_subr.o
+ .debug_abbrev  0x0000000000002648      0x36a ../fs/ramfs/ramfs.o
+ .debug_abbrev  0x00000000000029b2      0x208 ../fs/ramfs/initramfs.o
+ .debug_abbrev  0x0000000000002bba      0x2b2 ../fs/vfs.o
+ .debug_abbrev  0x0000000000002e6c       0x1b ./switch.o
+ .debug_abbrev  0x0000000000002e87       0x1b ./isr.o
 
-.debug_aranges  0x0000000000000000      0x4e0
+.debug_aranges  0x0000000000000000      0x540
  .debug_aranges
                 0x0000000000000000       0x30 ../kernel/acpi.o
  .debug_aranges
-                0x0000000000000030       0x30 ../kernel/spinlock.o
+                0x0000000000000030       0x30 ../kernel/syscall.o
  .debug_aranges
-                0x0000000000000060       0x30 ../kernel/panic.o
+                0x0000000000000060       0x30 ../kernel/sysproc.o
  .debug_aranges
-                0x0000000000000090       0x30 ../kernel/time.o
+                0x0000000000000090       0x30 ../kernel/spinlock.o
  .debug_aranges
-                0x00000000000000c0       0x30 ../kernel/apic.o
+                0x00000000000000c0       0x30 ../kernel/panic.o
  .debug_aranges
-                0x00000000000000f0       0x30 ../kernel/string.o
+                0x00000000000000f0       0x30 ../kernel/time.o
  .debug_aranges
-                0x0000000000000120       0x30 ../kernel/gdt.o
+                0x0000000000000120       0x30 ../kernel/apic.o
  .debug_aranges
-                0x0000000000000150       0x30 ../kernel/interrupt.o
+                0x0000000000000150       0x30 ../kernel/string.o
  .debug_aranges
-                0x0000000000000180       0x30 ../kernel/kbd.o
+                0x0000000000000180       0x30 ../kernel/gdt.o
  .debug_aranges
-                0x00000000000001b0       0x30 ../kernel/io.o
+                0x00000000000001b0       0x30 ../kernel/interrupt.o
  .debug_aranges
-                0x00000000000001e0       0x30 ../kernel/pmm.o
+                0x00000000000001e0       0x30 ../kernel/kbd.o
  .debug_aranges
-                0x0000000000000210       0x30 ../kernel/idt.o
+                0x0000000000000210       0x30 ../kernel/io.o
  .debug_aranges
-                0x0000000000000240       0x30 ../kernel/vmm.o
+                0x0000000000000240       0x30 ../kernel/pmm.o
  .debug_aranges
-                0x0000000000000270       0x30 ../kernel/vm/vm.o
+                0x0000000000000270       0x30 ../kernel/idt.o
  .debug_aranges
-                0x00000000000002a0       0x30 ../kernel/proc.o
+                0x00000000000002a0       0x30 ../kernel/vmm.o
  .debug_aranges
-                0x00000000000002d0       0x30 ../kernel/pic.o
+                0x00000000000002d0       0x30 ../kernel/vm/vm.o
  .debug_aranges
-                0x0000000000000300       0x30 ../kernel/cpu.o
+                0x0000000000000300       0x30 ../kernel/proc.o
  .debug_aranges
-                0x0000000000000330       0x30 ../kernel/kernel.o
+                0x0000000000000330       0x30 ../kernel/pic.o
  .debug_aranges
-                0x0000000000000360       0x30 ../kernel/slab.o
+                0x0000000000000360       0x30 ../kernel/cpu.o
  .debug_aranges
-                0x0000000000000390       0x30 ../main.o
+                0x0000000000000390       0x30 ../kernel/kernel.o
  .debug_aranges
-                0x00000000000003c0       0x30 ../fs/ramfs/ramfs_subr.o
+                0x00000000000003c0       0x30 ../kernel/slab.o
  .debug_aranges
-                0x00000000000003f0       0x30 ../fs/ramfs/ramfs.o
+                0x00000000000003f0       0x30 ../main.o
  .debug_aranges
-                0x0000000000000420       0x30 ../fs/ramfs/initramfs.o
+                0x0000000000000420       0x30 ../fs/ramfs/ramfs_subr.o
  .debug_aranges
-                0x0000000000000450       0x30 ../fs/vfs.o
+                0x0000000000000450       0x30 ../fs/ramfs/ramfs.o
  .debug_aranges
-                0x0000000000000480       0x30 ./switch.o
+                0x0000000000000480       0x30 ../fs/ramfs/initramfs.o
  .debug_aranges
-                0x00000000000004b0       0x30 ./isr.o
+                0x00000000000004b0       0x30 ../fs/vfs.o
+ .debug_aranges
+                0x00000000000004e0       0x30 ./switch.o
+ .debug_aranges
+                0x0000000000000510       0x30 ./isr.o
 
-.debug_line     0x0000000000000000     0x3ce1
+.debug_line     0x0000000000000000     0x3da7
  .debug_line    0x0000000000000000      0x158 ../kernel/acpi.o
- .debug_line    0x0000000000000158       0xec ../kernel/spinlock.o
- .debug_line    0x0000000000000244       0xb8 ../kernel/panic.o
- .debug_line    0x00000000000002fc      0x179 ../kernel/time.o
- .debug_line    0x0000000000000475      0x185 ../kernel/apic.o
- .debug_line    0x00000000000005fa      0x2d4 ../kernel/string.o
- .debug_line    0x00000000000008ce      0x1d5 ../kernel/gdt.o
- .debug_line    0x0000000000000aa3      0x13c ../kernel/interrupt.o
- .debug_line    0x0000000000000bdf      0x214 ../kernel/kbd.o
- .debug_line    0x0000000000000df3       0x69 ../kernel/io.o
- .debug_line    0x0000000000000e5c      0x318 ../kernel/pmm.o
- .debug_line    0x0000000000001174      0x1d9 ../kernel/idt.o
- .debug_line    0x000000000000134d      0x42a ../kernel/vmm.o
- .debug_line    0x0000000000001777      0x105 ../kernel/vm/vm.o
- .debug_line    0x000000000000187c      0x516 ../kernel/proc.o
- .debug_line    0x0000000000001d92      0x114 ../kernel/pic.o
- .debug_line    0x0000000000001ea6      0x1b2 ../kernel/cpu.o
- .debug_line    0x0000000000002058      0x29e ../kernel/kernel.o
- .debug_line    0x00000000000022f6      0x314 ../kernel/slab.o
- .debug_line    0x000000000000260a       0x55 ../main.o
- .debug_line    0x000000000000265f      0x146 ../fs/ramfs/ramfs_subr.o
- .debug_line    0x00000000000027a5      0xab0 ../fs/ramfs/ramfs.o
- .debug_line    0x0000000000003255      0x195 ../fs/ramfs/initramfs.o
- .debug_line    0x00000000000033ea      0x844 ../fs/vfs.o
- .debug_line    0x0000000000003c2e       0x42 ./switch.o
- .debug_line    0x0000000000003c70       0x71 ./isr.o
+ .debug_line    0x0000000000000158       0xb6 ../kernel/syscall.o
+ .debug_line    0x000000000000020e       0x4a ../kernel/sysproc.o
+ .debug_line    0x0000000000000258       0xec ../kernel/spinlock.o
+ .debug_line    0x0000000000000344       0xba ../kernel/panic.o
+ .debug_line    0x00000000000003fe      0x179 ../kernel/time.o
+ .debug_line    0x0000000000000577      0x185 ../kernel/apic.o
+ .debug_line    0x00000000000006fc      0x2d4 ../kernel/string.o
+ .debug_line    0x00000000000009d0      0x214 ../kernel/gdt.o
+ .debug_line    0x0000000000000be4      0x140 ../kernel/interrupt.o
+ .debug_line    0x0000000000000d24      0x214 ../kernel/kbd.o
+ .debug_line    0x0000000000000f38       0x69 ../kernel/io.o
+ .debug_line    0x0000000000000fa1      0x325 ../kernel/pmm.o
+ .debug_line    0x00000000000012c6      0x1dd ../kernel/idt.o
+ .debug_line    0x00000000000014a3      0x3d1 ../kernel/vmm.o
+ .debug_line    0x0000000000001874      0x105 ../kernel/vm/vm.o
+ .debug_line    0x0000000000001979      0x55e ../kernel/proc.o
+ .debug_line    0x0000000000001ed7      0x114 ../kernel/pic.o
+ .debug_line    0x0000000000001feb      0x1b2 ../kernel/cpu.o
+ .debug_line    0x000000000000219d      0x218 ../kernel/kernel.o
+ .debug_line    0x00000000000023b5      0x314 ../kernel/slab.o
+ .debug_line    0x00000000000026c9       0x5d ../main.o
+ .debug_line    0x0000000000002726      0x146 ../fs/ramfs/ramfs_subr.o
+ .debug_line    0x000000000000286c      0xaab ../fs/ramfs/ramfs.o
+ .debug_line    0x0000000000003317      0x195 ../fs/ramfs/initramfs.o
+ .debug_line    0x00000000000034ac      0x847 ../fs/vfs.o
+ .debug_line    0x0000000000003cf3       0x42 ./switch.o
+ .debug_line    0x0000000000003d35       0x72 ./isr.o
 
-.debug_str      0x0000000000000000     0x15c9
+.debug_str      0x0000000000000000     0x1604
  .debug_str     0x0000000000000000      0x24e ../kernel/acpi.o
                                         0x2b5 (size before relaxing)
- .debug_str     0x000000000000024e       0xb7 ../kernel/spinlock.o
+ .debug_str     0x000000000000024e       0x42 ../kernel/syscall.o
+                                        0x1de (size before relaxing)
+ .debug_str     0x0000000000000290       0x1d ../kernel/sysproc.o
+                                        0x147 (size before relaxing)
+ .debug_str     0x00000000000002ad       0xb7 ../kernel/spinlock.o
                                         0x25a (size before relaxing)
- .debug_str     0x0000000000000305       0x18 ../kernel/panic.o
+ .debug_str     0x0000000000000364       0x18 ../kernel/panic.o
                                         0x1b8 (size before relaxing)
- .debug_str     0x000000000000031d       0x77 ../kernel/time.o
+ .debug_str     0x000000000000037c       0x77 ../kernel/time.o
                                         0x2ab (size before relaxing)
- .debug_str     0x0000000000000394       0xb2 ../kernel/apic.o
+ .debug_str     0x00000000000003f3       0xa6 ../kernel/apic.o
                                         0x318 (size before relaxing)
- .debug_str     0x0000000000000446       0x72 ../kernel/string.o
+ .debug_str     0x0000000000000499       0x72 ../kernel/string.o
                                         0x21d (size before relaxing)
- .debug_str     0x00000000000004b8       0xea ../kernel/gdt.o
-                                        0x2e3 (size before relaxing)
- .debug_str     0x00000000000005a2       0x36 ../kernel/interrupt.o
+ .debug_str     0x000000000000050b      0x10c ../kernel/gdt.o
+                                        0x322 (size before relaxing)
+ .debug_str     0x0000000000000617       0x36 ../kernel/interrupt.o
                                         0x20d (size before relaxing)
- .debug_str     0x00000000000005d8      0x22e ../kernel/kbd.o
+ .debug_str     0x000000000000064d      0x22e ../kernel/kbd.o
                                         0x48f (size before relaxing)
- .debug_str     0x0000000000000806       0x1e ../kernel/io.o
+ .debug_str     0x000000000000087b       0x1e ../kernel/io.o
                                         0x1ac (size before relaxing)
- .debug_str     0x0000000000000824       0xef ../kernel/pmm.o
-                                        0x339 (size before relaxing)
- .debug_str     0x0000000000000913       0x76 ../kernel/idt.o
-                                        0x32e (size before relaxing)
- .debug_str     0x0000000000000989      0x198 ../kernel/vmm.o
-                                        0x47f (size before relaxing)
- .debug_str     0x0000000000000b21       0x1b ../kernel/vm/vm.o
+ .debug_str     0x0000000000000899       0xda ../kernel/pmm.o
+                                        0x344 (size before relaxing)
+ .debug_str     0x0000000000000973       0x76 ../kernel/idt.o
+                                        0x336 (size before relaxing)
+ .debug_str     0x00000000000009e9      0x1a4 ../kernel/vmm.o
+                                        0x491 (size before relaxing)
+ .debug_str     0x0000000000000b8d       0x1b ../kernel/vm/vm.o
                                         0x234 (size before relaxing)
- .debug_str     0x0000000000000b3c      0x210 ../kernel/proc.o
-                                        0x5fe (size before relaxing)
- .debug_str     0x0000000000000d4c       0x30 ../kernel/pic.o
+ .debug_str     0x0000000000000ba8      0x264 ../kernel/proc.o
+                                        0x72a (size before relaxing)
+ .debug_str     0x0000000000000e0c       0x30 ../kernel/pic.o
                                         0x202 (size before relaxing)
- .debug_str     0x0000000000000d7c      0x126 ../kernel/cpu.o
+ .debug_str     0x0000000000000e3c       0xad ../kernel/cpu.o
                                         0x51f (size before relaxing)
- .debug_str     0x0000000000000ea2      0x1dd ../kernel/kernel.o
-                                        0x6fc (size before relaxing)
- .debug_str     0x000000000000107f       0x9c ../kernel/slab.o
+ .debug_str     0x0000000000000ee9      0x1bf ../kernel/kernel.o
+                                        0x6c8 (size before relaxing)
+ .debug_str     0x00000000000010a8       0x9c ../kernel/slab.o
                                         0x30e (size before relaxing)
- .debug_str     0x000000000000111b        0xa ../main.o
+ .debug_str     0x0000000000001144        0xa ../main.o
                                         0x148 (size before relaxing)
- .debug_str     0x0000000000001125       0x6f ../fs/ramfs/ramfs_subr.o
+ .debug_str     0x000000000000114e       0x6f ../fs/ramfs/ramfs_subr.o
                                         0x386 (size before relaxing)
- .debug_str     0x0000000000001194      0x275 ../fs/ramfs/ramfs.o
-                                        0x640 (size before relaxing)
- .debug_str     0x0000000000001409      0x11e ../fs/ramfs/initramfs.o
+ .debug_str     0x00000000000011bd      0x275 ../fs/ramfs/ramfs.o
+                                        0x637 (size before relaxing)
+ .debug_str     0x0000000000001432      0x11e ../fs/ramfs/initramfs.o
                                         0x49f (size before relaxing)
- .debug_str     0x0000000000001527       0xa2 ../fs/vfs.o
+ .debug_str     0x0000000000001550       0xb4 ../fs/vfs.o
                                         0x4bf (size before relaxing)
 
 .comment        0x0000000000000000       0x2b
  .comment       0x0000000000000000       0x2b ../kernel/acpi.o
                                          0x2c (size before relaxing)
+ .comment       0x000000000000002b       0x2c ../kernel/syscall.o
+ .comment       0x000000000000002b       0x2c ../kernel/sysproc.o
  .comment       0x000000000000002b       0x2c ../kernel/spinlock.o
  .comment       0x000000000000002b       0x2c ../kernel/panic.o
  .comment       0x000000000000002b       0x2c ../kernel/time.o

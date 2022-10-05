@@ -2,20 +2,18 @@
 #include "asm/x86.h"
 #include "d.h"
 #include "franklin/apic.h"
+#include "franklin/fs/vfs.h"
+#include "franklin/gdt.h"
 #include "franklin/misc.h"
 #include "franklin/mmu.h"
 #include "franklin/switch.h"
 #include "mm/vm.h"
+#include "std/string.h"
 #include <elf.h>
 #include <stdint.h>
 
-struct auxval
-{
-  uint64_t at_entry;
-  uint64_t at_phdr;
-  uint64_t at_phent;
-  uint64_t at_phnum;
-};
+void
+copyargs(uintptr_t* stack[], const char* argv[], struct auxval* aux);
 
 extern void
 ret(void);
@@ -71,46 +69,42 @@ set_current_proc(struct proc* p)
 struct proc*
 get_current_proc(void)
 {
-  return rdmsr(MSR_GS);
+  return (struct proc*)rdmsr(MSR_GS);
 }
 
-struct elf
-{
-  int magic;
-};
+/* void */
+/* load_elf(struct ) */
+/* {} */
 
+struct vm_map;
 extern struct vm_map* kernel_vm_map;
 
 void
-exec(const char* name, const char* argv[])
+loadelf(const char* name, struct vm_map* vmap, struct auxval* aux)
 {
   Elf64_Ehdr elf;
   Elf64_Phdr phdr;
-  struct proc* p;
-  struct vm_map* vmap;
-  struct vm_map_entry* map_entry;
   struct vnode* vn;
-  struct auxval aux;
-  uint64_t flags, paddr, pagecount;
+  /* struct vm_map_entry* map_entry; */
+  uint64_t flags, pagecount, paddr;
+  size_t i;
 
   vfs_open(name, &vn, 0, 0);
-
   vfs_read(vn, &elf, 0, sizeof elf);
+  ;
 
-  vmap = newvm_map();
-
-  for (int i = 0; i < elf.e_phnum; ++i) {
-    vfs_read(vn, &phdr, elf.e_phoff + (i * sizeof phdr), sizeof phdr);
+  for (i = 0; i < elf.e_phnum; ++i) {
+    vfs_read(vn, &phdr, (off_t)(elf.e_phoff + (i * sizeof phdr)), sizeof phdr);
 
     switch (phdr.p_type) {
       case PT_LOAD: {
-        map_entry = kalloc(sizeof *map_entry);
+        /* map_entry = kalloc(sizeof *map_entry); */
         pagecount = DIV_ROUNDUP(phdr.p_memsz, PGSIZE);
 
         paddr = (uintptr_t)palloc(pagecount);
 
-        map_entry->start = phdr.p_vaddr;
-        map_entry->end = phdr.p_vaddr + phdr.p_memsz;
+        /* map_entry->start = phdr.p_vaddr; */
+        /* map_entry->end = phdr.p_vaddr + phdr.p_memsz; */
 
         flags = PTE_PRESENT | PTE_USER;
         if (phdr.p_flags & PF_W) {
@@ -125,21 +119,34 @@ exec(const char* name, const char* argv[])
           vmap->top_level, phdr.p_vaddr, paddr, pagecount * PGSIZE, flags);
 
         // read it into memory
-        vfs_read(vn, P2V(paddr), phdr.p_offset, phdr.p_filesz);
+        vfs_read(vn, (void*)P2V(paddr), (off_t)phdr.p_offset, phdr.p_filesz);
         break;
       }
       case PT_PHDR: {
-        aux.at_phdr = phdr.p_vaddr;
+        aux->at_phdr = phdr.p_vaddr;
       };
     };
   }
-  aux.at_entry = elf.e_entry;
-  aux.at_phent = elf.e_phentsize;
-  aux.at_phnum = elf.e_phnum;
+  aux->at_entry = elf.e_entry;
+  aux->at_phent = elf.e_phentsize;
+  aux->at_phnum = elf.e_phnum;
+  return 0;
+}
 
-  uintptr_t *stack, *stackva = 0x70000000000;
-  uintptr_t oldrsp;
+void
+exec(const char* name, const char* argv[])
+{
+  struct proc* p;
+  struct vm_map *vmap, *oldvmap;
+  struct auxval aux;
+  uintptr_t *stack, *stacktop;
+  uintptr_t stackva = 0x70000000000;
+
   p = get_current_proc();
+
+  vmap = newvm_map();
+
+  loadelf(name, vmap, &aux);
 
   // allocate and map the stack at 0x7000000000
   stack = palloc(STACKSIZE / PGSIZE);
@@ -150,22 +157,34 @@ exec(const char* name, const char* argv[])
            PTE_PRESENT | PTE_RW | PTE_USER);
 
   p->regs->rsp = (uintptr_t)stackva + STACKSIZE;
-  p->regs->rip = elf.e_entry;
+  p->regs->rip = aux.at_entry;
+
+  p->regs->cs = 0x43;
+
+  // sdm: on far ret, if the target CPL == 3, ss cant be 0
+  p->regs->ss = 0x3b;
+  p->regs->eflags = 0x202;
+
+  oldvmap = p->vmap;
   p->vmap = vmap;
 
-  stack = P2V((uintptr_t)stack + STACKSIZE);
-  void* stacktop = stack;
+  stack = (uintptr_t*)P2V((uintptr_t)stack + STACKSIZE);
+  stacktop = stack;
   copyargs(&stack, argv, &aux);
 
   p->regs->rsp -= (uintptr_t)stacktop - (uintptr_t)stack;
-  /* mappage2(vmap->top_level, 0x1000, 0x1000, PTE_PRESENT); */
+
+  struct tss* tss = kalloc(sizeof *tss);
 
   switchvm(vmap);
 
-  destroy_vmap(vmap);
+  tss->rsp0 = P2V(palloc(1) + PGSIZE);
+  load_tss(tss);
 
-  va2pte(vmap->top_level, 0x10000, 0);
+  /* destroyvm(oldvmap); */
 
+  // TODO: exec is a system call, so this is not needed,
+  // it should just return to the trap
   startproc(p);
 }
 
@@ -174,15 +193,15 @@ exec(const char* name, const char* argv[])
   and then placing pointers to those strings on the stack
 */
 void
-copyargs(uintptr_t* stack[], char* argv[], struct auxval* aux)
+copyargs(uintptr_t* stack[], const char* argv[], struct auxval* aux)
 {
   size_t argc, length, i;
   uintptr_t oldrsp = (uintptr_t)*stack;
 
   for (argc = 0; argv[argc]; argc++) {
     length = strlen(argv[argc]);
-    *stack = (char*)*stack - length - 1;
-    strcpy(*stack, argv[argc]);
+    *stack = (uintptr_t*)((char*)*stack - length - 1);
+    strcpy((char*)*stack, argv[argc]);
   }
 
   *--(*stack) = 0, *--(*stack);
@@ -194,7 +213,7 @@ copyargs(uintptr_t* stack[], char* argv[], struct auxval* aux)
   *--(*stack) = 0;
   *stack -= argc;
   for (i = 0; i < argc; ++i) {
-    oldrsp -= strlen(argv[i]) + 1;
+    oldrsp -= (uintptr_t)strlen(argv[i]) + 1;
     (*stack)[i] = oldrsp;
   }
   *--(*stack) = argc;
@@ -212,30 +231,6 @@ startproc(struct proc* p)
   // this useless stack needs to be "saved" somewhere
   struct stack* discard;
   switc(&discard, p->stack);
-}
-
-// Replace and existing proc like in exec()
-int
-replace_proc(struct proc* proc, struct vm_map* vmap, void (*entry)())
-{
-  struct regs* regs;
-  void* stack;
-
-  // allocate and map user stack at 0x10000
-  stack = palloc(STACKSIZE / PGSIZE);
-  mappage2(vmap->top_level, 0x10000, stack, PTE_RW | PTE_PRESENT | PTE_USER);
-
-  // allocate kernel stack
-  stack = P2V(palloc(STACKSIZE / PGSIZE));
-  stack = ((char*)stack + STACKSIZE) - sizeof *regs;
-
-  regs = (struct regs*)stack;
-  regs->rsp = 0x10000;
-  regs->rip = entry;
-  regs->eflags = 0x202;
-  char* s = "hello" + 1;
-
-  return 0;
 }
 
 struct proc*

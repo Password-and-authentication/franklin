@@ -77,29 +77,39 @@ struct vnode
   void* data;
 };
 
+int
+vfs_open(const char* name, struct vnode** vpp, enum vtype type, int flags);
+
+int
+vfs_read(struct vnode* vn, void* buf, off_t offset, size_t count);
+
 /*
   Called when copying a vnode pointer
   (pointers are copied when the pointer needs to
    outlive where it came from)
 */
-static inline vref(struct vnode* vn)
+static inline void
+vref(struct vnode* vn)
 {
   acquire(&vn->lock);
   vn->refcount++;
   release(&vn->lock);
 }
 
-static inline vref_locked(struct vnode* vn)
+static inline void
+vref_locked(struct vnode* vn)
 {
   vn->refcount++;
 }
 
-static inline vput(struct vnode* vn)
+static inline void
+vput(struct vnode* vn)
 {
   vfs_close(vn);
 }
 
-static inline vrele(struct vnode* vn)
+static inline void
+vrele(struct vnode* vn)
 {
   vput(vn);
 }

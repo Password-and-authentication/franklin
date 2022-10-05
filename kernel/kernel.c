@@ -102,6 +102,9 @@ kmain(void)
   init_pit(1000); // 1000 hz, 1000 IRQ0's in a second
   asm("sti");
 
+  /* asm("mov $10, %eax"); */
+  /* asm("int $69"); */
+
   /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also
    * configure it) */
   /* init_apic((uint32_t*)((uintptr_t)madt->lapic + HHDM_OFFSET)); */
@@ -127,30 +130,7 @@ kmain(void)
     vfs_close(v);
   }
 
-  uint64_t *pagetables, *new, *lol, *lol2, *lol3, *toplevel;
-  extern struct vm_map* kernel_vm_map;
-  static int l = 69;
-
-  uint64_t* va2pte();
-
-  // 0xfd000000
-  // 0x300000
-  asm volatile("mov %%cr3, %0" : "=r"(toplevel));
-
-  toplevel = P2V(toplevel);
-  lol = va2pte(toplevel, 0xfd000000, 0);
-
   init_vm();
-
-  new = kernel_vm_map->top_level;
-
-  /* lol2 = va2pte(new, &lol, 0); */
-
-  /* asm("mov %0, %%cr3" ::"r"(V2P(new))); */
-
-  l = 0;
-
-  lol = 0;
 
   void init_proc();
   init_proc(0);

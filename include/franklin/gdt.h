@@ -8,6 +8,8 @@ init_gdt(void);
 uint16_t
 init_tss(void);
 
+extern struct gdtdesc* gdt;
+
 struct gdtdesc
 {
   uint16_t segment_limit;
@@ -22,6 +24,12 @@ struct tssdesc
 {
   struct gdtdesc desc;
   uint32_t base_high;
+} __attribute__((packed));
+
+struct tss
+{
+  uint32_t zero;
+  uint64_t rsp0;
 } __attribute__((packed));
 
 #endif
