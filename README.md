@@ -8,5 +8,6 @@ So far it has:
 - vfs & ramfs
 - interrupts
 - scheduler
+- exec()
 
 It is not finished yet, I had to put it on hold because of other programming projects
