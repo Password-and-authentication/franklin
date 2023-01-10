@@ -87,23 +87,16 @@ kmain(void)
   vfs_mount(0, "ramfs");
   init_rootvn();
 
-  /* vfs_mount("/lmaooooo/haha/fuck", "ramfs"); */
 
   MADT* madt = get_acpi_sdt(MADT_C);
   walk_madt(madt); // get info about MADT table
   init_gdt();
 
-  /* print("\nwhat we gon' do tomorrow?\n"); */
-  /* print("i got an idea.. , lets FUCK!\n\n"); */
   init_interrupt();
 
-  /* vfs_mount("/", "ramfs"); */
 
   init_pit(1000); // 1000 hz, 1000 IRQ0's in a second
   asm("sti");
-
-  /* asm("mov $10, %eax"); */
-  /* asm("int $69"); */
 
   /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also
    * configure it) */
@@ -111,10 +104,6 @@ kmain(void)
 #define _shit_(x) x
 #define __shit_(...)
 
-  _shit_(("lol", "lol"));
-  __shit_("lol", "lol");
-
-  /* wrmsr(MSR_GS, 100); */
 
   /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
 
