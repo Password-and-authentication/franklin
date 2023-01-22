@@ -101,9 +101,6 @@ kmain(void)
   /* sets LAPIC registers and starts the LAPIC timer (the first CPU will also
    * configure it) */
   /* init_apic((uint32_t*)((uintptr_t)madt->lapic + HHDM_OFFSET)); */
-#define _shit_(x) x
-#define __shit_(...)
-
 
   /* init_cpu(); // init 2nd CPU, (init_apic() gets called here aswell) */
 
@@ -136,8 +133,6 @@ thread3()
   r();
   static int h;
 
-  const char* s[] = { "sex", "lmao" };
-  exec("/exe", s);
 
   for (;;) {
   }
