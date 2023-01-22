@@ -11,3 +11,5 @@ So far it has:
 - exec()
 
 It is not finished yet, I had to put it on hold because of other programming projects
+
+It is called **Franklin** because when I started it, I was reading the biography of Benjamin Franklin lol  
