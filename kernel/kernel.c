@@ -53,6 +53,9 @@ printl(void* s, size_t len)
   release(&spinlock);
 }
 
+/* entry point
+  Right now it contains a lot of testing calls..
+*/
 void
 kmain(void)
 {
